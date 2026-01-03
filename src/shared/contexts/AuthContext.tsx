@@ -37,7 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (credentials: LoginRequest) => {
     const response = await authService.login(credentials)
     const userData = { email: response.email, role: response.role }
+    // Ensure localStorage is updated before setting state
+    localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
+    return response
   }
 
   const register = async (data: RegisterRequest) => {

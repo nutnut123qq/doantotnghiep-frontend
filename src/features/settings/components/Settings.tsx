@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { Switch } from '@headlessui/react'
+import {
+  UserIcon,
+  BellIcon,
+  ChartBarIcon,
+  LockClosedIcon,
+} from '@heroicons/react/24/outline'
 
 export const Settings = () => {
   const [notifications, setNotifications] = useState({
@@ -26,7 +32,7 @@ export const Settings = () => {
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <span>👤</span>
+                <UserIcon className="h-5 w-5 text-slate-700" />
                 <span>Profile Settings</span>
               </h3>
             </div>
@@ -62,7 +68,7 @@ export const Settings = () => {
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <span>🔔</span>
+                <BellIcon className="h-5 w-5 text-slate-700" />
                 <span>Notifications</span>
               </h3>
             </div>
@@ -116,7 +122,7 @@ export const Settings = () => {
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <span>📊</span>
+                <ChartBarIcon className="h-5 w-5 text-slate-700" />
                 <span>Trading Preferences</span>
               </h3>
             </div>
@@ -152,7 +158,7 @@ export const Settings = () => {
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <span>🔒</span>
+                <LockClosedIcon className="h-5 w-5 text-slate-700" />
                 <span>Security</span>
               </h3>
             </div>

@@ -149,7 +149,7 @@ export const AIInsights = () => {
                           <div className="w-full bg-slate-200 rounded-full h-2">
                             <div
                               className={`${colors.bg.replace('100', '500')} h-2 rounded-full transition-all duration-500`}
-                              style={{ width: `${insight.confidence}%` }}
+                              style={{ '--confidence-width': `${insight.confidence}%`, width: `var(--confidence-width)` } as React.CSSProperties}
                             ></div>
                           </div>
                         </div>
