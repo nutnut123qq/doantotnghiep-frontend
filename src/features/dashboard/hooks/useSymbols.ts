@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { stockDataService, StockSymbol } from '../services/stockDataService'
+import { stockDataService } from '../services/stockDataService'
 
 export const useSymbols = (exchange?: string) => {
   const { data, isLoading, error } = useQuery({

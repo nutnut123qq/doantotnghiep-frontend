@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { columnPreferencesService } from '../services/columnPreferencesService'
 import { apiClient } from '@/infrastructure/api/apiClient'
+import type { TradingBoardColumnPreferences, ColumnId } from '../types/columnTypes'
 
 vi.mock('@/infrastructure/api/apiClient')
 
@@ -52,9 +53,9 @@ describe('columnPreferencesService', () => {
 
   describe('saveColumnPreferences', () => {
     it('should save preferences to backend and localStorage', async () => {
-      const preferences = {
-        visibleColumns: ['symbol', 'name'],
-        columnOrder: ['symbol', 'name'],
+      const preferences: TradingBoardColumnPreferences = {
+        visibleColumns: ['symbol', 'name'] as ColumnId[],
+        columnOrder: ['symbol', 'name'] as ColumnId[],
       }
 
       vi.mocked(apiClient.post).mockResolvedValue({} as any)

@@ -41,7 +41,7 @@ export const CreateAlertModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'nlp' | 'form')}>
+        <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as 'nlp' | 'form')}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="nlp" className="flex items-center space-x-2">
               <SparklesIcon className="h-4 w-4" />

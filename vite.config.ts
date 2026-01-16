@@ -1,11 +1,11 @@
-import { defineConfig, splitVendorChunkPlugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
   plugins: [
     react(),
-    splitVendorChunkPlugin() // Split vendor chunks for better caching
+    // Note: splitVendorChunkPlugin is not needed when using manualChunks
   ],
   resolve: {
     alias: {

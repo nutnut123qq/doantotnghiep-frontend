@@ -135,8 +135,8 @@ export const SymbolSelector = ({
     inputRef.current?.focus()
   }
 
-  // Find current symbol for display
-  const currentSymbol = symbols.find((s) => s.symbol === value)
+  // Find current symbol for display (unused for now, may be used later)
+  // const currentSymbol = symbols.find((s) => s.symbol === value)
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>

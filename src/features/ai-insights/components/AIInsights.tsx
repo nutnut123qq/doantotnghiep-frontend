@@ -193,7 +193,7 @@ export const AIInsights = () => {
     'Hold Recommendations': insights.filter(i => i.type.toLowerCase() === 'hold'),
   }
 
-  const filteredInsights = categories[selectedCategory as keyof typeof categories] || []
+  // Note: Insights are filtered by category in Tab.Panels below
 
   if (loading) {
     return (

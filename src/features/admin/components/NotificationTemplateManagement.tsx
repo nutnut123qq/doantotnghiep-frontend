@@ -15,7 +15,7 @@ export function NotificationTemplateManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<NotificationTemplate | null>(null)
-  const [previewData, setPreviewData] = useState<{ subject: string; body: string } | null>(null)
+  const [previewData, setPreviewData] = useState<{ renderedSubject: string; renderedBody: string } | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -211,8 +211,8 @@ export function NotificationTemplateManagement() {
       {/* Preview Modal */}
       {isPreviewOpen && previewData && (
         <PreviewModal
-          subject={previewData.subject}
-          body={previewData.body}
+          subject={previewData.renderedSubject}
+          body={previewData.renderedBody}
           onClose={() => {
             setIsPreviewOpen(false)
             setPreviewData(null)

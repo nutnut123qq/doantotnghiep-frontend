@@ -16,7 +16,6 @@ export const NLPChatInput = ({
   isLoading,
 }: NLPChatInputProps) => {
   const [input, setInput] = useState('')
-  const [parsedAlert, setParsedAlert] = useState<ParsedAlert | null>(null)
   const [isParsing, setIsParsing] = useState(false)
 
   const handleParse = async () => {
@@ -41,17 +40,6 @@ export const NLPChatInput = ({
     }
   }
 
-  const handleConfirm = () => {
-    if (parsedAlert) {
-      onSubmit({
-        symbol: parsedAlert.symbol,
-        type: parsedAlert.type as any,
-        condition: parsedAlert.operator,
-        threshold: parsedAlert.value,
-        timeframe: parsedAlert.timeframe,
-      })
-    }
-  }
 
   const examples = [
     'Alert me when VIC price goes above 100000',
@@ -76,32 +64,6 @@ export const NLPChatInput = ({
         />
       </div>
 
-      {parsedAlert && (
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">
-            Parsed Alert Preview:
-          </h4>
-          <div className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-            <p>
-              <strong>Symbol:</strong> {parsedAlert.symbol}
-            </p>
-            <p>
-              <strong>Type:</strong> {parsedAlert.type}
-            </p>
-            <p>
-              <strong>Condition:</strong> {parsedAlert.operator}
-            </p>
-            <p>
-              <strong>Value:</strong> {parsedAlert.value}
-            </p>
-            {parsedAlert.timeframe && (
-              <p>
-                <strong>Timeframe:</strong> {parsedAlert.timeframe}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">Examples:</p>
@@ -123,25 +85,19 @@ export const NLPChatInput = ({
         <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading || isParsing}>
           Cancel
         </Button>
-        {parsedAlert ? (
-          <Button onClick={handleConfirm} disabled={isLoading}>
-            Confirm & Create
-          </Button>
-        ) : (
-          <Button onClick={handleParse} disabled={isLoading || isParsing || !input.trim()}>
-            {isParsing ? (
-              <>
-                <SparklesIcon className="h-4 w-4 mr-2 animate-spin" />
-                Parsing...
-              </>
-            ) : (
-              <>
-                <SparklesIcon className="h-4 w-4 mr-2" />
-                Parse & Create
-              </>
-            )}
-          </Button>
-        )}
+        <Button onClick={handleParse} disabled={isLoading || isParsing || !input.trim()}>
+          {isParsing ? (
+            <>
+              <SparklesIcon className="h-4 w-4 mr-2 animate-spin" />
+              Parsing...
+            </>
+          ) : (
+            <>
+              <SparklesIcon className="h-4 w-4 mr-2" />
+              Parse & Create
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )

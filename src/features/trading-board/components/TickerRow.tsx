@@ -16,7 +16,6 @@ export const TickerRow = ({ ticker, visibleColumns, columnOrder, columnWidths }:
 
   const renderCell = (columnId: ColumnId) => {
     const isRightAlign = ['price', 'change', 'changePercent', 'volume', 'value'].includes(columnId)
-    const widthClass = columnWidths?.[columnId] ? '' : ''
     const widthStyle = columnWidths?.[columnId] ? { '--cell-width': `${columnWidths[columnId]}px` } as React.CSSProperties : undefined
 
     switch (columnId) {

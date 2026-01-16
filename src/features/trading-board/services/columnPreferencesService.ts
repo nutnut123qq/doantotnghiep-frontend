@@ -61,8 +61,8 @@ export const columnPreferencesService = {
    */
   getDefaultColumns(): TradingBoardColumnPreferences {
     return {
-      visibleColumns: [...DEFAULT_VISIBLE],
-      columnOrder: [...DEFAULT_ORDER],
+      visibleColumns: [...DEFAULT_VISIBLE_COLUMNS],
+      columnOrder: [...DEFAULT_COLUMN_ORDER],
     }
   },
 

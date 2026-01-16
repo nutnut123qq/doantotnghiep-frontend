@@ -18,8 +18,8 @@ import { useTradingBoard } from '../hooks/useTradingBoard'
 import { ColumnCustomizationModal } from './ColumnCustomizationModal'
 import { columnPreferencesService } from '../services/columnPreferencesService'
 import type { TradingBoardFilters } from '../services/tradingBoardService'
-import type { TradingBoardColumnPreferences, ColumnId } from '../types/columnTypes'
-import { COLUMN_DEFINITIONS, DEFAULT_COLUMN_ORDER } from '../types/columnTypes'
+import type { TradingBoardColumnPreferences } from '../types/columnTypes'
+import { DEFAULT_COLUMN_ORDER } from '../types/columnTypes'
 import type { StockTicker } from '@/domain/entities/StockTicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,7 +38,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { ArrowUpDown } from 'lucide-react'
@@ -54,7 +53,7 @@ export const TradingBoard = () => {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [columnPreferences, setColumnPreferences] = useState<TradingBoardColumnPreferences>({
+  const [, setColumnPreferences] = useState<TradingBoardColumnPreferences>({
     visibleColumns: DEFAULT_COLUMN_ORDER,
     columnOrder: DEFAULT_COLUMN_ORDER,
   })

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { alertService } from '../services/alertService'
 import { useToast } from '@/shared/hooks/useToast'
-import type { Alert, CreateAlertRequest } from '../types/alert.types'
+import type { CreateAlertRequest } from '../types/alert.types'
 
 export const useAlerts = (isActive?: boolean) => {
   const queryClient = useQueryClient()

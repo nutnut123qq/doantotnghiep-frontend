@@ -15,7 +15,6 @@ import { Badge } from '@/components/ui/badge'
 import {
   PlusIcon,
   TrashIcon,
-  PencilIcon,
   BellIcon,
 } from '@heroicons/react/24/outline'
 import { AlertTypeLabels } from '../types/alert.types'
@@ -25,7 +24,6 @@ import { format } from 'date-fns'
 export const AlertList = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingAlert, setEditingAlert] = useState<Alert | null>(null)
 
   const isActiveFilter = filter === 'all' ? undefined : filter === 'active'
   const {
