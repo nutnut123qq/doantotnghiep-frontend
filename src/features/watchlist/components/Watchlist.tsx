@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { StarIcon } from '@heroicons/react/24/solid'
 import { useWatchlists } from '../hooks/useWatchlists'
 import { CreateWatchlistModal } from './CreateWatchlistModal'
 import { EditWatchlistModal } from './EditWatchlistModal'
@@ -102,7 +103,7 @@ export const Watchlist = () => {
                 <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <span className="text-2xl">⭐</span>
+                      <StarIcon className="w-6 h-6 text-amber-500 dark:text-amber-400" />
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{watchlist.name}</h3>
                       <span className="text-sm text-slate-500 dark:text-slate-400">({watchlist.stocks.length} cổ phiếu)</span>
                     </div>
@@ -202,7 +203,9 @@ export const Watchlist = () => {
         {/* Empty State for New Users */}
         {!isLoading && watchlists.length === 0 && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-12 text-center border border-slate-200 dark:border-slate-700">
-            <div className="text-6xl mb-4">⭐</div>
+            <div className="flex justify-center mb-4">
+              <StarIcon className="w-16 h-16 text-amber-500 dark:text-amber-400" />
+            </div>
             <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Chưa có Watchlist nào</h3>
             <p className="text-slate-600 dark:text-slate-300 mb-6">Tạo watchlist đầu tiên để bắt đầu theo dõi cổ phiếu</p>
             <button
