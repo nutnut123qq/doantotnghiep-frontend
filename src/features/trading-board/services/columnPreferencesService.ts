@@ -1,4 +1,5 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
+import { authService } from '@/features/auth/services/authService'
 import type { TradingBoardColumnPreferences } from '../types/columnTypes'
 import { DEFAULT_COLUMN_ORDER, DEFAULT_VISIBLE_COLUMNS } from '../types/columnTypes'
 
@@ -15,16 +16,26 @@ export const columnPreferencesService = {
    * Get column preferences from backend
    */
   async getColumnPreferences(): Promise<TradingBoardColumnPreferences> {
-    try {
-      const response = await apiClient.get<UserPreference>(
-        `/api/UserPreference/${COLUMN_PREFERENCE_KEY}`
-      )
-      
-      if (response.data && response.data.preferenceValue) {
-        return JSON.parse(response.data.preferenceValue)
+    // Chỉ gọi API nếu user đã đăng nhập để tránh lỗi 404 không cần thiết
+    if (authService.isAuthenticated()) {
+      try {
+        const response = await apiClient.get<UserPreference>(
+          `/api/UserPreference/${COLUMN_PREFERENCE_KEY}`,
+          {
+            // Suppress 404 errors in console
+            validateStatus: (status) => status < 500, // Don't throw for 4xx errors
+          }
+        )
+        
+        if (response.status === 200 && response.data && response.data.preferenceValue) {
+          return JSON.parse(response.data.preferenceValue)
+        }
+      } catch (error: any) {
+        // 404 is expected when preference doesn't exist yet - don't log it
+        if (error?.response?.status !== 404) {
+          console.error('Error getting column preferences:', error)
+        }
       }
-    } catch (error) {
-      console.log('No saved column preferences found, using default')
     }
     
     // Fallback to localStorage

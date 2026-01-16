@@ -12,18 +12,22 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
     queryFn: () => tradingBoardService.getTickers(filters),
   })
 
-  const { on, invoke } = useSignalR('stock-price', () => {
-    // Join all ticker groups when connected
-    tickers.forEach((ticker) => {
-      invoke('JoinTickerGroup', ticker.symbol)
-    })
-  })
+  const { on, invoke, isConnected } = useSignalR('stock-price')
 
   useEffect(() => {
     if (data) {
       setTickers(data)
     }
   }, [data])
+
+  // Join ticker groups when connection is established and tickers are loaded
+  useEffect(() => {
+    if (isConnected && tickers.length > 0) {
+      tickers.forEach((ticker) => {
+        invoke('JoinTickerGroup', ticker.symbol)
+      })
+    }
+  }, [isConnected, tickers, invoke])
 
   useEffect(() => {
     // Listen for price updates

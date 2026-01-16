@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -23,10 +23,21 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ArrowUpDown, RefreshCw } from 'lucide-react'
+import { ArrowUpDown, RefreshCw, Plus, Search, X } from 'lucide-react'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { cn } from '@/lib/utils'
 import { portfolioService, type Holding, type PortfolioSummary } from '../services/portfolioService'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { useSymbols } from '@/features/dashboard/hooks/useSymbols'
+import type { StockSymbol } from '@/features/dashboard/services/stockDataService'
 
 export const Portfolio = () => {
   const [sorting, setSorting] = useState<SortingState>([])
@@ -37,6 +48,21 @@ export const Portfolio = () => {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [newHolding, setNewHolding] = useState({
+    symbol: '',
+    shares: '',
+    avgPrice: '',
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [symbolSearchQuery, setSymbolSearchQuery] = useState('')
+  const [isSymbolDropdownOpen, setIsSymbolDropdownOpen] = useState(false)
+  const [highlightedSymbolIndex, setHighlightedSymbolIndex] = useState(0)
+  const symbolInputRef = useRef<HTMLInputElement>(null)
+  const symbolDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Load symbols for autocomplete
+  const { symbols, isLoading: isLoadingSymbols } = useSymbols()
 
   // Debounce search query (300ms delay)
   useEffect(() => {
@@ -108,6 +134,130 @@ export const Portfolio = () => {
     loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
+
+  // Function to handle adding new holding
+  const handleAddHolding = async () => {
+    try {
+      setIsSubmitting(true)
+      const shares = parseFloat(newHolding.shares)
+      const avgPrice = parseFloat(newHolding.avgPrice)
+
+      if (!newHolding.symbol.trim() || !shares || !avgPrice || shares <= 0 || avgPrice <= 0) {
+        alert('Vui lòng nhập đầy đủ thông tin hợp lệ')
+        return
+      }
+
+      await portfolioService.addHolding({
+        symbol: newHolding.symbol.trim().toUpperCase(),
+        shares,
+        avgPrice,
+      })
+
+      // Reset form and close dialog
+      setNewHolding({ symbol: '', shares: '', avgPrice: '' })
+      setSymbolSearchQuery('')
+      setIsSymbolDropdownOpen(false)
+      setIsAddDialogOpen(false)
+      
+      // Reload data
+      await loadData()
+    } catch (err: any) {
+      console.error('Error adding holding:', err)
+      const errorMessage = err.response?.data?.message || err.message || 'Không thể thêm mã cổ phiếu. Vui lòng thử lại.'
+      alert(errorMessage)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Filter symbols for autocomplete
+  const filteredSymbols = useMemo(() => {
+    if (!symbolSearchQuery.trim()) {
+      return symbols.slice(0, 10) // Show first 10 when no search
+    }
+
+    const query = symbolSearchQuery.toLowerCase()
+    return symbols
+      .filter(
+        (s) =>
+          s.symbol.toLowerCase().includes(query) ||
+          s.name?.toLowerCase().includes(query)
+      )
+      .slice(0, 10) // Limit to 10 suggestions
+  }, [symbols, symbolSearchQuery])
+
+  // Close symbol dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        symbolInputRef.current &&
+        symbolDropdownRef.current &&
+        !symbolInputRef.current.contains(event.target as Node) &&
+        !symbolDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsSymbolDropdownOpen(false)
+      }
+    }
+
+    if (isSymbolDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [isSymbolDropdownOpen])
+
+  // Reset symbol search when dialog closes
+  useEffect(() => {
+    if (!isAddDialogOpen) {
+      setSymbolSearchQuery('')
+      setIsSymbolDropdownOpen(false)
+      setHighlightedSymbolIndex(0)
+    }
+  }, [isAddDialogOpen])
+
+  // Handle symbol selection
+  const handleSymbolSelect = (symbol: StockSymbol) => {
+    setNewHolding({ ...newHolding, symbol: symbol.symbol })
+    setSymbolSearchQuery(symbol.symbol)
+    setIsSymbolDropdownOpen(false)
+    setHighlightedSymbolIndex(0)
+  }
+
+  // Handle symbol input change
+  const handleSymbolInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSymbolSearchQuery(value)
+    setNewHolding({ ...newHolding, symbol: value })
+    setIsSymbolDropdownOpen(true)
+    setHighlightedSymbolIndex(0)
+  }
+
+  // Handle keyboard navigation in symbol dropdown
+  const handleSymbolKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isSymbolDropdownOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      setIsSymbolDropdownOpen(true)
+      return
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedSymbolIndex((prev) =>
+        prev < filteredSymbols.length - 1 ? prev + 1 : prev
+      )
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedSymbolIndex((prev) => (prev > 0 ? prev - 1 : 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filteredSymbols[highlightedSymbolIndex]) {
+        handleSymbolSelect(filteredSymbols[highlightedSymbolIndex])
+      }
+    } else if (e.key === 'Escape') {
+      setIsSymbolDropdownOpen(false)
+      symbolInputRef.current?.blur()
+    }
+  }
 
   // Filter holdings based on debounced search query
   const filteredHoldings = useMemo(() => {
@@ -428,15 +578,24 @@ export const Portfolio = () => {
             <p className="text-slate-600 dark:text-slate-400">Manage and track your investment holdings</p>
           </div>
           {!loading && (
-            <Button
-              onClick={loadData}
-              variant="outline"
-              size="sm"
-              disabled={loading}
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Thêm mã cổ phiếu
+              </Button>
+              <Button
+                onClick={loadData}
+                variant="outline"
+                size="sm"
+                disabled={loading}
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                Refresh
+              </Button>
+            </div>
           )}
         </motion.div>
 
@@ -656,6 +815,161 @@ export const Portfolio = () => {
             )}
           </Card>
         </motion.div>
+
+        {/* Add Holding Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Thêm mã cổ phiếu vào Portfolio</DialogTitle>
+              <DialogDescription>
+                Nhập thông tin mã cổ phiếu bạn muốn thêm vào portfolio của bạn.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="symbol">Mã cổ phiếu *</Label>
+                <div className="relative" ref={symbolInputRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="symbol"
+                      placeholder="Tìm kiếm mã cổ phiếu (VD: VIC, VNM, VCB)..."
+                      value={symbolSearchQuery}
+                      onChange={handleSymbolInputChange}
+                      onFocus={() => setIsSymbolDropdownOpen(true)}
+                      onKeyDown={handleSymbolKeyDown}
+                      disabled={isSubmitting}
+                      className="pl-9 pr-9"
+                    />
+                    {symbolSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSymbolSearchQuery('')
+                          setNewHolding({ ...newHolding, symbol: '' })
+                          setIsSymbolDropdownOpen(true)
+                          symbolInputRef.current?.focus()
+                        }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        disabled={isSubmitting}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Dropdown Suggestions */}
+                  {isSymbolDropdownOpen && (
+                    <div
+                      ref={symbolDropdownRef}
+                      className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-auto"
+                    >
+                      {isLoadingSymbols ? (
+                        <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                          Đang tải danh sách mã chứng khoán...
+                        </div>
+                      ) : symbols.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                          <div>Không có dữ liệu mã chứng khoán</div>
+                          <div className="text-xs mt-1">API có thể chưa sẵn sàng</div>
+                        </div>
+                      ) : filteredSymbols.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                          <div>Không tìm thấy mã chứng khoán</div>
+                          <div className="text-xs mt-1">
+                            Tìm kiếm: &quot;{symbolSearchQuery}&quot; ({symbols.length} mã có sẵn)
+                          </div>
+                        </div>
+                      ) : (
+                        <ul className="py-1">
+                          {filteredSymbols.map((symbol, index) => {
+                            const isHighlighted = index === highlightedSymbolIndex
+                            const isSelected = symbol.symbol === newHolding.symbol
+
+                            return (
+                              <li key={symbol.symbol}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSymbolSelect(symbol)}
+                                  className={cn(
+                                    'w-full text-left px-4 py-2 text-sm transition-colors',
+                                    isHighlighted
+                                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
+                                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700',
+                                    isSelected && 'font-semibold'
+                                  )}
+                                  disabled={isSubmitting}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">{symbol.symbol}</span>
+                                    {isSelected && (
+                                      <span className="text-xs text-blue-600 dark:text-blue-400">✓</span>
+                                    )}
+                                  </div>
+                                  {symbol.name && (
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                      {symbol.name}
+                                    </div>
+                                  )}
+                                </button>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="shares">Số lượng cổ phiếu *</Label>
+                <Input
+                  id="shares"
+                  type="number"
+                  placeholder="VD: 100"
+                  value={newHolding.shares}
+                  onChange={(e) => setNewHolding({ ...newHolding, shares: e.target.value })}
+                  min="0"
+                  step="1"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="avgPrice">Giá mua trung bình (VND) *</Label>
+                <Input
+                  id="avgPrice"
+                  type="number"
+                  placeholder="VD: 50000"
+                  value={newHolding.avgPrice}
+                  onChange={(e) => setNewHolding({ ...newHolding, avgPrice: e.target.value })}
+                  min="0"
+                  step="1000"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddDialogOpen(false)
+                  setNewHolding({ symbol: '', shares: '', avgPrice: '' })
+                  setSymbolSearchQuery('')
+                  setIsSymbolDropdownOpen(false)
+                }}
+                disabled={isSubmitting}
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={handleAddHolding}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Đang thêm...' : 'Thêm'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

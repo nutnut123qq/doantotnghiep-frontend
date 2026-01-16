@@ -60,10 +60,13 @@ export const TradingBoard = () => {
   const { tickers, isLoading, error } = useTradingBoard(filters)
 
   // Fetch watchlists for filter
-  const { data: watchlists = [] } = useQuery({
+  const { data: watchlistsData } = useQuery({
     queryKey: ['watchlists'],
     queryFn: () => watchlistService.getWatchlists(),
   })
+
+  // Ensure watchlists is always an array
+  const watchlists = Array.isArray(watchlistsData) ? watchlistsData : []
 
   useEffect(() => {
     loadColumnPreferences()

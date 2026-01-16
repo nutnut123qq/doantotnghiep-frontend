@@ -146,10 +146,10 @@ export const AIInsights = () => {
 
   const getTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'buy': return { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' }
-      case 'sell': return { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200' }
-      case 'hold': return { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200' }
-      default: return { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200' }
+      case 'buy': return { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-700' }
+      case 'sell': return { bg: 'bg-rose-100 dark:bg-rose-900/30', text: 'text-rose-700 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-700' }
+      case 'hold': return { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-700' }
+      default: return { bg: 'bg-slate-100 dark:bg-slate-700', text: 'text-slate-700 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-600' }
     }
   }
 
@@ -164,25 +164,25 @@ export const AIInsights = () => {
 
   const getSentimentIcon = (overall: string) => {
     switch (overall.toLowerCase()) {
-      case 'bullish': return <FaceSmileIcon className="w-12 h-12 text-emerald-600" />
-      case 'bearish': return <FaceSmileIcon className="w-12 h-12 text-rose-600 rotate-180" />
-      default: return <MinusIcon className="w-12 h-12 text-slate-600" />
+      case 'bullish': return <FaceSmileIcon className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+      case 'bearish': return <FaceSmileIcon className="w-12 h-12 text-rose-600 dark:text-rose-400 rotate-180" />
+      default: return <MinusIcon className="w-12 h-12 text-slate-600 dark:text-slate-400" />
     }
   }
 
   const getSentimentColor = (overall: string) => {
     switch (overall.toLowerCase()) {
-      case 'bullish': return 'text-emerald-600'
-      case 'bearish': return 'text-rose-600'
-      default: return 'text-slate-600'
+      case 'bullish': return 'text-emerald-600 dark:text-emerald-400'
+      case 'bearish': return 'text-rose-600 dark:text-rose-400'
+      default: return 'text-slate-600 dark:text-slate-400'
     }
   }
 
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel.toLowerCase()) {
-      case 'high': return 'text-rose-600'
-      case 'moderate': return 'text-amber-600'
-      default: return 'text-emerald-600'
+      case 'high': return 'text-rose-600 dark:text-rose-400'
+      case 'moderate': return 'text-amber-600 dark:text-amber-400'
+      default: return 'text-emerald-600 dark:text-emerald-400'
     }
   }
 
@@ -202,7 +202,7 @@ export const AIInsights = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-slate-600">Đang tải AI Insights...</p>
+              <p className="text-slate-600 dark:text-slate-300">Đang tải AI Insights...</p>
             </div>
           </div>
         </div>
@@ -237,7 +237,7 @@ export const AIInsights = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
               AI Insights
             </h1>
-            <p className="text-slate-600">AI-powered market analysis and trading recommendations</p>
+            <p className="text-slate-600 dark:text-slate-400">AI-powered market analysis and trading recommendations</p>
           </div>
           <button
             onClick={() => loadData(true)}
@@ -274,7 +274,7 @@ export const AIInsights = () => {
 
         {/* Insights with Tabs */}
         <Tab.Group selectedIndex={Object.keys(categories).indexOf(selectedCategory)} onChange={(index) => setSelectedCategory(Object.keys(categories)[index])}>
-          <Tab.List className="flex space-x-2 rounded-xl bg-white p-2 shadow-lg border border-slate-200 mb-6">
+          <Tab.List className="flex space-x-2 rounded-xl bg-white dark:bg-slate-800 p-2 shadow-lg border border-slate-200 dark:border-slate-700 mb-6">
             {Object.keys(categories).map((category) => (
               <Tab
                 key={category}
@@ -284,7 +284,7 @@ export const AIInsights = () => {
                     'focus:outline-none focus:ring-2 ring-offset-2 ring-offset-blue-400 ring-white ring-opacity-60',
                     selected
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow'
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-blue-600'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400'
                   )
                 }
               >
@@ -296,19 +296,19 @@ export const AIInsights = () => {
             {Object.values(categories).map((categoryInsights, idx) => (
               <Tab.Panel key={idx} className="space-y-6">
                 {categoryInsights.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 text-center">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-12 text-center">
                     <CpuChipIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-600 text-lg font-medium mb-2">
+                    <p className="text-slate-600 dark:text-slate-300 text-lg font-medium mb-2">
                       {insights.length === 0 
                         ? 'Chưa có insights nào được tạo' 
                         : 'Chưa có insights trong danh mục này'}
                     </p>
                     {insights.length === 0 && (
                       <>
-                        <p className="text-slate-500 mb-6">
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">
                           Nhấn nút bên dưới để tạo AI insights cho các mã cổ phiếu phổ biến.
                           <br />
-                          <span className="text-sm text-slate-400">Insights được tạo on-demand để tiết kiệm token.</span>
+                          <span className="text-sm text-slate-400 dark:text-slate-500">Insights được tạo on-demand để tiết kiệm token.</span>
                         </p>
                         <button
                           onClick={handleGenerateSample}
@@ -330,7 +330,7 @@ export const AIInsights = () => {
                         key={insight.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden hover:shadow-xl transition-shadow"
+                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl transition-shadow"
                       >
                         <div className="p-6">
                           <div className="flex items-start justify-between mb-4">
@@ -343,16 +343,16 @@ export const AIInsights = () => {
                                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${colors.bg} ${colors.text} uppercase`}>
                                     {insight.type}
                                   </span>
-                                  <span className="text-lg font-bold text-slate-900">{insight.symbol}</span>
+                                  <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{insight.symbol}</span>
                                 </div>
-                                <h3 className="text-xl font-semibold text-slate-900 mb-2">{insight.title}</h3>
-                                <p className="text-slate-600">{insight.description}</p>
+                                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{insight.title}</h3>
+                                <p className="text-slate-600 dark:text-slate-300">{insight.description}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm text-slate-500 mb-2">{formatTimestamp(insight.timestamp)}</div>
+                              <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">{formatTimestamp(insight.timestamp)}</div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-sm text-slate-600">Confidence:</span>
+                                <span className="text-sm text-slate-600 dark:text-slate-300">Confidence:</span>
                                 <span className={`text-lg font-bold ${colors.text}`}>{insight.confidence}%</span>
                               </div>
                             </div>
@@ -360,7 +360,7 @@ export const AIInsights = () => {
 
                           {/* Confidence Bar */}
                           <div className="mb-4">
-                            <div className="w-full bg-slate-200 rounded-full h-2">
+                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                               <div
                                 className={`${colors.bg.replace('100', '500')} h-2 rounded-full transition-all duration-500`}
                                 style={{ width: `${insight.confidence}%` }}
@@ -379,7 +379,7 @@ export const AIInsights = () => {
                             <button
                               onClick={() => handleDismiss(insight.id)}
                               disabled={isDismissing}
-                              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                             >
                               {isDismissing ? 'Đang xử lý...' : 'Dismiss'}
                             </button>
@@ -397,8 +397,8 @@ export const AIInsights = () => {
         {/* Market Sentiment */}
         {marketSentiment && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Market Sentiment</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Market Sentiment</h3>
               <div className="text-center">
                 <div className="flex justify-center mb-2">
                   {getSentimentIcon(marketSentiment.overall)}
@@ -406,7 +406,7 @@ export const AIInsights = () => {
                 <p className={`text-2xl font-bold ${getSentimentColor(marketSentiment.overall)}`}>
                   {marketSentiment.overall === 'Bullish' ? 'Tăng giá' : marketSentiment.overall === 'Bearish' ? 'Giảm giá' : 'Trung lập'}
                 </p>
-                <p className="text-sm text-slate-600 mt-2">
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
                   {marketSentiment.buySignalsCount > marketSentiment.sellSignalsCount
                     ? `${Math.round((marketSentiment.buySignalsCount / (marketSentiment.buySignalsCount + marketSentiment.sellSignalsCount + marketSentiment.holdSignalsCount)) * 100)}% tín hiệu tích cực`
                     : 'Tín hiệu hỗn hợp'}
@@ -414,8 +414,8 @@ export const AIInsights = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Risk Level</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Risk Level</h3>
               <div className="text-center">
                 <div className="flex justify-center mb-2">
                   <ExclamationTriangleIcon className={`w-12 h-12 ${getRiskColor(marketSentiment.riskLevel)}`} />
@@ -423,18 +423,18 @@ export const AIInsights = () => {
                 <p className={`text-2xl font-bold ${getRiskColor(marketSentiment.riskLevel)}`}>
                   {marketSentiment.riskLevel === 'High' ? 'Cao' : marketSentiment.riskLevel === 'Moderate' ? 'Trung bình' : 'Thấp'}
                 </p>
-                <p className="text-sm text-slate-600 mt-2">Volatility index: {marketSentiment.volatilityIndex}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Volatility index: {marketSentiment.volatilityIndex}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Opportunities</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Opportunities</h3>
               <div className="text-center">
               <div className="flex justify-center mb-2">
-                <StarIcon className="w-12 h-12 text-blue-600" />
+                <StarIcon className="w-12 h-12 text-blue-600 dark:text-blue-400" />
               </div>
-                <p className="text-2xl font-bold text-blue-600">{marketSentiment.opportunitiesCount} Found</p>
-                <p className="text-sm text-slate-600 mt-2">Based on your criteria</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{marketSentiment.opportunitiesCount} Found</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Based on your criteria</p>
               </div>
             </div>
           </div>
@@ -447,20 +447,20 @@ export const AIInsights = () => {
             onClick={() => setSelectedInsight(null)}
           >
             <div
-              className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-slate-900">{selectedInsight.title}</h3>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{selectedInsight.title}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                       {selectedInsight.symbol} - {formatTimestamp(selectedInsight.timestamp)}
                     </p>
                   </div>
                   <button
                     onClick={() => setSelectedInsight(null)}
-                    className="text-slate-400 hover:text-slate-600"
+                    className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                   >
                     <XMarkIcon className="w-6 h-6" />
                   </button>
@@ -471,20 +471,20 @@ export const AIInsights = () => {
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getTypeColor(selectedInsight.type).bg} ${getTypeColor(selectedInsight.type).text} uppercase`}>
                       {selectedInsight.type}
                     </span>
-                    <span className="ml-2 text-sm text-slate-600">Confidence: {selectedInsight.confidence}%</span>
+                    <span className="ml-2 text-sm text-slate-600 dark:text-slate-300">Confidence: {selectedInsight.confidence}%</span>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2">Mô tả</h4>
-                    <p className="text-sm text-slate-600">{selectedInsight.description}</p>
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Mô tả</h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">{selectedInsight.description}</p>
                   </div>
 
                   {selectedInsight.reasoning && selectedInsight.reasoning.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-2">Lý do phân tích</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Lý do phân tích</h4>
                       <ul className="space-y-2">
                         {selectedInsight.reasoning.map((reason, index) => (
-                          <li key={index} className="flex items-start space-x-2 text-sm text-slate-600">
+                          <li key={index} className="flex items-start space-x-2 text-sm text-slate-600 dark:text-slate-300">
                             <span className="text-emerald-600 mt-1">•</span>
                             <span>{reason}</span>
                           </li>
@@ -497,13 +497,13 @@ export const AIInsights = () => {
                     <div className="grid grid-cols-2 gap-4">
                       {selectedInsight.targetPrice && (
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-700 mb-1">Giá mục tiêu</h4>
+                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Giá mục tiêu</h4>
                           <p className="text-lg font-bold text-emerald-600">{selectedInsight.targetPrice.toLocaleString('vi-VN')} VND</p>
                         </div>
                       )}
                       {selectedInsight.stopLoss && (
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-700 mb-1">Cắt lỗ</h4>
+                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cắt lỗ</h4>
                           <p className="text-lg font-bold text-rose-600">{selectedInsight.stopLoss.toLocaleString('vi-VN')} VND</p>
                         </div>
                       )}
