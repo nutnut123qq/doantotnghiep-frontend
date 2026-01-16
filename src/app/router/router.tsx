@@ -1,9 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
+import { RoleProtectedRoute } from '@/shared/components/RoleProtectedRoute'
 import { Layout } from '@/shared/components/Layout'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
+import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
 
 // Lazy load heavy components for code splitting
 const Dashboard = lazy(() => import('@/features/dashboard/components/Dashboard').then(m => ({ default: m.Dashboard })))
@@ -16,6 +18,7 @@ const EventsFeed = lazy(() => import('@/features/events/components/EventsFeed'))
 const EventsCalendar = lazy(() => import('@/features/events/components/EventsCalendar'))
 const AdminDashboard = lazy(() => import('@/features/admin/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
+const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -104,9 +107,11 @@ export const router = createBrowserRouter(
         {
           path: 'admin',
           element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <AdminDashboard />
-            </Suspense>
+            <RoleProtectedRoute allowedRoles={['Admin']}>
+              <Suspense fallback={<LoadingFallback />}>
+                <AdminDashboard />
+              </Suspense>
+            </RoleProtectedRoute>
           ),
         },
         {
@@ -114,6 +119,14 @@ export const router = createBrowserRouter(
           element: (
             <Suspense fallback={<LoadingFallback />}>
               <Settings />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'alerts',
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <AlertList />
             </Suspense>
           ),
         },
@@ -126,6 +139,10 @@ export const router = createBrowserRouter(
     {
       path: '/register',
       element: <RegisterForm />,
+    },
+    {
+      path: '/verify-email',
+      element: <VerifyEmailPage />,
     },
   ]
 )

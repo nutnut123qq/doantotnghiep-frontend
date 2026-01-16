@@ -31,7 +31,30 @@ apiClient.interceptors.response.use(
       storage.remove('token')
       storage.remove('user')
       window.location.href = '/login'
+    } else if (error.response) {
+      // Handle other HTTP errors
+      const status = error.response.status
+      const message = error.response.data?.message || error.response.data?.error || 'An error occurred'
+      
+      // Only show toast for client errors (4xx) and server errors (5xx)
+      // Skip 401 as it's handled above
+      if (status >= 400 && status !== 401) {
+        // Import toast dynamically to avoid circular dependencies
+        import('sonner').then(({ toast }) => {
+          if (status >= 500) {
+            toast.error(`Server error: ${message}`)
+          } else {
+            toast.error(message)
+          }
+        })
+      }
+    } else if (error.request) {
+      // Network error
+      import('sonner').then(({ toast }) => {
+        toast.error('Network error: Please check your connection')
+      })
     }
+    
     return Promise.reject(error)
   }
 )

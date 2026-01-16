@@ -7,8 +7,8 @@ export interface ForecastResult {
   confidenceScore: number
   timeHorizon: 'short' | 'medium' | 'long'
   recommendation: 'Buy' | 'Hold' | 'Sell'
-  keyDrivers: string[]
-  risks: string[]
+  keyDrivers?: string[] | null
+  risks?: string[] | null
   analysis: string
   generatedAt: string
 }
@@ -32,8 +32,20 @@ export interface BatchForecastItem {
 
 export const forecastService = {
   async getForecast(symbol: string, timeHorizon: 'short' | 'medium' | 'long' = 'short'): Promise<ForecastResult> {
-    const response = await apiClient.get<ForecastResult>(`/api/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
-    return response.data
+    try {
+      const response = await apiClient.get<ForecastResult>(`/api/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
+      // Normalize data to ensure arrays are never null
+      const data = response.data
+      return {
+        ...data,
+        keyDrivers: data.keyDrivers || [],
+        risks: data.risks || [],
+      }
+    } catch (error: any) {
+      // Extract error message from API response
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Không thể tải dự báo'
+      throw new Error(errorMessage)
+    }
   },
 
   async getAllForecasts(symbol: string): Promise<AllForecasts> {

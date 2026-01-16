@@ -1,4 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { watchlistService } from '@/features/watchlist/services/watchlistService'
 import {
   useReactTable,
   getCoreRowModel,
@@ -44,6 +47,7 @@ import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { cn } from '@/lib/utils'
 
 export const TradingBoard = () => {
+  const navigate = useNavigate()
   const [filters, setFilters] = useState<TradingBoardFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false)
@@ -55,6 +59,12 @@ export const TradingBoard = () => {
     columnOrder: DEFAULT_COLUMN_ORDER,
   })
   const { tickers, isLoading, error } = useTradingBoard(filters)
+
+  // Fetch watchlists for filter
+  const { data: watchlists = [] } = useQuery({
+    queryKey: ['watchlists'],
+    queryFn: () => watchlistService.getWatchlists(),
+  })
 
   useEffect(() => {
     loadColumnPreferences()
@@ -397,12 +407,46 @@ export const TradingBoard = () => {
                     </Select>
                   </div>
                   <div className="flex-1 min-w-[200px]">
+                    <Select
+                      value={filters.index || 'all'}
+                      onValueChange={(value) => handleFilterChange('index', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Indexes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Indexes</SelectItem>
+                        <SelectItem value="VN30">VN30</SelectItem>
+                        <SelectItem value="VN100">VN100</SelectItem>
+                        <SelectItem value="HNX30">HNX30</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
                     <Input
                       type="text"
                       placeholder="Filter by industry"
                       value={filters.industry || ''}
                       onChange={(e) => handleFilterChange('industry', e.target.value)}
                     />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <Select
+                      value={filters.watchlistId || 'all'}
+                      onValueChange={(value) => handleFilterChange('watchlistId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Watchlists" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Watchlists</SelectItem>
+                        {watchlists.map((watchlist) => (
+                          <SelectItem key={watchlist.id} value={watchlist.id}>
+                            {watchlist.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -434,15 +478,23 @@ export const TradingBoard = () => {
                 </TableHeader>
                 <TableBody>
                   {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
+                    table.getRowModel().rows.map((row) => {
+                      const ticker = row.original
+                      return (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && 'selected'}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => navigate(`/?symbol=${ticker.symbol}`)}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )
+                    })
                   ) : (
                     <TableRow>
                       <TableCell colSpan={columns.length} className="h-24 text-center">

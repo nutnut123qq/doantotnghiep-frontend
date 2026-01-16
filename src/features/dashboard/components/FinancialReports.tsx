@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { financialReportService, FinancialReport, FinancialMetrics } from '../services/financialReportService'
 import { DocumentTextIcon, ChatBubbleLeftRightIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
@@ -15,11 +15,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
   const [answer, setAnswer] = useState('')
   const [asking, setAsking] = useState(false)
 
-  useEffect(() => {
-    loadReports()
-  }, [symbol])
-
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     try {
       setLoading(true)
       const data = await financialReportService.getReportsBySymbol(symbol)
@@ -32,7 +28,11 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [symbol])
+
+  useEffect(() => {
+    loadReports()
+  }, [loadReports])
 
   const selectReport = (report: FinancialReport) => {
     setSelectedReport(report)
@@ -58,44 +58,44 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
         <div className="flex items-center space-x-3 mb-6">
-          <DocumentTextIcon className="h-6 w-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-slate-900">Báo cáo tài chính</h3>
+          <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính</h3>
         </div>
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-          <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+          <div className="h-4 bg-muted rounded w-3/4"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <DocumentTextIcon className="h-6 w-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-slate-900">Báo cáo tài chính - {symbol}</h3>
+          <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính - {symbol}</h3>
         </div>
         <button
           onClick={loadReports}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
         >
           Làm mới
         </button>
       </div>
 
       {reports.length === 0 ? (
-        <div className="text-center py-8 text-slate-500">
-          <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-slate-300" />
+        <div className="text-center py-8 text-muted-foreground">
+          <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
           <p>Chưa có báo cáo tài chính</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Report List */}
           <div className="lg:col-span-1">
-            <h4 className="text-sm font-semibold text-slate-700 mb-3">Danh sách báo cáo</h4>
+            <h4 className="text-sm font-semibold text-card-foreground mb-3">Danh sách báo cáo</h4>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {reports.map((report) => (
                 <button
@@ -103,15 +103,15 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                   onClick={() => selectReport(report)}
                   className={`w-full text-left p-3 rounded-lg border transition-colors ${
                     selectedReport?.id === report.id
-                      ? 'bg-blue-50 border-blue-200'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                      : 'bg-muted border-border hover:bg-accent'
                   }`}
                 >
-                  <div className="font-medium text-sm text-slate-900">
+                  <div className="font-medium text-sm text-card-foreground">
                     {report.reportType} {report.year}
                     {report.quarter && ` Q${report.quarter}`}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {new Date(report.reportDate).toLocaleDateString('vi-VN')}
                   </div>
                 </button>
@@ -126,8 +126,8 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                 {/* Financial Metrics */}
                 <div>
                   <div className="flex items-center space-x-2 mb-4">
-                    <ChartBarIcon className="h-5 w-5 text-blue-600" />
-                    <h4 className="text-sm font-semibold text-slate-700">Chỉ số tài chính</h4>
+                    <ChartBarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h4 className="text-sm font-semibold text-card-foreground">Chỉ số tài chính</h4>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <MetricCard label="Doanh thu" value={financialReportService.formatCurrency(metrics.Revenue)} />
@@ -144,8 +144,8 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                 {/* AI Q&A */}
                 <div>
                   <div className="flex items-center space-x-2 mb-4">
-                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600" />
-                    <h4 className="text-sm font-semibold text-slate-700">Hỏi đáp AI</h4>
+                    <ChatBubbleLeftRightIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h4 className="text-sm font-semibold text-card-foreground">Hỏi đáp AI</h4>
                   </div>
 
                   <div className="space-y-4">
@@ -156,12 +156,12 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                         onChange={(e) => setQuestion(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleAskQuestion()}
                         placeholder="Đặt câu hỏi về báo cáo tài chính..."
-                        className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <button
                         onClick={handleAskQuestion}
                         disabled={asking || !question.trim()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {asking ? 'Đang xử lý...' : 'Hỏi'}
                       </button>
@@ -169,7 +169,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
 
                     {/* Suggested Questions */}
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-xs text-slate-500">Gợi ý:</span>
+                      <span className="text-xs text-muted-foreground">Gợi ý:</span>
                       {[
                         'Doanh thu tăng trưởng như thế nào?',
                         'Đánh giá khả năng sinh lời',
@@ -179,7 +179,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                         <button
                           key={suggestion}
                           onClick={() => setQuestion(suggestion)}
-                          className="text-xs px-3 py-1 bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
+                          className="text-xs px-3 py-1 bg-muted text-foreground rounded-full hover:bg-accent"
                         >
                           {suggestion}
                         </button>
@@ -187,17 +187,17 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                     </div>
 
                     {answer && (
-                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                        <p className="text-xs font-medium text-blue-900 mb-2">Trả lời AI:</p>
-                        <p className="text-sm text-blue-800 whitespace-pre-wrap">{answer}</p>
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-2">Trả lời AI:</p>
+                        <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap">{answer}</p>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-500">
-                <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-slate-300" />
+              <div className="text-center py-12 text-muted-foreground">
+                <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
                 <p>Chọn một báo cáo để xem chi tiết</p>
               </div>
             )}
@@ -215,9 +215,9 @@ interface MetricCardProps {
 
 const MetricCard = ({ label, value }: MetricCardProps) => {
   return (
-    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-      <p className="text-xs text-slate-600 mb-1">{label}</p>
-      <p className="text-lg font-semibold text-slate-900">{value}</p>
+    <div className="p-3 bg-muted rounded-lg border border-border">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-lg font-semibold text-card-foreground">{value}</p>
     </div>
   )
 }

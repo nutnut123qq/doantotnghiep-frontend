@@ -38,8 +38,11 @@ export const RegisterForm = () => {
     try {
       setLoading(true)
       await registerUser(data)
-      toast.success('Registration successful! Please login.')
-      navigate('/login')
+      toast.success('Registration successful! Please check your email to verify your account.')
+      // Show message and navigate after a delay
+      setTimeout(() => {
+        navigate('/login')
+      }, 2000)
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Registration failed. Please try again.'
       toast.error(errorMessage)

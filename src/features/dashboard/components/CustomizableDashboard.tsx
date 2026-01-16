@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Responsive, WidthProvider, Layout as GridLayout } from 'react-grid-layout'
 import { motion, AnimatePresence } from 'framer-motion'
 import { layoutService } from '../services/layoutService'
@@ -15,8 +16,7 @@ import {
   Cog6ToothIcon, 
   PencilSquareIcon,
   CheckIcon,
-  XMarkIcon,
-  GripVerticalIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import { GripVertical } from 'lucide-react'
 import 'react-grid-layout/css/styles.css'
@@ -29,17 +29,14 @@ interface CustomizableDashboardProps {
 }
 
 export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDashboardProps) => {
+  const [searchParams] = useSearchParams()
+  const symbolFromUrl = searchParams.get('symbol') || defaultSymbol
   const [layout, setLayout] = useState<LayoutConfig | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showLayoutManager, setShowLayoutManager] = useState(false)
 
-  // Load layout on mount
-  useEffect(() => {
-    loadLayout()
-  }, [])
-
-  const loadLayout = async () => {
+  const loadLayout = useCallback(async () => {
     try {
       setIsLoading(true)
       const savedLayout = await layoutService.getLayout()
@@ -49,7 +46,12 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  // Load layout on mount
+  useEffect(() => {
+    loadLayout()
+  }, [loadLayout])
 
   const handleLayoutChange = useCallback((newGridLayout: GridLayout[]) => {
     if (!layout || !isEditMode) return
@@ -151,13 +153,13 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
         return <NewsFeed />
       
       case 'financialReports':
-        return <FinancialReports symbol={defaultSymbol} />
+        return <FinancialReports symbol={symbolFromUrl} />
       
       case 'chart':
-        return <TradingViewChart symbol={defaultSymbol} height={widget.h * layout!.rowHeight - 40} />
+        return <TradingViewChart symbol={symbolFromUrl} height={widget.h * layout!.rowHeight - 40} />
       
       case 'forecast':
-        return <AIForecast symbol={defaultSymbol} />
+        return <AIForecast symbol={symbolFromUrl} />
       
       case 'watchlist':
         return (
@@ -221,7 +223,7 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
   if (!layout) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="text-slate-500">Failed to load layout</p>
+        <p className="text-muted-foreground">Failed to load layout</p>
       </div>
     )
   }
@@ -254,7 +256,7 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
               Dashboard
             </h1>
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               {isEditMode ? 'Edit mode - Drag and resize widgets' : 'Customizable dashboard layout'}
             </p>
           </div>
@@ -328,7 +330,7 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
           onLayoutChange={handleLayoutChange}
           draggableHandle=".drag-handle"
           containerPadding={[0, 0]}
-          margin={[16, 16]}
+          margin={[24, 24]}
         >
           {layout.widgets.filter(w => w.visible).map((widget, index) => (
             <div key={widget.id} className="relative h-full w-full">

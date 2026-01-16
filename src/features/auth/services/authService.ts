@@ -29,5 +29,20 @@ export const authService = {
   isAuthenticated(): boolean {
     return !!this.getToken()
   },
+
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+    )
+    return response.data
+  },
+
+  async resendVerification(email: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      '/api/auth/resend-verification',
+      { email }
+    )
+    return response.data
+  },
 }
 

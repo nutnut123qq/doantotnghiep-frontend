@@ -47,9 +47,10 @@ export const Layout = () => {
     { name: 'Trading Board', href: '/trading-board', icon: ChartPieIcon },
     { name: 'Portfolio', href: '/portfolio', icon: BriefcaseIcon },
     { name: 'Watchlist', href: '/watchlist', icon: StarIcon },
+    { name: 'Alerts', href: '/alerts', icon: BellIcon },
     { name: 'AI Insights', href: '/ai-insights', icon: CpuChipIcon },
     { name: 'Events', href: '/events', icon: CalendarIcon },
-    { name: 'Admin', href: '/admin', icon: Cog6ToothIcon },
+    ...(user?.role === 'Admin' ? [{ name: 'Admin', href: '/admin', icon: Cog6ToothIcon }] : []),
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
   ]
 

@@ -10,6 +10,22 @@ interface TradingViewChartProps {
   height?: number
 }
 
+// Chart color constants - moved outside component to avoid recreation
+const CHART_COLORS = {
+  light: {
+    background: '#ffffff',
+    text: '#333',
+    grid: '#f0f0f0',
+    border: '#e0e0e0',
+  },
+  dark: {
+    background: '#0c1221',
+    text: '#e2e8f0',
+    grid: '#1e293b',
+    border: '#334155',
+  },
+} as const
+
 export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
@@ -20,11 +36,57 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<'1M' | '3M' | '6M' | '1Y' | 'ALL'>('3M')
+  const [isDarkMode, setIsDarkMode] = useState(() => 
+    document.documentElement.classList.contains('dark')
+  )
 
   // Update selectedSymbol when prop changes
   useEffect(() => {
     setSelectedSymbol(symbol)
   }, [symbol])
+
+  // Listen for dark mode changes
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const darkMode = document.documentElement.classList.contains('dark')
+          setIsDarkMode(darkMode)
+        }
+      })
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  // Update chart colors when dark mode changes
+  useEffect(() => {
+    if (!chartRef.current) return
+
+    const colors = isDarkMode ? CHART_COLORS.dark : CHART_COLORS.light
+
+    chartRef.current.applyOptions({
+      layout: {
+        background: { color: colors.background },
+        textColor: colors.text,
+      },
+      grid: {
+        vertLines: { color: colors.grid },
+        horzLines: { color: colors.grid },
+      },
+      rightPriceScale: {
+        borderColor: colors.border,
+      },
+      timeScale: {
+        borderColor: colors.border,
+      },
+    })
+  }, [isDarkMode])
 
   // Load saved settings on mount
   useEffect(() => {
@@ -42,26 +104,28 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
   useEffect(() => {
     if (!chartContainerRef.current) return
 
-    // Create chart
+    const colors = isDarkMode ? CHART_COLORS.dark : CHART_COLORS.light
+
+    // Create chart with dark mode support
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
       height: height,
       layout: {
-        background: { color: '#ffffff' },
-        textColor: '#333',
+        background: { color: colors.background },
+        textColor: colors.text,
       },
       grid: {
-        vertLines: { color: '#f0f0f0' },
-        horzLines: { color: '#f0f0f0' },
+        vertLines: { color: colors.grid },
+        horzLines: { color: colors.grid },
       },
       crosshair: {
         mode: 1,
       },
       rightPriceScale: {
-        borderColor: '#e0e0e0',
+        borderColor: colors.border,
       },
       timeScale: {
-        borderColor: '#e0e0e0',
+        borderColor: colors.border,
         timeVisible: true,
         secondsVisible: false,
       },
@@ -180,12 +244,12 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
   }, [loadChartData])
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <ChartBarIcon className="h-6 w-6 text-blue-600" />
+          <ChartBarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           <div className="flex items-center space-x-2">
-            <span className="text-lg font-semibold text-slate-900">Biểu đồ</span>
+            <span className="text-lg font-semibold text-card-foreground">Biểu đồ</span>
             <SymbolSelector
               value={selectedSymbol}
               onChange={setSelectedSymbol}
@@ -197,15 +261,15 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
 
         <div className="flex items-center space-x-2">
           {/* Time Range Selector */}
-          <div className="flex space-x-1 bg-slate-100 rounded-lg p-1">
+          <div className="flex space-x-1 bg-muted rounded-lg p-1">
             {(['1M', '3M', '6M', '1Y', 'ALL'] as const).map((range) => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
                 className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                   timeRange === range
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-background text-blue-600 dark:text-blue-400 shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {range}
@@ -217,7 +281,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
           <button
             onClick={loadChartData}
             disabled={loading}
-            className="p-2 text-slate-600 hover:text-blue-600 disabled:opacity-50"
+            className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50"
             title="Làm mới"
           >
             <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
@@ -226,7 +290,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
           {/* Settings Button */}
           <button
             onClick={() => chartSettingsService.exportSettings(selectedSymbol)}
-            className="p-2 text-slate-600 hover:text-blue-600"
+            className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
             title="Xuất cài đặt"
           >
             <Cog6ToothIcon className="h-5 w-5" />
@@ -237,22 +301,22 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
       {/* Chart Container */}
       <div className="relative">
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 rounded-lg">
+          <div className="absolute inset-0 flex items-center justify-center bg-card/80 z-10 rounded-lg">
             <div className="text-center">
-              <ArrowPathIcon className="h-8 w-8 text-blue-600 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-slate-600">Đang tải dữ liệu...</p>
+              <ArrowPathIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Đang tải dữ liệu...</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10 rounded-lg">
+          <div className="absolute inset-0 flex items-center justify-center bg-card/80 z-10 rounded-lg">
             <div className="text-center">
-              <ChartBarIcon className="h-12 w-12 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-red-600">{error}</p>
+              <ChartBarIcon className="h-12 w-12 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               <button
                 onClick={loadChartData}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 Thử lại
               </button>
@@ -264,7 +328,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
       </div>
 
       {/* Chart Info */}
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-green-500 rounded"></div>
