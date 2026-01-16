@@ -4,6 +4,7 @@ import type {
   CreateAlertRequest,
   CreateAlertResponse,
   GetAlertsResponse,
+  ParsedAlert,
 } from '../types/alert.types'
 
 export const alertService = {
@@ -20,6 +21,16 @@ export const alertService = {
       `/api/Alert?${params.toString()}`
     )
     return response.data.alerts || []
+  },
+
+  /**
+   * Parse natural language alert input without creating the alert
+   */
+  async parseAlert(naturalLanguageInput: string): Promise<ParsedAlert> {
+    const response = await apiClient.post<ParsedAlert>('/api/Alert/parse', {
+      naturalLanguageInput,
+    })
+    return response.data
   },
 
   /**

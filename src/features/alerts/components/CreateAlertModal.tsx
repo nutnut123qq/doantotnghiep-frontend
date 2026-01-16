@@ -33,7 +33,7 @@ export const CreateAlertModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Alert</DialogTitle>
           <DialogDescription>
@@ -53,7 +53,7 @@ export const CreateAlertModal = ({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="nlp" className="mt-4">
+          <TabsContent value="nlp" className="mt-4 flex-1 overflow-hidden">
             <NLPChatInput
               onSubmit={handleSubmit}
               onCancel={onClose}

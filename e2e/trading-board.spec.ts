@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Trading Board', () => {
+  // Use authenticated state
+  test.use({ storageState: 'playwright/.auth/user.json' })
+
   test.beforeEach(async ({ page }) => {
-    // Assuming user is logged in - in real scenario, you'd set up auth state
     await page.goto('/trading-board')
   })
 
@@ -13,10 +15,13 @@ test.describe('Trading Board', () => {
 
   test('should filter by exchange', async ({ page }) => {
     // Wait for filters to load
-    await page.waitForSelector('select')
+    await page.waitForSelector('button[role="combobox"]', { timeout: 10000 })
 
-    // Select HOSE exchange
-    await page.selectOption('select', 'HOSE')
+    // Click the exchange select button
+    await page.getByRole('button', { name: /All Exchanges/i }).first().click()
+
+    // Wait for options to appear and click HOSE
+    await page.getByRole('option', { name: 'HOSE' }).click()
 
     // Should show filtered results (assuming API works)
     await expect(page.locator('table')).toBeVisible()
@@ -31,11 +36,29 @@ test.describe('Trading Board', () => {
     await expect(page.locator('table')).toBeVisible()
   })
 
+  test('should filter by index', async ({ page }) => {
+    // Wait for filters to load
+    await page.waitForSelector('button[role="combobox"]', { timeout: 10000 })
+
+    // Click the index select button (find by placeholder text)
+    const indexSelect = page.locator('button').filter({ hasText: /All Indexes/i }).first()
+    await indexSelect.click()
+
+    // Wait for options to appear and click VN30
+    await page.getByRole('option', { name: 'VN30' }).click()
+
+    // Should show filtered results
+    await expect(page.locator('table')).toBeVisible()
+  })
+
   test('should open column customization modal', async ({ page }) => {
-    // Click customize columns button
-    await page.click('button:has-text("Customize Columns")')
+    // Wait for page to load
+    await page.waitForSelector('h1', { timeout: 10000 })
+
+    // Click customize columns button (using icon or text)
+    await page.getByRole('button', { name: /Customize|Settings/i }).first().click()
 
     // Modal should be visible
-    await expect(page.locator('text=Customize Columns')).toBeVisible()
+    await expect(page.getByRole('dialog')).toBeVisible()
   })
 })
