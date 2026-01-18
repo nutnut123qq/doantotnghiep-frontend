@@ -21,6 +21,14 @@ export default function EventsFeed() {
   const [error, setError] = useState<string | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CorporateEvent | null>(null)
 
+  // AI Analysis states
+  const [analyzing, setAnalyzing] = useState<string | null>(null)
+  const [analysisResult, setAnalysisResult] = useState<{
+    eventId: string
+    analysis: string
+    impact: string
+  } | null>(null)
+
   // Filter states
   const [symbolFilter, setSymbolFilter] = useState('')
   const [eventTypeFilter, setEventTypeFilter] = useState<CorporateEventType | undefined>()
@@ -75,6 +83,18 @@ export default function EventsFeed() {
 
   const getEventStatusLabel = (status: EventStatus): string => {
     return StatusLabels[status] || 'Unknown'
+  }
+
+  const handleAnalyzeEvent = async (eventId: string) => {
+    try {
+      setAnalyzing(eventId)
+      const result = await eventService.analyzeEvent(eventId)
+      setAnalysisResult({ eventId, ...result })
+    } catch (error) {
+      console.error('Error analyzing event:', error)
+    } finally {
+      setAnalyzing(null)
+    }
   }
 
   const renderEventDetails = (event: CorporateEvent) => {
@@ -378,6 +398,32 @@ export default function EventsFeed() {
                     </a>
                   </div>
                 )}
+
+                {/* AI Analysis Section */}
+                <div className="border-t pt-4">
+                  <button
+                    onClick={() => handleAnalyzeEvent(selectedEvent.id)}
+                    disabled={analyzing === selectedEvent.id}
+                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {analyzing === selectedEvent.id ? 'Analyzing...' : 'Analyze with AI'}
+                  </button>
+                  
+                  {analysisResult?.eventId === selectedEvent.id && (
+                    <div className="mt-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                      <h5 className="font-semibold text-purple-700 dark:text-purple-300 mb-2">
+                        AI Analysis
+                      </h5>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap">
+                        {analysisResult.analysis}
+                      </p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 border-t border-purple-200 dark:border-purple-800 pt-2">
+                        <strong className="text-purple-700 dark:text-purple-300">Impact:</strong>{' '}
+                        <span className="whitespace-pre-wrap">{analysisResult.impact}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

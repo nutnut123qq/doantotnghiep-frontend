@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import { config } from '@/infrastructure/config/env'
+import { storage } from '@/infrastructure/storage/localStorage'
 
 export const useSignalR = (hubName: string, onConnected?: () => void) => {
   const connectionRef = useRef<signalR.HubConnection | null>(null)
@@ -30,7 +31,11 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${config.signalRUrl}/${hubName}`, {
-        withCredentials: false
+        withCredentials: false,
+        accessTokenFactory: () => {
+          const token = storage.get<string>('token')
+          return token ?? ''
+        }
       })
       .withAutomaticReconnect()
       .configureLogging(

@@ -51,12 +51,12 @@ export const NewsFeed = () => {
       setSummarizing(newsId)
       await newsService.requestSummarization(newsId)
       
-      // Reload news to get updated summary
+      // Reload news to get updated summary (reduced timeout for sync processing)
       setTimeout(async () => {
         const updatedNews = await newsService.getNewsById(newsId)
         setNews(prev => prev.map(n => n.id === newsId ? updatedNews : n))
         setSummarizing(null)
-      }, 3000)
+      }, 1000)
     } catch (error) {
       console.error('Error summarizing news:', error)
       setSummarizing(null)

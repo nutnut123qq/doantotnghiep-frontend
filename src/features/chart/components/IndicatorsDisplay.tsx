@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { technicalIndicatorService } from '../services/technicalIndicatorService'
 
 interface Indicator {
   name: string
@@ -13,24 +15,6 @@ interface Indicator {
 
 interface IndicatorsDisplayProps {
   symbol: string
-}
-
-const MOCK_INDICATORS: Record<string, Indicator[]> = {
-  momentum: [
-    { name: 'RSI (14)', value: 65.5, signal: 'hold', description: 'Neutral - approaching overbought' },
-    { name: 'MACD', value: 1250, signal: 'buy', description: 'Bullish crossover detected' },
-    { name: 'Stochastic', value: 72.3, signal: 'hold', description: 'Overbought territory' },
-  ],
-  trend: [
-    { name: 'MA (20)', value: 98000, signal: 'buy', description: 'Price above 20-day MA' },
-    { name: 'MA (50)', value: 95000, signal: 'buy', description: 'Price above 50-day MA' },
-    { name: 'MA (200)', value: 92000, signal: 'buy', description: 'Price above 200-day MA' },
-    { name: 'EMA (12)', value: 99000, signal: 'buy', description: 'Strong uptrend' },
-  ],
-  volatility: [
-    { name: 'Bollinger Bands', value: 0.025, signal: 'hold', description: 'Price near upper band' },
-    { name: 'ATR', value: 2500, signal: 'hold', description: 'Moderate volatility' },
-  ],
 }
 
 const getSignalIcon = (signal: Indicator['signal']) => {
@@ -55,8 +39,70 @@ const getSignalColor = (signal: Indicator['signal']) => {
   }
 }
 
-export const IndicatorsDisplay = ({ symbol: _symbol }: IndicatorsDisplayProps) => {
-  const [indicators] = useState(MOCK_INDICATORS)
+export const IndicatorsDisplay = ({ symbol }: IndicatorsDisplayProps) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['technical-indicators', symbol],
+    queryFn: () => technicalIndicatorService.getIndicators(symbol),
+    enabled: !!symbol
+  })
+
+  const indicators = useMemo(() => {
+    if (!data?.indicators) {
+      return { momentum: [], trend: [], volatility: [] }
+    }
+    
+    const grouped: Record<string, Indicator[]> = {
+      momentum: [],
+      trend: [],
+      volatility: []
+    }
+    
+    data.indicators.forEach(ind => {
+      const indicator: Indicator = {
+        name: ind.indicatorType === 'MA' || ind.indicatorType === 'EMA' 
+          ? `${ind.indicatorType} (${Math.round(ind.value || 0)})` 
+          : ind.indicatorType,
+        value: ind.value ?? 0,
+        signal: deriveSignal(ind.trendAssessment),
+        description: ind.trendAssessment ?? 'N/A'
+      }
+      
+      // Group by type
+      if (['RSI', 'MACD', 'Stochastic'].includes(ind.indicatorType)) {
+        grouped.momentum.push(indicator)
+      } else if (['MA', 'EMA'].includes(ind.indicatorType)) {
+        grouped.trend.push(indicator)
+      } else {
+        grouped.volatility.push(indicator)
+      }
+    })
+    
+    return grouped
+  }, [data])
+  
+  const deriveSignal = (trend?: string): 'buy' | 'sell' | 'hold' => {
+    if (!trend) return 'hold'
+    const t = trend.toLowerCase()
+    if (t.includes('bullish') || t.includes('buy') || t.includes('strong uptrend')) return 'buy'
+    if (t.includes('bearish') || t.includes('sell') || t.includes('downtrend')) return 'sell'
+    return 'hold'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(var(--accent))]"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-[hsl(var(--negative))]">
+        Failed to load indicators. Please try again.
+      </div>
+    )
+  }
 
   return (
     <Tabs defaultValue="momentum" className="w-full">

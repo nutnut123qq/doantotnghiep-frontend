@@ -30,10 +30,14 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
   }, [isConnected, tickers, invoke])
 
   useEffect(() => {
-    // Listen for price updates
+    // Listen for price updates - match by symbol (not id, as id may change)
     const handlePriceUpdate = (updatedTicker: StockTicker) => {
       setTickers((prev) =>
-        prev.map((ticker) => (ticker.id === updatedTicker.id ? updatedTicker : ticker))
+        prev.map((ticker) => 
+          ticker.symbol.toLowerCase() === updatedTicker.symbol.toLowerCase() 
+            ? updatedTicker 
+            : ticker
+        )
       )
     }
 

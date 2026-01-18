@@ -131,6 +131,16 @@ class EventService {
     if (diffDays > 0) return `in ${diffDays} days`
     return `${Math.abs(diffDays)} days ago`
   }
+
+  /**
+   * Analyze event with AI
+   */
+  async analyzeEvent(id: string): Promise<{ analysis: string; impact: string }> {
+    const response = await apiClient.post<{ analysis: string; impact: string }>(
+      `${this.BASE_URL}/${id}/analyze`
+    )
+    return response.data
+  }
 }
 
 export const eventService = new EventService()
