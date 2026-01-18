@@ -6,7 +6,7 @@ import { SharedWatchlists } from './SharedWatchlists'
 import { SharedLayouts } from './SharedLayouts'
 import { MemberManagement } from './MemberManagement'
 import { Users, MessageSquare, Star, Layout } from 'lucide-react'
-import { useAuthContext } from '@/shared/contexts/useAuthContext'
+import { useAuthContext } from '@/shared/contexts/AuthContext'
 
 export const WorkspacePage = () => {
   const { user } = useAuthContext()

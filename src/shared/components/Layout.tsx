@@ -31,7 +31,7 @@ import {
   Moon,
   Sun,
 } from 'lucide-react'
-import { useAuthContext } from '@/shared/contexts/useAuthContext'
+import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useTheme } from '@/shared/contexts/useTheme'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'

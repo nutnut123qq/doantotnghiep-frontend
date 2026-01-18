@@ -39,7 +39,8 @@ apiClient.interceptors.response.use(
       // Only show toast for client errors (4xx) and server errors (5xx)
       // Skip 401 as it's handled above
       // Skip 404 for UserPreference endpoints (expected when preference doesn't exist)
-      const isExpected404 = status === 404 && error.config?.url?.includes('/api/UserPreference/')
+      const isExpected404 = status === 404 && 
+        error.config?.url?.toLowerCase().includes('/userpreference')
       
       if (status >= 400 && status !== 401 && !isExpected404) {
         // Import toast dynamically to avoid circular dependencies

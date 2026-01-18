@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Search, TrendingUp, BarChart3, Bell, Star, Calendar, Cpu, Settings, Briefcase } from 'lucide-react'
-import { useAuthContext } from '@/shared/contexts/useAuthContext'
+import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 
 interface CommandItem {
