@@ -13,12 +13,15 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
-  Cog6ToothIcon, 
-  PencilSquareIcon,
-  CheckIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline'
-import { GripVertical } from 'lucide-react'
+  Settings,
+  Pencil,
+  Check,
+  X,
+  GripVertical
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { PageHeader } from '@/shared/components/PageHeader'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
@@ -35,6 +38,7 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
   const [isEditMode, setIsEditMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showLayoutManager, setShowLayoutManager] = useState(false)
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const loadLayout = useCallback(async () => {
     try {
@@ -85,10 +89,10 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
     try {
       await layoutService.saveLayout(layout)
       setIsEditMode(false)
-      alert('Layout saved successfully!')
+      toast.success('Layout saved successfully!')
     } catch (error) {
       console.error('Error saving layout:', error)
-      alert('Failed to save layout')
+      toast.error('Failed to save layout')
     }
   }
 
@@ -102,23 +106,25 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
       const newLayout = await layoutService.applyTemplate(templateId)
       setLayout(newLayout)
       setShowLayoutManager(false)
-      alert('Template applied successfully!')
+      toast.success('Template applied successfully!')
     } catch (error) {
       console.error('Error applying template:', error)
-      alert('Failed to apply template')
+      toast.error('Failed to apply template')
     }
   }
 
+  const handleResetLayoutClick = () => {
+    setResetConfirmOpen(true)
+  }
+
   const handleResetLayout = async () => {
-    if (confirm('Are you sure you want to reset to default layout?')) {
-      try {
-        const defaultLayout = await layoutService.resetToDefault()
-        setLayout(defaultLayout)
-        alert('Layout reset successfully!')
-      } catch (error) {
-        console.error('Error resetting layout:', error)
-        alert('Failed to reset layout')
-      }
+    try {
+      const defaultLayout = await layoutService.resetToDefault()
+      setLayout(defaultLayout)
+      toast.success('Layout reset successfully!')
+    } catch (error) {
+      console.error('Error resetting layout:', error)
+      toast.error('Failed to reset layout')
     }
   }
 
@@ -135,13 +141,13 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
       if (layoutService.validateLayout(importedLayout)) {
         await layoutService.saveLayout(importedLayout)
         setLayout(importedLayout)
-        alert('Layout imported successfully!')
+        toast.success('Layout imported successfully!')
       } else {
-        alert('Invalid layout file')
+        toast.error('Invalid layout file')
       }
     } catch (error) {
       console.error('Error importing layout:', error)
-      alert('Failed to import layout')
+      toast.error('Failed to import layout')
     }
   }
 
@@ -247,60 +253,51 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
     <div className="p-8 animate-fade-in">
       <div className="w-full mx-auto">
         {/* Header with controls */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex items-center justify-between"
-        >
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              {isEditMode ? 'Edit mode - Drag and resize widgets' : 'Customizable dashboard layout'}
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {isEditMode ? (
-              <>
-                <Button
-                  onClick={handleSaveLayout}
-                  className="flex items-center space-x-2"
-                >
-                  <CheckIcon className="h-5 w-5" />
-                  <span>Save Layout</span>
-                </Button>
-                <Button
-                  onClick={handleCancelEdit}
-                  variant="outline"
-                  className="flex items-center space-x-2"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                  <span>Cancel</span>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={() => setIsEditMode(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <PencilSquareIcon className="h-5 w-5" />
-                  <span>Edit Layout</span>
-                </Button>
-                <Button
-                  onClick={() => setShowLayoutManager(true)}
-                  variant="outline"
-                  className="flex items-center space-x-2"
-                >
-                  <Cog6ToothIcon className="h-5 w-5" />
-                  <span>Manage</span>
-                </Button>
-              </>
-            )}
-          </div>
-        </motion.div>
+        <PageHeader
+          title="Dashboard"
+          description={isEditMode ? 'Edit mode - Drag and resize widgets' : 'Customizable dashboard layout'}
+          actions={
+            <div className="flex items-center space-x-2">
+              {isEditMode ? (
+                <>
+                  <Button
+                    onClick={handleSaveLayout}
+                    className="flex items-center space-x-2"
+                  >
+                    <Check className="h-5 w-5" />
+                    <span>Save Layout</span>
+                  </Button>
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant="outline"
+                    className="flex items-center space-x-2"
+                  >
+                    <X className="h-5 w-5" />
+                    <span>Cancel</span>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => setIsEditMode(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <Pencil className="h-5 w-5" />
+                    <span>Edit Layout</span>
+                  </Button>
+                  <Button
+                    onClick={() => setShowLayoutManager(true)}
+                    variant="outline"
+                    className="flex items-center space-x-2"
+                  >
+                    <Settings className="h-5 w-5" />
+                    <span>Manage</span>
+                  </Button>
+                </>
+              )}
+            </div>
+          }
+        />
 
         {/* Edit mode banner */}
         <AnimatePresence>
@@ -363,12 +360,24 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
           <LayoutManager
             currentLayout={layout}
             onApplyTemplate={handleApplyTemplate}
-            onReset={handleResetLayout}
+            onReset={handleResetLayoutClick}
             onExport={handleExportLayout}
             onImport={handleImportLayout}
             onClose={() => setShowLayoutManager(false)}
           />
         )}
+
+        {/* Reset Confirm Dialog */}
+        <ConfirmDialog
+          open={resetConfirmOpen}
+          onOpenChange={setResetConfirmOpen}
+          title="Reset Layout"
+          description="Are you sure you want to reset to default layout? This action cannot be undone."
+          confirmText="Reset"
+          cancelText="Cancel"
+          onConfirm={handleResetLayout}
+          variant="destructive"
+        />
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline'
+import { X, GripVertical } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   DndContext,
   closestCenter,
@@ -70,7 +71,7 @@ const SortableColumnItem = ({ id, label, visible, onToggle }: SortableColumnItem
           {...listeners}
           className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600"
         >
-          <Bars3Icon className="h-5 w-5" />
+          <GripVertical className="h-5 w-5" />
         </button>
         <label className="flex items-center space-x-2 flex-1 cursor-pointer">
           <input
@@ -159,7 +160,7 @@ export const ColumnCustomizationModal = ({
       onClose()
     } catch (error) {
       console.error('Error saving preferences:', error)
-      alert('Failed to save column preferences. Please try again.')
+      toast.error('Failed to save column preferences. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -182,7 +183,7 @@ export const ColumnCustomizationModal = ({
             onClick={onClose}
             className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <XMarkIcon className="h-6 w-6 text-slate-600" />
+            <X className="h-6 w-6 text-[hsl(var(--muted))]" />
           </button>
         </div>
 

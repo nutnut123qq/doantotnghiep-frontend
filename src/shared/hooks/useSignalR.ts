@@ -45,7 +45,6 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
     connectionRef.current = connection
 
     let isMounted = true
-    let startPromise: Promise<void> | null = null
 
     // Track connection state changes
     const updateConnectionState = () => {
@@ -66,7 +65,8 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
       updateConnectionState()
     })
 
-    startPromise = connection
+    // Connection started
+    void connection
       .start()
       .then(() => {
         if (isMounted) {
@@ -118,7 +118,7 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
     }
   }, [hubName]) // Removed onConnected from dependencies
 
-  const invoke = async (methodName: string, ...args: any[]) => {
+  const invoke = async (methodName: string, ...args: unknown[]) => {
     if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
       return connectionRef.current.invoke(methodName, ...args)
     }

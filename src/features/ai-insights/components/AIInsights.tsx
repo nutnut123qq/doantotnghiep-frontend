@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Tab } from '@headlessui/react'
 import { 
-  ArrowTrendingUpIcon, 
-  ArrowTrendingDownIcon, 
-  MinusIcon,
-  CpuChipIcon,
-  FaceSmileIcon,
-  ExclamationTriangleIcon,
-  StarIcon,
-  ArrowPathIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline'
+  TrendingUp, 
+  TrendingDown, 
+  Minus,
+  Cpu,
+  Smile,
+  AlertTriangle,
+  Star,
+  RefreshCw,
+  X
+} from 'lucide-react'
 import { aiInsightsService, type AIInsight, type MarketSentiment } from '../services/aiInsightsService'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -97,7 +98,7 @@ export const AIInsights = () => {
       setMarketSentiment(sentiment)
     } catch (err: any) {
       console.error('Error dismissing insight:', err)
-      alert('Không thể bỏ qua insight. Vui lòng thử lại.')
+      toast.error('Không thể bỏ qua insight. Vui lòng thử lại.')
     } finally {
       setDismissingIds(prev => {
         const newSet = new Set(prev)
@@ -113,7 +114,7 @@ export const AIInsights = () => {
       setSelectedInsight(detail)
     } catch (err: any) {
       console.error('Error loading insight details:', err)
-      alert('Không thể tải chi tiết insight')
+      toast.error('Không thể tải chi tiết insight')
     }
   }
 
@@ -135,7 +136,7 @@ export const AIInsights = () => {
       
       // Reload data after generation
       await loadData()
-      alert('Đã tạo insights cho một số mã cổ phiếu phổ biến. Vui lòng đợi vài giây để xem kết quả.')
+      toast.success('Đã tạo insights cho một số mã cổ phiếu phổ biến. Vui lòng đợi vài giây để xem kết quả.')
     } catch (err: any) {
       console.error('Error generating insights:', err)
       setError(err.message || 'Không thể tạo insights. Vui lòng kiểm tra AI service.')
@@ -155,18 +156,18 @@ export const AIInsights = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type.toLowerCase()) {
-      case 'buy': return <ArrowTrendingUpIcon className="h-6 w-6" />
-      case 'sell': return <ArrowTrendingDownIcon className="h-6 w-6" />
-      case 'hold': return <MinusIcon className="h-6 w-6" />
-      default: return <ArrowTrendingUpIcon className="h-6 w-6" />
+      case 'buy': return <TrendingUp className="h-6 w-6" />
+      case 'sell': return <TrendingDown className="h-6 w-6" />
+      case 'hold': return <Minus className="h-6 w-6" />
+      default: return <TrendingUp className="h-6 w-6" />
     }
   }
 
   const getSentimentIcon = (overall: string) => {
     switch (overall.toLowerCase()) {
-      case 'bullish': return <FaceSmileIcon className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
-      case 'bearish': return <FaceSmileIcon className="w-12 h-12 text-rose-600 dark:text-rose-400 rotate-180" />
-      default: return <MinusIcon className="w-12 h-12 text-slate-600 dark:text-slate-400" />
+      case 'bullish': return <Smile className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
+      case 'bearish': return <Smile className="w-12 h-12 text-rose-600 dark:text-rose-400 rotate-180" />
+      default: return <Minus className="w-12 h-12 text-slate-600 dark:text-slate-400" />
     }
   }
 
@@ -244,7 +245,7 @@ export const AIInsights = () => {
             disabled={refreshing}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            <ArrowPathIcon className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
           </button>
         </div>
@@ -254,7 +255,7 @@ export const AIInsights = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                <CpuChipIcon className="w-8 h-8 text-white" />
+                <Cpu className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold mb-1">AI Analysis Engine</h3>
@@ -297,7 +298,7 @@ export const AIInsights = () => {
               <Tab.Panel key={idx} className="space-y-6">
                 {categoryInsights.length === 0 ? (
                   <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-12 text-center">
-                    <CpuChipIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <Cpu className="w-16 h-16 text-slate-400 mx-auto mb-4" />
                     <p className="text-slate-600 dark:text-slate-300 text-lg font-medium mb-2">
                       {insights.length === 0 
                         ? 'Chưa có insights nào được tạo' 
@@ -315,7 +316,7 @@ export const AIInsights = () => {
                           disabled={generating}
                           className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
                         >
-                          <ArrowPathIcon className={`w-5 h-5 ${generating ? 'animate-spin' : ''}`} />
+                          <RefreshCw className={`w-5 h-5 ${generating ? 'animate-spin' : ''}`} />
                           <span>{generating ? 'Đang tạo insights...' : 'Tạo Insights Ngay'}</span>
                         </button>
                       </>
@@ -418,7 +419,7 @@ export const AIInsights = () => {
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Risk Level</h3>
               <div className="text-center">
                 <div className="flex justify-center mb-2">
-                  <ExclamationTriangleIcon className={`w-12 h-12 ${getRiskColor(marketSentiment.riskLevel)}`} />
+                  <AlertTriangle className={`w-12 h-12 ${getRiskColor(marketSentiment.riskLevel)}`} />
                 </div>
                 <p className={`text-2xl font-bold ${getRiskColor(marketSentiment.riskLevel)}`}>
                   {marketSentiment.riskLevel === 'High' ? 'Cao' : marketSentiment.riskLevel === 'Moderate' ? 'Trung bình' : 'Thấp'}
@@ -431,7 +432,7 @@ export const AIInsights = () => {
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Opportunities</h3>
               <div className="text-center">
               <div className="flex justify-center mb-2">
-                <StarIcon className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+                <Star className="w-12 h-12 text-blue-600 dark:text-blue-400" />
               </div>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{marketSentiment.opportunitiesCount} Found</p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Based on your criteria</p>
@@ -462,7 +463,7 @@ export const AIInsights = () => {
                     onClick={() => setSelectedInsight(null)}
                     className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                   >
-                    <XMarkIcon className="w-6 h-6" />
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
 

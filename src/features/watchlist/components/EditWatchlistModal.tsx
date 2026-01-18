@@ -47,7 +47,7 @@ export const EditWatchlistModal = ({
     try {
       await onUpdate(watchlistId, name.trim())
       onClose()
-    } catch (err) {
+    } catch {
       // Error is handled by the mutation in useWatchlists hook
     }
   }

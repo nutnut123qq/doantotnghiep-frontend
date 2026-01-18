@@ -6,6 +6,7 @@ import { Layout } from '@/shared/components/Layout'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
+import { LoadingFallback } from '@/shared/components/LoadingFallback'
 
 // Lazy load heavy components for code splitting
 const Dashboard = lazy(() => import('@/features/dashboard/components/Dashboard').then(m => ({ default: m.Dashboard })))
@@ -19,16 +20,8 @@ const EventsCalendar = lazy(() => import('@/features/events/components/EventsCal
 const AdminDashboard = lazy(() => import('@/features/admin/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
-
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-      <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-    </div>
-  </div>
-)
+const ChartPage = lazy(() => import('@/features/chart/components/ChartPage').then(m => ({ default: m.ChartPage })))
+const WorkspacePage = lazy(() => import('@/features/workspace/components/WorkspacePage').then(m => ({ default: m.WorkspacePage })))
 
 export const router = createBrowserRouter(
   [
@@ -127,6 +120,22 @@ export const router = createBrowserRouter(
           element: (
             <Suspense fallback={<LoadingFallback />}>
               <AlertList />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'chart',
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <ChartPage />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'workspace',
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <WorkspacePage />
             </Suspense>
           ),
         },

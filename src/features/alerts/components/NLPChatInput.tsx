@@ -4,7 +4,8 @@ import { Label } from '@/components/ui/label'
 import { SparklesIcon } from '@heroicons/react/24/outline'
 import { alertService } from '../services/alertService'
 import type { CreateAlertRequest, ParsedAlert } from '../types/alert.types'
-import { AlertTypeLabels, AlertType } from '../types/alert.types'
+import { AlertType } from '../types/alert.types'
+import { getErrorMessage } from '@/shared/types/error.types'
 
 interface ChatMessage {
   id: string
@@ -60,12 +61,12 @@ export const NLPChatInput = ({
       
       setCurrentParsedAlert(parsed)
       setInput('') // Clear input after successful parse
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error parsing alert:', error)
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'system',
-        content: error.response?.data?.message || error.message || 'Failed to parse alert. Please try again.',
+        content: getErrorMessage(error) || 'Failed to parse alert. Please try again.',
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, userMessage, errorMessage].slice(-5))

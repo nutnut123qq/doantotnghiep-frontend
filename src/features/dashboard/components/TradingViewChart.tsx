@@ -175,7 +175,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
       window.removeEventListener('resize', handleResize)
       chart.remove()
     }
-  }, [height])
+  }, [height, isDarkMode])
 
   const loadChartData = useCallback(async () => {
     try {

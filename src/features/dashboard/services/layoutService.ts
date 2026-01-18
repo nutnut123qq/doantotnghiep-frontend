@@ -23,7 +23,7 @@ export const layoutService = {
       if (response.data && response.data.preferenceValue) {
         return JSON.parse(response.data.preferenceValue)
       }
-    } catch (error) {
+    } catch {
       console.log('No saved layout found, using default')
     }
     
@@ -127,7 +127,7 @@ export const layoutService = {
           }
           
           resolve(layout)
-        } catch (error) {
+        } catch {
           reject(new Error('Failed to parse layout file'))
         }
       }

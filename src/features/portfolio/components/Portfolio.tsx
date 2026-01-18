@@ -27,6 +27,7 @@ import { ArrowUpDown, RefreshCw, Plus, Search, X } from 'lucide-react'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { cn } from '@/lib/utils'
 import { portfolioService, type Holding, type PortfolioSummary } from '../services/portfolioService'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -143,7 +144,7 @@ export const Portfolio = () => {
       const avgPrice = parseFloat(newHolding.avgPrice)
 
       if (!newHolding.symbol.trim() || !shares || !avgPrice || shares <= 0 || avgPrice <= 0) {
-        alert('Vui lòng nhập đầy đủ thông tin hợp lệ')
+        toast.error('Vui lòng nhập đầy đủ thông tin hợp lệ')
         return
       }
 
@@ -164,7 +165,7 @@ export const Portfolio = () => {
     } catch (err: any) {
       console.error('Error adding holding:', err)
       const errorMessage = err.response?.data?.message || err.message || 'Không thể thêm mã cổ phiếu. Vui lòng thử lại.'
-      alert(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -533,7 +534,7 @@ export const Portfolio = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent mb-2">
               Portfolio
             </h1>
             <p className="text-slate-600 dark:text-slate-400">Manage and track your investment holdings</p>
@@ -572,7 +573,7 @@ export const Portfolio = () => {
           className="flex items-center justify-between"
         >
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent mb-2">
               Portfolio
             </h1>
             <p className="text-slate-600 dark:text-slate-400">Manage and track your investment holdings</p>

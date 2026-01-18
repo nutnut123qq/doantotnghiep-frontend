@@ -47,6 +47,7 @@ export default function EventsCalendar() {
 
   useEffect(() => {
     loadEvents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, view])
 
   const loadEvents = async () => {

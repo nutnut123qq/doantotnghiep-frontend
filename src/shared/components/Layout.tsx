@@ -16,25 +16,27 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import {
-  Bars3Icon,
-  XMarkIcon,
-  BellIcon,
-  ChartBarIcon,
-  ChartPieIcon,
-  BriefcaseIcon,
-  StarIcon,
-  CpuChipIcon,
-  CalendarIcon,
-  Cog6ToothIcon,
-  UserCircleIcon,
-  ArrowRightOnRectangleIcon,
-  MoonIcon,
-  SunIcon,
-} from '@heroicons/react/24/outline'
-import { useAuthContext } from '@/shared/contexts/AuthContext'
-import { useTheme } from '@/shared/contexts/ThemeContext'
+  Menu,
+  X,
+  Bell,
+  BarChart3,
+  PieChart,
+  Briefcase,
+  Star,
+  Cpu,
+  Calendar,
+  Settings,
+  UserCircle,
+  LogOut,
+  Moon,
+  Sun,
+} from 'lucide-react'
+import { useAuthContext } from '@/shared/contexts/useAuthContext'
+import { useTheme } from '@/shared/contexts/useTheme'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { CommandPalette } from './CommandPalette'
+import { TickerSearch } from './TickerSearch'
 
 export const Layout = () => {
   const location = useLocation()
@@ -43,15 +45,15 @@ export const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: ChartBarIcon },
-    { name: 'Trading Board', href: '/trading-board', icon: ChartPieIcon },
-    { name: 'Portfolio', href: '/portfolio', icon: BriefcaseIcon },
-    { name: 'Watchlist', href: '/watchlist', icon: StarIcon },
-    { name: 'Alerts', href: '/alerts', icon: BellIcon },
-    { name: 'AI Insights', href: '/ai-insights', icon: CpuChipIcon },
-    { name: 'Events', href: '/events', icon: CalendarIcon },
-    ...(user?.role === 'Admin' ? [{ name: 'Admin', href: '/admin', icon: Cog6ToothIcon }] : []),
-    { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+    { name: 'Dashboard', href: '/', icon: BarChart3 },
+    { name: 'Trading Board', href: '/trading-board', icon: PieChart },
+    { name: 'Portfolio', href: '/portfolio', icon: Briefcase },
+    { name: 'Watchlist', href: '/watchlist', icon: Star },
+    { name: 'Alerts', href: '/alerts', icon: Bell },
+    { name: 'AI Insights', href: '/ai-insights', icon: Cpu },
+    { name: 'Events', href: '/events', icon: Calendar },
+    ...(user?.role === 'Admin' ? [{ name: 'Admin', href: '/admin', icon: Settings }] : []),
+    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const isActive = (path: string) => {
@@ -62,12 +64,12 @@ export const Layout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-[hsl(var(--bg))]">
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-white dark:bg-slate-800 shadow-lg border-b border-slate-200 dark:border-slate-700"
+        className="bg-[hsl(var(--surface-1))] border-b border-[hsl(var(--border))]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -77,11 +79,11 @@ export const Layout = () => {
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center"
+                  className="w-10 h-10 bg-[hsl(var(--accent))] rounded-lg flex items-center justify-center"
                 >
-                  <span className="text-white text-xl font-bold">SI</span>
+                  <span className="text-[hsl(var(--accent-foreground))] text-xl font-bold">SI</span>
                 </motion.div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className="text-xl font-bold text-[hsl(var(--text))]">
                   Stock Investment
                 </span>
               </Link>
@@ -102,8 +104,8 @@ export const Layout = () => {
                             className={cn(
                               'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center space-x-2',
                               active
-                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
-                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400'
+                                ? 'bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]'
+                                : 'text-[hsl(var(--text))] hover:bg-[hsl(var(--surface-2))]'
                             )}
                           >
                             <Icon className="h-5 w-5" />
@@ -119,43 +121,46 @@ export const Layout = () => {
 
             {/* User Menu */}
             <div className="hidden md:flex items-center space-x-4">
+              {/* Ticker Search */}
+              <TickerSearch />
+
               {/* Dark Mode Toggle */}
               <div className="flex items-center space-x-2">
-                <SunIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                <Sun className="h-4 w-4 text-[hsl(var(--muted))]" />
                 <Switch
                   checked={theme === 'dark'}
                   onCheckedChange={toggleTheme}
                 />
-                <MoonIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                <Moon className="h-4 w-4 text-[hsl(var(--muted))]" />
               </div>
 
               {/* Notifications */}
               <Button variant="ghost" size="icon" className="relative">
-                <BellIcon className="h-6 w-6" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <Bell className="h-6 w-6" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-[hsl(var(--negative))] rounded-full"></span>
               </Button>
 
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2">
-                    <UserCircleIcon className="h-6 w-6" />
+                    <UserCircle className="h-6 w-6" />
                     <span className="text-sm font-medium">{user?.email}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center space-x-2">
-                      <Cog6ToothIcon className="h-5 w-5" />
+                      <Settings className="h-5 w-5" />
                       <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={logout}
-                    className="text-red-600 focus:text-red-600"
+                    className="text-[hsl(var(--negative))] focus:text-[hsl(var(--negative))]"
                   >
-                    <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
+                    <LogOut className="h-5 w-5 mr-2" />
                     <span>Logout</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -170,9 +175,9 @@ export const Layout = () => {
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? (
-                  <XMarkIcon className="h-6 w-6" />
+                  <X className="h-6 w-6" />
                 ) : (
-                  <Bars3Icon className="h-6 w-6" />
+                  <Menu className="h-6 w-6" />
                 )}
               </Button>
             </div>
@@ -185,7 +190,7 @@ export const Layout = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+            className="md:hidden border-t border-[hsl(var(--border))] bg-[hsl(var(--surface-1))]"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => {
@@ -199,8 +204,8 @@ export const Layout = () => {
                     className={cn(
                       'block px-3 py-2 rounded-lg text-base font-medium transition-colors flex items-center space-x-2',
                       active
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? 'bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]'
+                        : 'text-[hsl(var(--text))] hover:bg-[hsl(var(--surface-2))]'
                     )}
                   >
                     <Icon className="h-5 w-5" />
@@ -208,12 +213,12 @@ export const Layout = () => {
                   </Link>
                 )
               })}
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
-                <div className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400">
-                  Signed in as <span className="font-medium text-slate-900 dark:text-slate-100">{user?.email}</span>
+              <div className="pt-4 border-t border-[hsl(var(--border))] space-y-1">
+                <div className="px-3 py-2 text-sm text-[hsl(var(--muted))]">
+                  Signed in as <span className="font-medium text-[hsl(var(--text))]">{user?.email}</span>
                 </div>
                 <div className="px-3 py-2 flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Dark Mode</span>
+                  <span className="text-sm text-[hsl(var(--muted))]">Dark Mode</span>
                   <Switch
                     checked={theme === 'dark'}
                     onCheckedChange={toggleTheme}
@@ -222,9 +227,9 @@ export const Layout = () => {
                 <Button
                   variant="ghost"
                   onClick={logout}
-                  className="w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+                  className="w-full text-left px-3 py-2 text-base font-medium text-[hsl(var(--negative))] hover:bg-[hsl(var(--negative)/0.1)] flex items-center space-x-2"
                 >
-                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <LogOut className="h-5 w-5" />
                   <span>Logout</span>
                 </Button>
               </div>
@@ -241,6 +246,9 @@ export const Layout = () => {
       >
         <Outlet />
       </motion.main>
+
+      {/* Command Palette */}
+      <CommandPalette />
     </div>
   )
 }

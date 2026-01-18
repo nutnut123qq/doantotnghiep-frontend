@@ -32,6 +32,7 @@ export default function EventsFeed() {
 
   useEffect(() => {
     loadEvents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolFilter, eventTypeFilter, statusFilter, dateRangeFilter])
 
   const loadEvents = async () => {

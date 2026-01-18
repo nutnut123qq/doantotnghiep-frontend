@@ -32,7 +32,7 @@ export const CreateWatchlistModal = ({
       await onCreate(name.trim())
       setName('')
       onClose()
-    } catch (err) {
+    } catch {
       // Error is handled by the mutation in useWatchlists hook
     }
   }

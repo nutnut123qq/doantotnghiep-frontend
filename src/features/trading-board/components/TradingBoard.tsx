@@ -17,19 +17,12 @@ import {
 import { useTradingBoard } from '../hooks/useTradingBoard'
 import { ColumnCustomizationModal } from './ColumnCustomizationModal'
 import { columnPreferencesService } from '../services/columnPreferencesService'
-import type { TradingBoardFilters } from '../services/tradingBoardService'
+import type { TradingBoardFilters as TradingBoardFiltersType } from '../services/tradingBoardService'
 import type { TradingBoardColumnPreferences } from '../types/columnTypes'
 import { DEFAULT_COLUMN_ORDER } from '../types/columnTypes'
 import type { StockTicker } from '@/domain/entities/StockTicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -39,15 +32,20 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { Settings } from 'lucide-react'
 import { ArrowUpDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { TradingBoardFilters } from './TradingBoardFilters'
+import { DensityToggle } from './DensityToggle'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { BarChart3, Bell, Star } from 'lucide-react'
 
 export const TradingBoard = () => {
   const navigate = useNavigate()
-  const [filters, setFilters] = useState<TradingBoardFilters>({})
+  const [filters, setFilters] = useState<TradingBoardFiltersType>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -57,6 +55,7 @@ export const TradingBoard = () => {
     visibleColumns: DEFAULT_COLUMN_ORDER,
     columnOrder: DEFAULT_COLUMN_ORDER,
   })
+  const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
   const { tickers, isLoading, error } = useTradingBoard(filters)
 
   // Fetch watchlists for filter
@@ -107,7 +106,7 @@ export const TradingBoard = () => {
     )
   }, [tickers, searchQuery])
 
-  const handleFilterChange = (key: keyof TradingBoardFilters, value: string) => {
+  const handleFilterChange = (key: keyof TradingBoardFiltersType, value: string | undefined) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value === 'all' ? undefined : value || undefined,
@@ -210,8 +209,8 @@ export const TradingBoard = () => {
           const isPositive = change !== null && change >= 0
           return (
             <div className={cn(
-              'text-right',
-              isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              'text-right font-medium tabular-nums',
+              isPositive ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
             )}>
               {change !== null ? (change >= 0 ? '+' : '') + formatNumber(change) : '-'}
             </div>
@@ -239,8 +238,8 @@ export const TradingBoard = () => {
           const isPositive = changePercent !== null && changePercent >= 0
           return (
             <div className={cn(
-              'text-right font-bold',
-              isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              'text-right font-bold tabular-nums',
+              isPositive ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
             )}>
               {changePercent !== null ? formatPercentage(changePercent) : '-'}
             </div>
@@ -353,26 +352,20 @@ export const TradingBoard = () => {
     <div className="p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between"
-        >
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Trading Board
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">Real-time stock market data and analytics</p>
-          </div>
-          <Button
-            onClick={() => setIsColumnModalOpen(true)}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            <Cog6ToothIcon className="h-5 w-5" />
-            <span className="hidden sm:inline">Customize Columns</span>
-          </Button>
-        </motion.div>
+        <PageHeader
+          title="Trading Board"
+          description="Real-time stock market data and analytics"
+          actions={
+            <Button
+              onClick={() => setIsColumnModalOpen(true)}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="hidden sm:inline">Customize Columns</span>
+            </Button>
+          }
+        />
 
         {/* Search and Filters Section */}
         <motion.div
@@ -380,77 +373,26 @@ export const TradingBoard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card>
+          <Card className="bg-[hsl(var(--surface-1))]">
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div>
+                <div className="flex items-center space-x-2">
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by symbol or company name..."
-                    className="w-full"
+                    className="flex-1"
+                  />
+                  <DensityToggle
+                    density={density}
+                    onDensityChange={setDensity}
                   />
                 </div>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex-1 min-w-[200px]">
-                    <Select
-                      value={filters.exchange || 'all'}
-                      onValueChange={(value) => handleFilterChange('exchange', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Exchanges" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Exchanges</SelectItem>
-                        <SelectItem value="HOSE">HOSE</SelectItem>
-                        <SelectItem value="HNX">HNX</SelectItem>
-                        <SelectItem value="UPCOM">UPCOM</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <Select
-                      value={filters.index || 'all'}
-                      onValueChange={(value) => handleFilterChange('index', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Indexes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Indexes</SelectItem>
-                        <SelectItem value="VN30">VN30</SelectItem>
-                        <SelectItem value="VN100">VN100</SelectItem>
-                        <SelectItem value="HNX30">HNX30</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <Input
-                      type="text"
-                      placeholder="Filter by industry"
-                      value={filters.industry || ''}
-                      onChange={(e) => handleFilterChange('industry', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <Select
-                      value={filters.watchlistId || 'all'}
-                      onValueChange={(value) => handleFilterChange('watchlistId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Watchlists" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Watchlists</SelectItem>
-                        {watchlists.map((watchlist) => (
-                          <SelectItem key={watchlist.id} value={watchlist.id}>
-                            {watchlist.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <TradingBoardFilters
+                  filters={filters}
+                  watchlists={watchlists}
+                  onFilterChange={handleFilterChange}
+                />
               </div>
             </CardContent>
           </Card>
@@ -462,14 +404,15 @@ export const TradingBoard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card>
+          <Card className="bg-[hsl(var(--surface-1))]">
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
+              <div className="relative max-h-[calc(100vh-300px)] overflow-y-auto">
+                <Table className={cn(density === 'compact' ? 'text-sm' : 'text-base')}>
+                  <TableHeader className="sticky top-0 z-10 bg-[hsl(var(--surface-1))] border-b border-[hsl(var(--border))]">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                        {headerGroup.headers.map((header) => (
+                          <TableHead key={header.id} className="font-semibold text-[hsl(var(--text))]">
                           {header.isPlaceholder
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
@@ -480,40 +423,95 @@ export const TradingBoard = () => {
                 </TableHeader>
                 <TableBody>
                   {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => {
+                    table.getRowModel().rows.map((row, index) => {
                       const ticker = row.original
+                      // Detect unusual moves for signal highlight
+                      const changePercent = ticker.changePercent || 0
+                      const isUnusualMove = Math.abs(changePercent) > 3
+                      
                       return (
                         <TableRow
                           key={row.id}
                           data-state={row.getIsSelected() && 'selected'}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => navigate(`/?symbol=${ticker.symbol}`)}
+                          className={cn(
+                            'cursor-pointer transition-colors',
+                            index % 2 === 0 ? 'bg-[hsl(var(--surface-1))]' : 'bg-[hsl(var(--surface-2))]',
+                            'hover:bg-[hsl(var(--surface-3))]',
+                            isUnusualMove && 'border-l-2 border-l-[hsl(var(--accent))]'
+                          )}
                         >
                           {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id}>
+                            <TableCell
+                              key={cell.id}
+                              className={cn(
+                                density === 'compact' ? 'py-2' : 'py-3',
+                                'tabular-nums'
+                              )}
+                            >
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
+                          {/* Quick Actions Column */}
+                          <TableCell className="w-[120px]">
+                            <div className="flex items-center space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(`/?symbol=${ticker.symbol}`)
+                                }}
+                                title="Open Chart"
+                              >
+                                <BarChart3 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(`/alerts?symbol=${ticker.symbol}`)
+                                }}
+                                title="Create Alert"
+                              >
+                                <Bell className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  // TODO: Add to watchlist
+                                }}
+                                title="Add to Watchlist"
+                              >
+                                <Star className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       )
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center">
-                        <div className="text-slate-400 dark:text-slate-500">
-                          <p className="text-lg font-medium">No tickers found</p>
-                          <p className="text-sm mt-1">
-                            {searchQuery ? 'No results match your search' : 'Try adjusting your filters'}
-                          </p>
-                        </div>
+                      <TableCell colSpan={columns.length + 1} className="h-24 text-center">
+                        <EmptyState
+                          icon={BarChart3}
+                          title="No tickers found"
+                          description={searchQuery ? 'No results match your search' : 'Try adjusting your filters'}
+                        />
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
             {/* Pagination */}
-            <div className="flex items-center justify-between px-4 py-4 border-t">
+            <div className="flex items-center justify-between px-4 py-4 border-t border-[hsl(var(--border))]">
               <div className="text-sm text-muted-foreground">
                 Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
                 {Math.min(

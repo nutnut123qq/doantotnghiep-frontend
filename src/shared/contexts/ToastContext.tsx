@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, useState, ReactNode, useCallback } from 'react'
 import { Transition } from '@headlessui/react'
 import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
@@ -111,11 +111,5 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   )
 }
 
-export const useToast = () => {
-  const context = useContext(ToastContext)
-  if (context === undefined) {
-    throw new Error('useToast must be used within a ToastProvider')
-  }
-  return context
-}
+export { ToastContext }
 

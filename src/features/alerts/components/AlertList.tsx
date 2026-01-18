@@ -12,23 +12,27 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  PlusIcon,
-  TrashIcon,
-  BellIcon,
-} from '@heroicons/react/24/outline'
+import { Plus, Trash2, Bell } from 'lucide-react'
 import { AlertTypeLabels } from '../types/alert.types'
 import type { Alert, CreateAlertRequest } from '../types/alert.types'
 import { format } from 'date-fns'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { toast } from 'sonner'
 
 export const AlertList = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [alertToDelete, setAlertToDelete] = useState<string | null>(null)
 
   const isActiveFilter = filter === 'all' ? undefined : filter === 'active'
   const {
     alerts,
     isLoading,
+    error,
     createAlert,
     deleteAlert,
     toggleAlert,
@@ -40,25 +44,32 @@ export const AlertList = () => {
     try {
       await createAlert(data)
       setIsCreateModalOpen(false)
-    } catch (error) {
-      // Error handled by hook
+      toast.success('Alert created successfully')
+    } catch {
+      toast.error('Failed to create alert')
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this alert?')) {
-      try {
-        await deleteAlert(id)
-      } catch (error) {
-        // Error handled by hook
-      }
+  const handleDeleteClick = (id: string) => {
+    setAlertToDelete(id)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!alertToDelete) return
+    try {
+      await deleteAlert(alertToDelete)
+      toast.success('Alert deleted successfully')
+      setAlertToDelete(null)
+    } catch {
+      toast.error('Failed to delete alert')
     }
   }
 
   const handleToggle = async (alert: Alert) => {
     try {
       await toggleAlert({ id: alert.id, isActive: !alert.isActive })
-    } catch (error) {
+    } catch {
       // Error handled by hook
     }
   }
@@ -78,23 +89,19 @@ export const AlertList = () => {
     <div className="p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Alerts
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">
-              Manage your stock market alerts
-            </p>
-          </div>
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center space-x-2"
-          >
-            <PlusIcon className="h-5 w-5" />
-            <span>Create Alert</span>
-          </Button>
-        </div>
+        <PageHeader
+          title="Alerts"
+          description="Manage your stock market alerts"
+          actions={
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center space-x-2"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Create Alert</span>
+            </Button>
+          }
+        />
 
         {/* Filters */}
         <Card>
@@ -132,23 +139,30 @@ export const AlertList = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <BellIcon className="h-5 w-5" />
+              <Bell className="h-5 w-5" />
               <span>Your Alerts ({alerts.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {error ? (
+              <ErrorState
+                message={error instanceof Error ? error.message : 'Failed to load alerts'}
+                onRetry={() => window.location.reload()}
+              />
+            ) : isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-4 border-[hsl(var(--accent))] border-t-transparent"></div>
               </div>
             ) : alerts.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <BellIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-                <p className="text-lg font-medium">No alerts found</p>
-                <p className="text-sm mt-2">
-                  Create your first alert to get notified about market changes
-                </p>
-              </div>
+              <EmptyState
+                icon={Bell}
+                title="No alerts found"
+                description="Create your first alert to get notified about market changes"
+                action={{
+                  label: 'Create Alert',
+                  onClick: () => setIsCreateModalOpen(true),
+                }}
+              />
             ) : (
               <Table>
                 <TableHeader>
@@ -205,22 +219,22 @@ export const AlertList = () => {
                             onClick={() => handleToggle(alert)}
                             title={alert.isActive ? 'Deactivate' : 'Activate'}
                           >
-                            <BellIcon
+                            <Bell
                               className={`h-4 w-4 ${
                                 alert.isActive
-                                  ? 'text-green-600'
-                                  : 'text-gray-400'
+                                  ? 'text-[hsl(var(--positive))]'
+                                  : 'text-[hsl(var(--muted))]'
                               }`}
                             />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(alert.id)}
+                            onClick={() => handleDeleteClick(alert.id)}
                             disabled={isDeleting}
                             title="Delete"
                           >
-                            <TrashIcon className="h-4 w-4 text-red-600" />
+                            <Trash2 className="h-4 w-4 text-[hsl(var(--negative))]" />
                           </Button>
                         </div>
                       </TableCell>
@@ -238,6 +252,18 @@ export const AlertList = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onCreate={handleCreate}
           isLoading={isCreating}
+        />
+
+        {/* Delete Confirm Dialog */}
+        <ConfirmDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="Delete Alert"
+          description="Are you sure you want to delete this alert? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={handleDeleteConfirm}
+          variant="destructive"
         />
       </div>
     </div>

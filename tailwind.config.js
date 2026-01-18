@@ -15,6 +15,7 @@ export default {
     },
     extend: {
       colors: {
+        // Shadcn/ui compatibility (keep for existing components)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -58,27 +59,48 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        success: {
-          DEFAULT: "hsl(142, 76%, 36%)",
-          foreground: "hsl(142, 76%, 96%)",
+        // Terminal minimal theme tokens
+        bg: "hsl(var(--bg))",
+        'surface-1': "hsl(var(--surface-1))",
+        'surface-2': "hsl(var(--surface-2))",
+        'surface-3': "hsl(var(--surface-3))",
+        text: "hsl(var(--text))",
+        'text-muted': "hsl(var(--muted))",
+        'text-faint': "hsl(var(--faint))",
+        // Signals - only for data
+        positive: {
+          DEFAULT: "hsl(var(--positive))",
+          foreground: "hsl(var(--positive-foreground))",
+        },
+        negative: {
+          DEFAULT: "hsl(var(--negative))",
+          foreground: "hsl(var(--negative-foreground))",
         },
         warning: {
-          DEFAULT: "hsl(38, 92%, 50%)",
-          foreground: "hsl(38, 92%, 96%)",
-        },
-        error: {
-          DEFAULT: "hsl(0, 84%, 60%)",
-          foreground: "hsl(0, 84%, 96%)",
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         info: {
-          DEFAULT: "hsl(217, 91%, 60%)",
-          foreground: "hsl(217, 91%, 96%)",
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        // Legacy aliases for compatibility
+        success: {
+          DEFAULT: "hsl(var(--positive))",
+          foreground: "hsl(var(--positive-foreground))",
+        },
+        error: {
+          DEFAULT: "hsl(var(--negative))",
+          foreground: "hsl(var(--negative-foreground))",
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius-lg)",
+        md: "var(--radius-md)",
+        sm: "var(--radius-sm)",
+        xl: "var(--radius-xl)",
+        // Legacy shadcn/ui compatibility
+        DEFAULT: "var(--radius)",
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
@@ -116,6 +138,7 @@ export default {
     },
   },
   plugins: [
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
     require("tailwindcss-animate"),
     function ({ addComponents, theme }) {
       addComponents({

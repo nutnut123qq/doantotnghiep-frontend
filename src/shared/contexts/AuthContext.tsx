@@ -7,11 +7,16 @@ interface User {
   role: string
 }
 
+interface LoginResponse {
+  email: string
+  role: string
+}
+
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (credentials: LoginRequest) => Promise<any>
+  login: (credentials: LoginRequest) => Promise<LoginResponse>
   register: (data: RegisterRequest) => Promise<void>
   logout: () => void
 }
@@ -67,6 +72,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   )
 }
+
+export { AuthContext }
 
 export const useAuthContext = () => {
   const context = useContext(AuthContext)

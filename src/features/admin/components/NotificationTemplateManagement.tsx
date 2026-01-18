@@ -1,5 +1,20 @@
 import { useState, useEffect } from 'react'
-import { PlusIcon, PencilIcon, TrashIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { toast } from 'sonner'
+import { Bell } from 'lucide-react'
 import { notificationTemplateService } from '../services/notificationTemplateService'
 import type { NotificationTemplate, PushNotificationConfig } from '@/shared/types/notificationTemplateTypes'
 import {
@@ -43,17 +58,26 @@ export function NotificationTemplateManagement() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this template?')) {
-      return
-    }
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null)
 
+  const handleDelete = async (id: string) => {
+    setTemplateToDelete(id)
+    setDeleteConfirmOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!templateToDelete) return
     try {
-      await notificationTemplateService.delete(id)
+      await notificationTemplateService.delete(templateToDelete)
+      toast.success('Template deleted successfully')
       await loadTemplates()
     } catch (error) {
       console.error('Error deleting template:', error)
-      alert('Failed to delete template')
+      toast.error('Failed to delete template')
+    } finally {
+      setDeleteConfirmOpen(false)
+      setTemplateToDelete(null)
     }
   }
 
@@ -77,7 +101,7 @@ export function NotificationTemplateManagement() {
       setIsPreviewOpen(true)
     } catch (error) {
       console.error('Error previewing template:', error)
-      alert('Failed to preview template')
+      toast.error('Failed to preview template')
     }
   }
 
@@ -90,107 +114,125 @@ export function NotificationTemplateManagement() {
   }, {} as Record<NotificationEventType, NotificationTemplate[]>)
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-      </div>
-    )
+    return <LoadingSkeleton />
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Notification Template Management</h2>
-          <p className="text-sm text-slate-600 mt-1">Manage notification templates and push notification settings</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingTemplate(null)
-            setIsModalOpen(true)
-          }}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <PlusIcon className="h-5 w-5" />
-          <span>Add Template</span>
-        </button>
-      </div>
+      <PageHeader
+        title="Notification Template Management"
+        description="Manage notification templates and push notification settings"
+        actions={
+          <Button
+            onClick={() => {
+              setEditingTemplate(null)
+              setIsModalOpen(true)
+            }}
+            className="flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Template</span>
+          </Button>
+        }
+      />
 
       {/* Templates by Event Type */}
       {Object.entries(groupedTemplates).map(([eventType, eventTemplates]) => (
-        <div key={eventType} className="bg-white rounded-lg shadow border border-slate-200">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-            <h3 className="text-lg font-semibold text-slate-900">
+        <Card key={eventType} className="bg-[hsl(var(--surface-1))]">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-[hsl(var(--text))]">
               {NOTIFICATION_EVENT_TYPE_LABELS[Number(eventType) as NotificationEventType]} Templates
-            </h3>
-          </div>
-          <div className="divide-y divide-slate-200">
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             {eventTemplates.length === 0 ? (
-              <div className="px-6 py-8 text-center text-slate-500">
-                No templates configured
-              </div>
+              <EmptyState
+                icon={Bell}
+                title="No templates configured"
+                description="Create a template to get started"
+              />
             ) : (
-              eventTemplates.map((template) => (
-                <div key={template.id} className="px-6 py-4 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h4 className="text-sm font-semibold text-slate-900">{template.name}</h4>
-                        {template.isActive && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                            Active
-                          </span>
-                        )}
+              <div className="space-y-3">
+                {eventTemplates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="p-4 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))] hover:bg-[hsl(var(--surface-3))] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="text-sm font-semibold text-[hsl(var(--text))]">{template.name}</h4>
+                          {template.isActive && (
+                            <Badge className="bg-[hsl(var(--positive))] text-[hsl(var(--positive-foreground))]">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-[hsl(var(--muted))]">
+                          <strong>Subject:</strong> {template.subject}
+                        </p>
+                        <p className="text-xs text-[hsl(var(--muted))] mt-1 line-clamp-2">
+                          <strong>Body:</strong> {template.body}
+                        </p>
                       </div>
-                      <p className="text-sm text-slate-600 mt-1">
-                        <strong>Subject:</strong> {template.subject}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                        <strong>Body:</strong> {template.body}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handlePreview(template)}
-                        className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
-                        title="Preview"
-                      >
-                        <EyeIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingTemplate(template)
-                          setIsModalOpen(true)
-                        }}
-                        className="p-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(template.id)}
-                        className="p-2 text-slate-600 hover:text-red-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handlePreview(template)}
+                          title="Preview"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingTemplate(template)
+                            setIsModalOpen(true)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(template.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       ))}
 
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        onConfirm={confirmDelete}
+        title="Delete Template"
+        description="Are you sure you want to delete this template? This action cannot be undone."
+      />
+
       {/* Push Notification Configuration */}
-      <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Push Notification Configuration</h3>
-        <PushNotificationConfigSection
-          config={pushConfig}
-          onSave={async () => {
-            await loadPushConfig()
-          }}
-        />
-      </div>
+      <Card className="bg-[hsl(var(--surface-1))]">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[hsl(var(--text))]">Push Notification Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PushNotificationConfigSection
+            config={pushConfig}
+            onSave={async () => {
+              await loadPushConfig()
+            }}
+          />
+        </CardContent>
+      </Card>
 
       {/* Template Modal */}
       {isModalOpen && (
@@ -247,11 +289,11 @@ function PushNotificationConfigSection({ config, onSave }: PushNotificationConfi
         ...formData,
         id: config?.id,
       })
-      alert('Push notification configuration saved successfully')
+      toast.success('Push notification configuration saved successfully')
       onSave()
     } catch (error) {
       console.error('Error saving push config:', error)
-      alert('Failed to save configuration')
+      toast.error('Failed to save configuration')
     } finally {
       setIsSaving(false)
     }
@@ -259,7 +301,7 @@ function PushNotificationConfigSection({ config, onSave }: PushNotificationConfi
 
   const handleTest = async () => {
     if (!testDeviceToken.trim()) {
-      alert('Please enter a device token')
+      toast.error('Please enter a device token')
       return
     }
 
@@ -271,13 +313,13 @@ function PushNotificationConfigSection({ config, onSave }: PushNotificationConfi
         'This is a test push notification from Stock Investment Platform'
       )
       if (result.success) {
-        alert('Test notification sent successfully!')
+        toast.success('Test notification sent successfully!')
       } else {
-        alert(`Failed to send test notification: ${result.errorMessage || 'Unknown error'}`)
+        toast.error(`Failed to send test notification: ${result.errorMessage || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error testing push notification:', error)
-      alert('Failed to send test notification')
+      toast.error('Failed to send test notification')
     } finally {
       setIsTesting(false)
     }
@@ -286,79 +328,77 @@ function PushNotificationConfigSection({ config, onSave }: PushNotificationConfi
   return (
     <form onSubmit={handleSave} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Service</label>
-        <select
+        <Label htmlFor="serviceName">Service</Label>
+        <Select
           value={formData.serviceName}
-          onChange={(e) => setFormData({ ...formData, serviceName: e.target.value })}
-          className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          onValueChange={(value) => setFormData({ ...formData, serviceName: value })}
         >
-          <option value="Firebase">Firebase Cloud Messaging (FCM)</option>
-          <option value="OneSignal">OneSignal</option>
-        </select>
+          <SelectTrigger id="serviceName">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Firebase">Firebase Cloud Messaging (FCM)</SelectItem>
+            <SelectItem value="OneSignal">OneSignal</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Server Key</label>
-        <input
+        <Label htmlFor="serverKey">Server Key</Label>
+        <Input
+          id="serverKey"
           type="password"
           value={formData.serverKey}
           onChange={(e) => setFormData({ ...formData, serverKey: e.target.value })}
           placeholder={config?.serverKey ? '••••••••' : 'Enter server key'}
-          className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">App ID</label>
-        <input
+        <Label htmlFor="appId">App ID</Label>
+        <Input
+          id="appId"
           type="text"
           value={formData.appId}
           onChange={(e) => setFormData({ ...formData, appId: e.target.value })}
           placeholder="Enter app ID"
-          className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
-      <div>
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={formData.isEnabled}
-            onChange={(e) => setFormData({ ...formData, isEnabled: e.target.checked })}
-            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-          />
-          <span className="text-sm font-medium text-slate-700">Enable Push Notifications</span>
-        </label>
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="isEnabled"
+          checked={formData.isEnabled}
+          onCheckedChange={(checked) => setFormData({ ...formData, isEnabled: checked })}
+        />
+        <Label htmlFor="isEnabled">Enable Push Notifications</Label>
       </div>
 
-      <div className="flex items-center space-x-3 pt-4 border-t border-slate-200">
+      <div className="flex items-center space-x-3 pt-4 border-t border-[hsl(var(--border))]">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Test Device Token</label>
-          <input
+          <Label htmlFor="testDeviceToken">Test Device Token</Label>
+          <Input
+            id="testDeviceToken"
             type="text"
             value={testDeviceToken}
             onChange={(e) => setTestDeviceToken(e.target.value)}
             placeholder="Enter device token to test"
-            className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
-        <button
+        <Button
           type="button"
           onClick={handleTest}
           disabled={isTesting || !formData.isEnabled}
-          className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 mt-6"
+          variant="outline"
+          className="mt-6"
         >
           {isTesting ? 'Testing...' : 'Test'}
-        </button>
+        </Button>
       </div>
 
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isSaving} className="w-full">
         {isSaving ? 'Saving...' : 'Save Configuration'}
-      </button>
+      </Button>
     </form>
   )
 }
@@ -388,115 +428,98 @@ function NotificationTemplateModal({ template, onSave, onClose }: NotificationTe
       } else {
         await notificationTemplateService.create(formData)
       }
+      toast.success('Template saved successfully')
       onSave()
     } catch (error) {
       console.error('Error saving template:', error)
-      alert('Failed to save template')
+      toast.error('Failed to save template')
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">
-            {template ? 'Edit Template' : 'Add Template'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6 text-slate-600" />
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>{template ? 'Edit Template' : 'Add Template'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div>
+            <Label htmlFor="templateName">Name</Label>
+            <Input
+              id="templateName"
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Event Type</label>
-              <select
-                value={formData.eventType}
-                onChange={(e) => setFormData({ ...formData, eventType: Number(e.target.value) })}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
+          <div>
+            <Label htmlFor="eventType">Event Type</Label>
+            <Select
+              value={formData.eventType.toString()}
+              onValueChange={(value) => setFormData({ ...formData, eventType: Number(value) })}
+            >
+              <SelectTrigger id="eventType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {Object.entries(NOTIFICATION_EVENT_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Subject</label>
-              <input
-                type="text"
-                required
-                value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                placeholder="e.g., Alert: {stockSymbol} reached {price}"
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Body</label>
-              <textarea
-                required
-                rows={6}
-                value={formData.body}
-                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
-                placeholder="e.g., Your alert has been triggered! Stock: {stockSymbol} ({companyName}) Current Price: {price}"
-                className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Available variables: {Object.keys(TEMPLATE_VARIABLES).join(', ')}
-              </p>
-            </div>
-
-            <div>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-slate-700">Active</span>
-              </label>
-            </div>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-            >
+          <div>
+            <Label htmlFor="subject">Subject</Label>
+            <Input
+              id="subject"
+              type="text"
+              required
+              value={formData.subject}
+              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              placeholder="e.g., Alert: {stockSymbol} reached {price}"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="body">Body</Label>
+            <Textarea
+              id="body"
+              required
+              rows={6}
+              value={formData.body}
+              onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+              placeholder="e.g., Your alert has been triggered! Stock: {stockSymbol} ({companyName}) Current Price: {price}"
+            />
+            <p className="text-xs text-[hsl(var(--muted))] mt-1">
+              Available variables: {Object.keys(TEMPLATE_VARIABLES).join(', ')}
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="templateIsActive"
+              checked={formData.isActive}
+              onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+            />
+            <Label htmlFor="templateIsActive">Active</Label>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" disabled={isSaving}>
               {isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -508,46 +531,31 @@ interface PreviewModalProps {
 
 function PreviewModal({ subject, body, onClose }: PreviewModalProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900">Template Preview</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6 text-slate-600" />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Subject</label>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-900">
-                {subject}
-              </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Template Preview</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-4">
+          <div>
+            <Label>Subject</Label>
+            <div className="bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] rounded-lg px-4 py-3 text-sm text-[hsl(var(--text))] mt-2">
+              {subject}
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Body</label>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-900 whitespace-pre-wrap">
-                {body}
-              </div>
+          <div>
+            <Label>Body</Label>
+            <div className="bg-[hsl(var(--surface-2))] border border-[hsl(var(--border))] rounded-lg px-4 py-3 text-sm text-[hsl(var(--text))] whitespace-pre-wrap mt-2">
+              {body}
             </div>
           </div>
         </div>
-
-        <div className="flex items-center justify-end p-6 border-t border-slate-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

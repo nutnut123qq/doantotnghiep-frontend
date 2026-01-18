@@ -1,0 +1,123 @@
+/* Theme Tokens - Terminal Minimal, Dark-First Design System */
+
+:root {
+  /* Surfaces - 90% neutral */
+  --bg: 0 0% 100%; /* #ffffff - Background chính */
+  --surface-1: 0 0% 97%; /* #f8f9fa - Card/panel level 1 */
+  --surface-2: 0 0% 95%; /* #f1f3f5 - Card/panel level 2 */
+  --surface-3: 0 0% 91%; /* #e9ecef - Elevated surfaces */
+
+  /* Text Hierarchy */
+  --text: 0 0% 4%; /* #0a0a0a - Primary text */
+  --muted: 0 0% 40%; /* #666666 - Secondary text */
+  --faint: 0 0% 60%; /* #999999 - Tertiary text */
+
+  /* Border & Shadow */
+  --border: 0 0% 90%; /* #e5e7eb - Subtle borders */
+  --shadow-1: 0 0% 0% / 0.05; /* Light elevation */
+  --shadow-2: 0 0% 0% / 0.1; /* Medium elevation */
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Accent - Chỉ 1 accent, dùng cho CTA & selection */
+  --accent: 217 91% 60%; /* #3b82f6 - Primary accent */
+  --accent-foreground: 0 0% 98%; /* White text on accent */
+
+  /* Signals - Chỉ dùng cho data (price change, sentiment, risk) */
+  --positive: 142 76% 36%; /* #22c55e - Green for gains, bullish */
+  --positive-foreground: 142 76% 96%; /* Light green text */
+  --negative: 0 84% 60%; /* #ef4444 - Red for losses, bearish */
+  --negative-foreground: 0 84% 96%; /* Light red text */
+  --warning: 38 92% 50%; /* #f59e0b - Amber for warnings, risk */
+  --warning-foreground: 38 92% 96%; /* Light amber text */
+  --info: 217 91% 60%; /* #3b82f6 - Blue for info, neutral signals */
+  --info-foreground: 217 91% 96%; /* Light blue text */
+
+  /* Density - Spacing modes */
+  --density-compact: 4px;
+  --density-comfortable: 8px;
+}
+
+.dark {
+  /* Surfaces - Dark mode */
+  --bg: 0 0% 4%; /* #0a0a0a - Background chính */
+  --surface-1: 0 0% 7%; /* #111111 - Card/panel level 1 */
+  --surface-2: 0 0% 10%; /* #1a1a1a - Card/panel level 2 */
+  --surface-3: 0 0% 13%; /* #222222 - Elevated surfaces */
+
+  /* Text Hierarchy - Dark mode */
+  --text: 0 0% 98%; /* #ffffff - Primary text */
+  --muted: 0 0% 53%; /* #888888 - Secondary text */
+  --faint: 0 0% 33%; /* #555555 - Tertiary text */
+
+  /* Border & Shadow - Dark mode */
+  --border: 0 0% 16%; /* #2a2a2a - Subtle borders */
+  --shadow-1: 0 0% 0% / 0.3; /* Light elevation */
+  --shadow-2: 0 0% 0% / 0.5; /* Medium elevation */
+
+  /* Accent - Dark mode (same) */
+  --accent: 217 91% 60%; /* #3b82f6 */
+  --accent-foreground: 0 0% 4%; /* Dark text on accent */
+
+  /* Signals - Dark mode (slightly adjusted) */
+  --positive: 142 76% 36%; /* #22c55e */
+  --positive-foreground: 142 76% 96%;
+  --negative: 0 84% 60%; /* #ef4444 */
+  --negative-foreground: 0 84% 96%;
+  --warning: 38 92% 50%; /* #f59e0b */
+  --warning-foreground: 38 92% 96%;
+  --info: 217 91% 60%; /* #3b82f6 */
+  --info-foreground: 217 91% 96%;
+}
+
+/* Typography - Tabular numbers for financial data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Density utilities */
+.density-compact {
+  --spacing-unit: var(--density-compact);
+}
+
+.density-comfortable {
+  --spacing-unit: var(--density-comfortable);
+}
+
+/* Signal color utilities - Only for data */
+.signal-positive {
+  color: hsl(var(--positive));
+}
+
+.signal-negative {
+  color: hsl(var(--negative));
+}
+
+.signal-warning {
+  color: hsl(var(--warning));
+}
+
+.signal-info {
+  color: hsl(var(--info));
+}
+
+/* Background signal utilities */
+.bg-signal-positive {
+  background-color: hsl(var(--positive) / 0.1);
+}
+
+.bg-signal-negative {
+  background-color: hsl(var(--negative) / 0.1);
+}
+
+.bg-signal-warning {
+  background-color: hsl(var(--warning) / 0.1);
+}
+
+.bg-signal-info {
+  background-color: hsl(var(--info) / 0.1);
+}

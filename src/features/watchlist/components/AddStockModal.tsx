@@ -64,7 +64,7 @@ export const AddStockModal = ({
       await onAdd({ watchlistId, symbol: symbolUpper })
       setSymbol('')
       onClose()
-    } catch (err) {
+    } catch {
       // Error is handled by the mutation in useWatchlists hook
     }
   }
