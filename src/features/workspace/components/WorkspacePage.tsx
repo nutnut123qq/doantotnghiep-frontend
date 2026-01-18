@@ -31,14 +31,14 @@ export const WorkspacePage = () => {
   // Load selected workspace details
   const { data: workspace, isLoading: isLoadingWorkspace } = useWorkspace(selectedWorkspaceId)
 
-  const userId = user?.id || ''
-  const isOwner = workspace?.ownerId === userId
+  const userEmail = user?.email || ''
+  const isOwner = workspace?.owner?.email === userEmail
   const isAdmin = useMemo(() => {
     if (isOwner) return true
     if (!workspace?.members) return false
-    const member = workspace.members.find((m) => m.userId === userId)
+    const member = workspace.members.find((m) => m.user?.email === userEmail)
     return member?.role === 'Admin' || member?.role === 'Owner'
-  }, [workspace, userId, isOwner])
+  }, [workspace, userEmail, isOwner])
 
   if (isLoadingWorkspaces || isLoadingWorkspace) {
     return (

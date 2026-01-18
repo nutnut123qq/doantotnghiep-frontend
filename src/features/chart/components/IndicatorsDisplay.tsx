@@ -39,6 +39,14 @@ const getSignalColor = (signal: Indicator['signal']) => {
   }
 }
 
+const deriveSignal = (trend?: string): 'buy' | 'sell' | 'hold' => {
+  if (!trend) return 'hold'
+  const t = trend.toLowerCase()
+  if (t.includes('bullish') || t.includes('buy') || t.includes('strong uptrend')) return 'buy'
+  if (t.includes('bearish') || t.includes('sell') || t.includes('downtrend')) return 'sell'
+  return 'hold'
+}
+
 export const IndicatorsDisplay = ({ symbol }: IndicatorsDisplayProps) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['technical-indicators', symbol],
@@ -58,19 +66,24 @@ export const IndicatorsDisplay = ({ symbol }: IndicatorsDisplayProps) => {
     }
     
     data.indicators.forEach(ind => {
+      const type = ind.indicatorType
+      const isTrend = type.startsWith('MA') || type.startsWith('EMA')
+      
       const indicator: Indicator = {
-        name: ind.indicatorType === 'MA' || ind.indicatorType === 'EMA' 
-          ? `${ind.indicatorType} (${Math.round(ind.value || 0)})` 
-          : ind.indicatorType,
+        name: isTrend
+          ? `${type} (${Math.round(ind.value || 0)})` 
+          : type,
         value: ind.value ?? 0,
         signal: deriveSignal(ind.trendAssessment),
         description: ind.trendAssessment ?? 'N/A'
       }
       
-      // Group by type
-      if (['RSI', 'MACD', 'Stochastic'].includes(ind.indicatorType)) {
+      // Group by type - match BE indicator types: MA20, MA50, RSI, MACD
+      const isMomentum = ['RSI', 'MACD', 'Stochastic'].includes(type)
+      
+      if (isMomentum) {
         grouped.momentum.push(indicator)
-      } else if (['MA', 'EMA'].includes(ind.indicatorType)) {
+      } else if (isTrend) {
         grouped.trend.push(indicator)
       } else {
         grouped.volatility.push(indicator)
@@ -79,14 +92,6 @@ export const IndicatorsDisplay = ({ symbol }: IndicatorsDisplayProps) => {
     
     return grouped
   }, [data])
-  
-  const deriveSignal = (trend?: string): 'buy' | 'sell' | 'hold' => {
-    if (!trend) return 'hold'
-    const t = trend.toLowerCase()
-    if (t.includes('bullish') || t.includes('buy') || t.includes('strong uptrend')) return 'buy'
-    if (t.includes('bearish') || t.includes('sell') || t.includes('downtrend')) return 'sell'
-    return 'hold'
-  }
 
   if (isLoading) {
     return (

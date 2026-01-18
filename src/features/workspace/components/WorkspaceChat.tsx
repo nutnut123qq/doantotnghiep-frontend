@@ -144,42 +144,49 @@ export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
               No messages yet. Start the conversation!
             </div>
           ) : (
-          {messages.map((message) => {
-            const isOwnMessage = message.userId === (user?.id || user?.email || '')
-            return (
-              <div
-                key={message.id}
-                className={cn('flex items-start space-x-3', isOwnMessage && 'flex-row-reverse space-x-reverse')}
-              >
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]">
-                    {getInitials(message.userName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className={cn('flex-1 max-w-[70%]', isOwnMessage && 'flex flex-col items-end')}>
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-xs font-semibold text-[hsl(var(--text))]">
-                      {message.userName}
-                    </span>
-                    <span className="text-xs text-[hsl(var(--muted))]">
-                      {format(message.timestamp, 'HH:mm')}
-                    </span>
-                  </div>
+            <>
+              {messages.map((message) => {
+                const isOwnMessage = message.userName === (user?.email || '')
+                const ts = message.timestamp instanceof Date
+                  ? message.timestamp
+                  : new Date(message.timestamp)
+
+                return (
                   <div
-                    className={cn(
-                      'rounded-lg p-3',
-                      isOwnMessage
-                        ? 'bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]'
-                        : 'bg-[hsl(var(--surface-2))] text-[hsl(var(--text))]'
-                    )}
+                    key={message.id}
+                    className={cn('flex items-start space-x-3', isOwnMessage && 'flex-row-reverse space-x-reverse')}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]">
+                        {getInitials(message.userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className={cn('flex-1 max-w-[70%]', isOwnMessage && 'flex flex-col items-end')}>
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-xs font-semibold text-[hsl(var(--text))]">
+                          {message.userName}
+                        </span>
+                        <span className="text-xs text-[hsl(var(--muted))]">
+                          {format(ts, 'HH:mm')}
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          'rounded-lg p-3',
+                          isOwnMessage
+                            ? 'bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]'
+                            : 'bg-[hsl(var(--surface-2))] text-[hsl(var(--text))]'
+                        )}
+                      >
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )
-          })}
-          <div ref={messagesEndRef} />
+                )
+              })}
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
 
         {/* Input */}

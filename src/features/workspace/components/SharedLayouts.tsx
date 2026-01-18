@@ -108,11 +108,6 @@ export const SharedLayouts = ({ workspaceId, canEdit }: SharedLayoutsProps) => {
                           Shared
                         </Badge>
                       </div>
-                      {layout.shareCode && (
-                        <div className="flex items-center space-x-4 text-xs text-[hsl(var(--muted))]">
-                          <span className="font-mono">Code: {layout.shareCode}</span>
-                        </div>
-                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button

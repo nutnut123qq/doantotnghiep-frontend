@@ -94,10 +94,13 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
 
   // Load saved settings on mount
   useEffect(() => {
-    const savedSettings = chartSettingsService.loadSettings(selectedSymbol)
-    if (savedSettings) {
-      setTimeRange(savedSettings.timeRange)
+    const loadSettings = async () => {
+      const savedSettings = await chartSettingsService.loadSettings(selectedSymbol)
+      if (savedSettings) {
+        setTimeRange(savedSettings.timeRange)
+      }
     }
+    loadSettings()
   }, [selectedSymbol])
 
   // Save settings when timeRange changes

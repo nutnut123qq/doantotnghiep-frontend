@@ -36,7 +36,7 @@ interface BackendChartSettings {
 
 const STORAGE_KEY = 'chart_settings'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-let saveDebounceTimer: NodeJS.Timeout | null = null
+let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Helper to parse JSON safely
 const parseJSON = <T>(json: string | null | undefined, defaultValue: T): T => {

@@ -80,7 +80,10 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
       }
 
       // Prepare data arrays
-      const dates = data.map(d => d.time as string)
+      const dates = data.map(d => {
+        const date = new Date(d.time)
+        return date.toISOString().split('T')[0] // Format: YYYY-MM-DD
+      })
       const ohlcData = data.map(d => [d.open, d.close, d.low, d.high])
       const volumeData = data.map(d => d.volume)
 
@@ -159,7 +162,7 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
         series: [
           {
             name: 'Candlestick',
-            type: 'candlestick',
+            type: 'candlestick' as const,
             data: ohlcData,
             xAxisIndex: 0,
             yAxisIndex: 0,
@@ -184,7 +187,7 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
           },
           {
             name: 'Volume',
-            type: 'bar',
+            type: 'bar' as const,
             data: volumeData.map((vol, idx) => ({
               value: vol,
               itemStyle: {
@@ -196,7 +199,7 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
           },
           ...(showMA20 ? [{
             name: 'MA20',
-            type: 'line',
+            type: 'line' as const,
             data: ma20Data,
             xAxisIndex: 0,
             yAxisIndex: 0,
@@ -206,7 +209,7 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
           }] : []),
           ...(showMA50 ? [{
             name: 'MA50',
-            type: 'line',
+            type: 'line' as const,
             data: ma50Data,
             xAxisIndex: 0,
             yAxisIndex: 0,
@@ -216,7 +219,7 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
           }] : []),
           ...(showRSI ? [{
             name: 'RSI',
-            type: 'line',
+            type: 'line' as const,
             data: rsiData,
             xAxisIndex: 2,
             yAxisIndex: 2,
@@ -230,7 +233,7 @@ export const EChartsAdvanced = ({ symbol, height = 600 }: EChartsAdvancedProps) 
               ],
             },
           }] : []),
-        ],
+        ] as echarts.SeriesOption[],
         toolbox: {
           feature: {
             dataZoom: { yAxisIndex: 'none' },
