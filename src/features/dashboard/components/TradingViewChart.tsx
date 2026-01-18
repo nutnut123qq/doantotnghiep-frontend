@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { createChart, IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts'
+import { createChart, IChartApi, ISeriesApi, CandlestickData, LineData, Time } from 'lightweight-charts'
 import { stockDataService, OHLCVData } from '../services/stockDataService'
 import { chartSettingsService } from '../services/chartSettingsService'
 import { ChartBarIcon, ArrowPathIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
@@ -31,6 +31,10 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
   const chartRef = useRef<IChartApi | null>(null)
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
+  const ma20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const ma50SeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const [showMA20, setShowMA20] = useState(true)
+  const [showMA50, setShowMA50] = useState(true)
   
   const [selectedSymbol, setSelectedSymbol] = useState(symbol)
   const [loading, setLoading] = useState(true)
@@ -153,6 +157,32 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
     })
     volumeSeriesRef.current = volumeSeries
 
+    // Create MA20 line series
+    const ma20Series = chart.addLineSeries({
+      color: '#ffa726',
+      lineWidth: 2,
+      title: 'MA(20)',
+      priceFormat: {
+        type: 'price',
+        precision: 0,
+        minMove: 1,
+      },
+    })
+    ma20SeriesRef.current = ma20Series
+
+    // Create MA50 line series
+    const ma50Series = chart.addLineSeries({
+      color: '#42a5f5',
+      lineWidth: 2,
+      title: 'MA(50)',
+      priceFormat: {
+        type: 'price',
+        precision: 0,
+        minMove: 1,
+      },
+    })
+    ma50SeriesRef.current = ma50Series
+
     chart.priceScale('').applyOptions({
       scaleMargins: {
         top: 0.8,
@@ -226,8 +256,42 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
         color: d.close >= d.open ? '#26a69a80' : '#ef535080',
       }))
 
+      // Calculate Moving Averages
+      const calculateMA = (period: number): LineData[] => {
+        const maData: LineData[] = []
+        for (let i = 0; i < data.length; i++) {
+          if (i < period - 1) {
+            // Not enough data points yet
+            continue
+          }
+          const sum = data.slice(i - period + 1, i + 1).reduce((acc, d) => acc + d.close, 0)
+          const ma = sum / period
+          maData.push({
+            time: data[i].time as Time,
+            value: ma,
+          })
+        }
+        return maData
+      }
+
+      const ma20Data = calculateMA(20)
+      const ma50Data = calculateMA(50)
+
       candlestickSeriesRef.current?.setData(candlestickData)
       volumeSeriesRef.current?.setData(volumeData)
+      
+      // Update MA series visibility
+      if (showMA20 && ma20SeriesRef.current) {
+        ma20SeriesRef.current.setData(ma20Data)
+      } else if (ma20SeriesRef.current) {
+        ma20SeriesRef.current.setData([])
+      }
+      
+      if (showMA50 && ma50SeriesRef.current) {
+        ma50SeriesRef.current.setData(ma50Data)
+      } else if (ma50SeriesRef.current) {
+        ma50SeriesRef.current.setData([])
+      }
 
       // Fit content
       chartRef.current?.timeScale().fitContent()
@@ -237,7 +301,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
     } finally {
       setLoading(false)
     }
-  }, [selectedSymbol, timeRange])
+  }, [selectedSymbol, timeRange, showMA20, showMA50])
 
   useEffect(() => {
     loadChartData()
@@ -260,6 +324,32 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* MA Toggle Buttons */}
+          <div className="flex space-x-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setShowMA20(!showMA20)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                showMA20
+                  ? 'bg-background text-orange-600 dark:text-orange-400 shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Toggle MA(20)"
+            >
+              MA20
+            </button>
+            <button
+              onClick={() => setShowMA50(!showMA50)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                showMA50
+                  ? 'bg-background text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Toggle MA(50)"
+            >
+              MA50
+            </button>
+          </div>
+
           {/* Time Range Selector */}
           <div className="flex space-x-1 bg-muted rounded-lg p-1">
             {(['1M', '3M', '6M', '1Y', 'ALL'] as const).map((range) => (
@@ -338,6 +428,18 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
             <div className="w-3 h-3 bg-red-500 rounded"></div>
             <span>Giảm</span>
           </div>
+          {showMA20 && (
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-orange-500 rounded"></div>
+              <span>MA(20)</span>
+            </div>
+          )}
+          {showMA50 && (
+            <div className="flex items-center space-x-1">
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <span>MA(50)</span>
+            </div>
+          )}
         </div>
         <div>
           Dữ liệu từ VNStock

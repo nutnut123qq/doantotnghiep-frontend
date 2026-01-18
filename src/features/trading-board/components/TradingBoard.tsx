@@ -15,6 +15,7 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 import { useTradingBoard } from '../hooks/useTradingBoard'
+import { useTradingBoardWithIndicators, type StockTickerWithIndicators } from '../hooks/useTradingBoardWithIndicators'
 import { ColumnCustomizationModal } from './ColumnCustomizationModal'
 import { columnPreferencesService } from '../services/columnPreferencesService'
 import type { TradingBoardFilters as TradingBoardFiltersType } from '../services/tradingBoardService'
@@ -56,7 +57,8 @@ export const TradingBoard = () => {
     columnOrder: DEFAULT_COLUMN_ORDER,
   })
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
-  const { tickers, isLoading, error } = useTradingBoard(filters)
+  const { tickers: baseTickers, isLoading, error } = useTradingBoard(filters)
+  const { tickers, isLoadingIndicators } = useTradingBoardWithIndicators(baseTickers)
 
   // Fetch watchlists for filter
   const { data: watchlistsData } = useQuery({
@@ -114,7 +116,7 @@ export const TradingBoard = () => {
   }
 
   // Column definitions
-  const columns = useMemo<ColumnDef<StockTicker>[]>(
+  const columns = useMemo<ColumnDef<StockTickerWithIndicators>[]>(
     () => [
       {
         accessorKey: 'symbol',
@@ -296,8 +298,111 @@ export const TradingBoard = () => {
           )
         },
       },
+      {
+        accessorKey: 'rsi',
+        header: ({ column }) => {
+          return (
+            <div className="text-right">
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                className="h-8 px-2 lg:px-3"
+              >
+                RSI(14)
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )
+        },
+        cell: ({ row }) => {
+          const rsi = row.getValue('rsi') as number | undefined
+          if (rsi === undefined) {
+            return (
+              <div className="text-right text-[hsl(var(--muted))]">
+                {isLoadingIndicators ? '...' : '-'}
+              </div>
+            )
+          }
+          const color = rsi > 70 ? 'text-[hsl(var(--negative))]' : rsi < 30 ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--text))]'
+          return (
+            <div className={cn('text-right font-medium tabular-nums', color)}>
+              {rsi.toFixed(2)}
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: 'ma20',
+        header: ({ column }) => {
+          return (
+            <div className="text-right">
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                className="h-8 px-2 lg:px-3"
+              >
+                MA(20)
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )
+        },
+        cell: ({ row }) => {
+          const ma20 = row.getValue('ma20') as number | undefined
+          const currentPrice = row.original.currentPrice
+          if (ma20 === undefined) {
+            return (
+              <div className="text-right text-[hsl(var(--muted))]">
+                {isLoadingIndicators ? '...' : '-'}
+              </div>
+            )
+          }
+          // Color code: green if price > MA20 (bullish), red if price < MA20 (bearish)
+          const color = currentPrice > ma20 ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
+          return (
+            <div className={cn('text-right font-medium tabular-nums', color)}>
+              {formatNumber(ma20)}
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: 'ma50',
+        header: ({ column }) => {
+          return (
+            <div className="text-right">
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                className="h-8 px-2 lg:px-3"
+              >
+                MA(50)
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )
+        },
+        cell: ({ row }) => {
+          const ma50 = row.getValue('ma50') as number | undefined
+          const currentPrice = row.original.currentPrice
+          if (ma50 === undefined) {
+            return (
+              <div className="text-right text-[hsl(var(--muted))]">
+                {isLoadingIndicators ? '...' : '-'}
+              </div>
+            )
+          }
+          // Color code: green if price > MA50 (bullish), red if price < MA50 (bearish)
+          const color = currentPrice > ma50 ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
+          return (
+            <div className={cn('text-right font-medium tabular-nums', color)}>
+              {formatNumber(ma50)}
+            </div>
+          )
+        },
+      },
     ],
-    []
+    [isLoadingIndicators]
   )
 
   const table = useReactTable({

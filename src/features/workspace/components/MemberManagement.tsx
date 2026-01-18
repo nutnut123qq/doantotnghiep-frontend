@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,8 @@ import {
 import { Users, MoreVertical, UserPlus, Crown, Shield, User, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/shared/components/EmptyState'
+import { useRemoveMember, useUpdateMemberRole } from '../hooks/useWorkspaceMembers'
+import { toast } from 'sonner'
 
 interface Member {
   id: string
@@ -55,16 +57,32 @@ const getRoleColor = (role: Member['role']) => {
 }
 
 export const MemberManagement = ({ workspace, canManage }: MemberManagementProps) => {
-  const [members] = useState<Member[]>(workspace.members)
+  const removeMemberMutation = useRemoveMember(workspace.id)
+  const updateRoleMutation = useUpdateMemberRole(workspace.id)
 
-  const handleRoleChange = (memberId: string, newRole: Member['role']) => {
-    // TODO: Implement role change
-    console.log('Change role:', memberId, newRole)
+  const members = useMemo(() => workspace.members || [], [workspace.members])
+
+  const handleRoleChange = async (memberId: string, newRole: 'Owner' | 'Admin' | 'Member') => {
+    try {
+      await updateRoleMutation.mutateAsync({
+        memberUserId: memberId,
+        role: newRole,
+      })
+      toast.success('Member role updated')
+    } catch (error) {
+      toast.error('Failed to update member role')
+    }
   }
 
-  const handleRemoveMember = (memberId: string) => {
-    // TODO: Implement remove member
-    console.log('Remove member:', memberId)
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to remove this member?')) return
+    
+    try {
+      await removeMemberMutation.mutateAsync(memberId)
+      toast.success('Member removed')
+    } catch (error) {
+      toast.error('Failed to remove member')
+    }
   }
 
   const getInitials = (name: string) => {
@@ -135,21 +153,22 @@ export const MemberManagement = ({ workspace, canManage }: MemberManagementProps
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'admin')}>
-                          <Shield className="h-4 w-4 mr-2" />
-                          Make Admin
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'member')}>
-                          <User className="h-4 w-4 mr-2" />
-                          Make Member
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'viewer')}>
-                          <User className="h-4 w-4 mr-2" />
-                          Make Viewer
-                        </DropdownMenuItem>
+                        {member.role !== 'admin' && (
+                          <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'Admin')}>
+                            <Shield className="h-4 w-4 mr-2" />
+                            Make Admin
+                          </DropdownMenuItem>
+                        )}
+                        {member.role !== 'member' && (
+                          <DropdownMenuItem onClick={() => handleRoleChange(member.id, 'Member')}>
+                            <User className="h-4 w-4 mr-2" />
+                            Make Member
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => handleRemoveMember(member.id)}
                           className="text-[hsl(var(--negative))]"
+                          disabled={removeMemberMutation.isPending}
                         >
                           <X className="h-4 w-4 mr-2" />
                           Remove

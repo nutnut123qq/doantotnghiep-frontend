@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { WorkspaceChat } from './WorkspaceChat'
@@ -7,26 +8,59 @@ import { SharedLayouts } from './SharedLayouts'
 import { MemberManagement } from './MemberManagement'
 import { Users, MessageSquare, Star, Layout } from 'lucide-react'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
+import { useWorkspaces, useWorkspace } from '../hooks/useWorkspace'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { EmptyState } from '@/shared/components/EmptyState'
 
 export const WorkspacePage = () => {
   const { user } = useAuthContext()
+  const [searchParams] = useSearchParams()
+  const workspaceIdParam = searchParams.get('id')
   const [activeTab, setActiveTab] = useState('chat')
 
-  // Mock workspace data
-  const userEmail = user?.email || ''
-  const workspace = {
-    id: '1',
-    name: 'Investment Team Alpha',
-    owner: userEmail,
-    members: [
-      { id: '1', name: 'John Doe', email: 'john@example.com', role: 'owner' as const },
-      { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'admin' as const },
-      { id: '3', name: 'Bob Wilson', email: 'bob@example.com', role: 'member' as const },
-    ],
+  // Load workspaces
+  const { data: workspaces, isLoading: isLoadingWorkspaces } = useWorkspaces()
+  
+  // Determine which workspace to show
+  const selectedWorkspaceId = useMemo(() => {
+    if (workspaceIdParam) return workspaceIdParam
+    if (workspaces && workspaces.length > 0) return workspaces[0].id
+    return null
+  }, [workspaceIdParam, workspaces])
+
+  // Load selected workspace details
+  const { data: workspace, isLoading: isLoadingWorkspace } = useWorkspace(selectedWorkspaceId)
+
+  const userId = user?.id || ''
+  const isOwner = workspace?.ownerId === userId
+  const isAdmin = useMemo(() => {
+    if (isOwner) return true
+    if (!workspace?.members) return false
+    const member = workspace.members.find((m) => m.userId === userId)
+    return member?.role === 'Admin' || member?.role === 'Owner'
+  }, [workspace, userId, isOwner])
+
+  if (isLoadingWorkspaces || isLoadingWorkspace) {
+    return (
+      <div className="p-8">
+        <LoadingSkeleton />
+      </div>
+    )
   }
 
-  const isOwner = workspace.owner === userEmail
-  const isAdmin = workspace.members.find((m) => m.email === userEmail)?.role === 'admin' || isOwner
+  if (!workspace) {
+    return (
+      <div className="p-8">
+        <EmptyState
+          icon={Users}
+          title="No workspace found"
+          description={workspaces && workspaces.length === 0 
+            ? "You don't have any workspaces yet. Create one to get started!"
+            : "Workspace not found or you don't have access to it."}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 animate-fade-in">
@@ -34,7 +68,7 @@ export const WorkspacePage = () => {
         {/* Header */}
         <PageHeader
           title={workspace.name}
-          description="Collaborative workspace for team investment decisions"
+          description={workspace.description || "Collaborative workspace for team investment decisions"}
         />
 
         {/* Main Content */}
@@ -72,7 +106,17 @@ export const WorkspacePage = () => {
 
           <TabsContent value="members" className="mt-6">
             <MemberManagement
-              workspace={workspace}
+              workspace={{
+                id: workspace.id,
+                name: workspace.name,
+                owner: workspace.ownerId,
+                members: workspace.members?.map(m => ({
+                  id: m.id,
+                  name: m.user?.email || 'Unknown',
+                  email: m.user?.email || '',
+                  role: m.role.toLowerCase() as 'owner' | 'admin' | 'member',
+                })) || [],
+              }}
               canManage={isAdmin}
             />
           </TabsContent>

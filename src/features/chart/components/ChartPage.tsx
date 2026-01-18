@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { TradingViewChart } from '@/features/dashboard/components/TradingViewChart'
+import { EChartsAdvanced } from './EChartsAdvanced'
 import { AIInsightsPanel } from './AIInsightsPanel'
 import { ForecastChat } from './ForecastChat'
 import { IndicatorsDisplay } from './IndicatorsDisplay'
@@ -68,7 +69,7 @@ export const ChartPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TradingViewChart symbol={selectedSymbol} height={600} />
+                <EChartsAdvanced symbol={selectedSymbol} height={600} />
               </CardContent>
             </Card>
 

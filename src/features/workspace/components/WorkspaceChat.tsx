@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -7,14 +8,16 @@ import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { format } from 'date-fns'
-import { useSignalR } from '@/shared/hooks/useSignalR'
+import { workspaceService, type WorkspaceMessage } from '../services/workspaceService'
+import { useWorkspaceRealtime, type WorkspaceMessage as RealtimeMessage } from '../hooks/useWorkspaceRealtime'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
 
 interface ChatMessage {
   id: string
   userId: string
   userName: string
   content: string
-  timestamp: Date
+  timestamp: Date | string
 }
 
 interface WorkspaceChatProps {
@@ -23,38 +26,51 @@ interface WorkspaceChatProps {
 
 export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
   const { user } = useAuthContext()
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      userId: '1',
-      userName: 'John Doe',
-      content: 'Welcome to the workspace chat!',
-      timestamp: new Date(),
-    },
-  ])
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // SignalR connection for realtime chat
-  const { connection, invoke, on, off } = useSignalR('workspace')
+  // Load messages from API
+  const { data: apiMessages, isLoading } = useQuery({
+    queryKey: ['workspace-messages', workspaceId],
+    queryFn: () => workspaceService.getMessages(workspaceId, 50),
+    enabled: !!workspaceId,
+  })
+
+  // Convert API messages to ChatMessage format
+  const [messages, setMessages] = useState<ChatMessage[]>([])
 
   useEffect(() => {
-    if (connection) {
-      invoke('JoinWorkspace', workspaceId).catch((err) => {
-        console.error('Error joining workspace:', err)
-      })
-
-      // Listen for new messages
-      const handleMessage = (message: ChatMessage) => {
-        setMessages((prev) => [...prev, message])
-      }
-      on('ReceiveMessage', handleMessage)
-
-      return () => {
-        off('ReceiveMessage', handleMessage)
-      }
+    if (apiMessages) {
+      const converted: ChatMessage[] = apiMessages.map((msg) => ({
+        id: msg.id,
+        userId: msg.userId,
+        userName: msg.user?.email || 'Unknown User',
+        content: msg.content,
+        timestamp: msg.createdAt,
+      }))
+      setMessages(converted)
     }
-  }, [connection, workspaceId, invoke, on, off])
+  }, [apiMessages])
+
+  // Realtime messaging
+  const { sendMessage: sendRealtimeMessage } = useWorkspaceRealtime(
+    workspaceId,
+    (message: RealtimeMessage) => {
+      // Add new message from SignalR
+      const chatMessage: ChatMessage = {
+        id: message.id,
+        userId: message.userId,
+        userName: message.userName,
+        content: message.content,
+        timestamp: message.timestamp,
+      }
+      setMessages((prev) => {
+        // Avoid duplicates
+        if (prev.some((m) => m.id === chatMessage.id)) return prev
+        return [...prev, chatMessage]
+      })
+    }
+  )
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -67,28 +83,30 @@ export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
   const handleSend = async () => {
     if (!input.trim() || !user) return
 
-    const message: ChatMessage = {
-      id: Date.now().toString(),
-      userId: user?.email || '',
-      userName: user?.email || 'Anonymous',
-      content: input,
-      timestamp: new Date(),
-    }
+    const content = input.trim()
+    setInput('')
 
-    if (connection && invoke) {
+    try {
+      // Try SignalR first
+      await sendRealtimeMessage(content)
+    } catch (err) {
+      console.error('Error sending via SignalR, falling back to API:', err)
+      // Fallback: send via API
       try {
-        await invoke('SendMessage', workspaceId, message.content)
-        setInput('')
-      } catch (err) {
-        console.error('Error sending message:', err)
-        // Fallback: add message locally
-        setMessages((prev) => [...prev, message])
-        setInput('')
+        const savedMessage = await workspaceService.sendMessage(workspaceId, content)
+        const chatMessage: ChatMessage = {
+          id: savedMessage.id,
+          userId: savedMessage.userId,
+          userName: savedMessage.user?.email || user.email || 'Unknown',
+          content: savedMessage.content,
+          timestamp: savedMessage.createdAt,
+        }
+        setMessages((prev) => [...prev, chatMessage])
+      } catch (apiErr) {
+        console.error('Error sending via API:', apiErr)
+        // Restore input on error
+        setInput(content)
       }
-    } else {
-      // Fallback: add message locally
-      setMessages((prev) => [...prev, message])
-      setInput('')
     }
   }
 
@@ -101,6 +119,16 @@ export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
       .slice(0, 2)
   }
 
+  if (isLoading) {
+    return (
+      <Card className="bg-[hsl(var(--surface-1))]">
+        <CardContent className="p-6">
+          <LoadingSkeleton />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-[hsl(var(--surface-1))] flex flex-col h-[calc(100vh-300px)]">
       <CardHeader className="pb-3">
@@ -111,8 +139,13 @@ export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
       <CardContent className="flex-1 flex flex-col p-4">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          {messages.length === 0 ? (
+            <div className="text-center text-[hsl(var(--muted))] py-8">
+              No messages yet. Start the conversation!
+            </div>
+          ) : (
           {messages.map((message) => {
-            const isOwnMessage = message.userId === (user?.email || '')
+            const isOwnMessage = message.userId === (user?.id || user?.email || '')
             return (
               <div
                 key={message.id}
