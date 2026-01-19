@@ -2,6 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { financialReportService, FinancialReport, FinancialMetrics } from '../services/financialReportService'
 import { DocumentTextIcon, ChatBubbleLeftRightIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
+// Helper to check if a string is a valid URL
+const isValidUrl = (str: string): boolean => {
+  try {
+    const url = new URL(str)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 interface FinancialReportsProps {
   symbol?: string
 }
@@ -13,7 +23,16 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
   const [loading, setLoading] = useState(true)
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
+  const [sources, setSources] = useState<string[]>([])
   const [asking, setAsking] = useState(false)
+
+  const selectReport = useCallback((report: FinancialReport) => {
+    setSelectedReport(report)
+    const parsedMetrics = financialReportService.parseContent(report.content)
+    setMetrics(parsedMetrics)
+    setAnswer('')
+    setSources([])
+  }, [])
 
   const loadReports = useCallback(async () => {
     try {
@@ -28,18 +47,11 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
     } finally {
       setLoading(false)
     }
-  }, [symbol])
+  }, [symbol, selectReport])
 
   useEffect(() => {
     loadReports()
   }, [loadReports])
-
-  const selectReport = (report: FinancialReport) => {
-    setSelectedReport(report)
-    const parsedMetrics = financialReportService.parseContent(report.content)
-    setMetrics(parsedMetrics)
-    setAnswer('')
-  }
 
   const handleAskQuestion = async () => {
     if (!selectedReport || !question.trim()) return
@@ -48,9 +60,12 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
       setAsking(true)
       const response = await financialReportService.askQuestion(selectedReport.id, question)
       setAnswer(response.answer)
+      setSources(response.sources || [])
+      setQuestion('') // Clear input for next question
     } catch (error) {
       console.error('Error asking question:', error)
       setAnswer('Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại.')
+      setSources([])
     } finally {
       setAsking(false)
     }
@@ -121,7 +136,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
 
           {/* Report Details */}
           <div className="lg:col-span-2">
-            {selectedReport && metrics ? (
+            {selectedReport ? (
               <div className="space-y-6">
                 {/* Financial Metrics */}
                 <div>
@@ -129,16 +144,22 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                     <ChartBarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     <h4 className="text-sm font-semibold text-card-foreground">Chỉ số tài chính</h4>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <MetricCard label="Doanh thu" value={financialReportService.formatCurrency(metrics.Revenue)} />
-                    <MetricCard label="Lợi nhuận gộp" value={financialReportService.formatCurrency(metrics.GrossProfit)} />
-                    <MetricCard label="Lợi nhuận hoạt động" value={financialReportService.formatCurrency(metrics.OperatingProfit)} />
-                    <MetricCard label="Lợi nhuận sau thuế" value={financialReportService.formatCurrency(metrics.NetProfit)} />
-                    <MetricCard label="EPS" value={metrics.EPS.toFixed(2)} />
-                    <MetricCard label="ROE" value={financialReportService.formatPercent(metrics.ROE)} />
-                    <MetricCard label="ROA" value={financialReportService.formatPercent(metrics.ROA)} />
-                    <MetricCard label="Vốn chủ sở hữu" value={financialReportService.formatCurrency(metrics.Equity)} />
-                  </div>
+                  {metrics ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <MetricCard label="Doanh thu" value={financialReportService.formatCurrency(metrics.Revenue)} />
+                      <MetricCard label="Lợi nhuận gộp" value={financialReportService.formatCurrency(metrics.GrossProfit)} />
+                      <MetricCard label="Lợi nhuận hoạt động" value={financialReportService.formatCurrency(metrics.OperatingProfit)} />
+                      <MetricCard label="Lợi nhuận sau thuế" value={financialReportService.formatCurrency(metrics.NetProfit)} />
+                      <MetricCard label="EPS" value={metrics.EPS.toFixed(2)} />
+                      <MetricCard label="ROE" value={financialReportService.formatPercent(metrics.ROE)} />
+                      <MetricCard label="ROA" value={financialReportService.formatPercent(metrics.ROA)} />
+                      <MetricCard label="Vốn chủ sở hữu" value={financialReportService.formatCurrency(metrics.Equity)} />
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted rounded-lg border border-border">
+                      <p className="text-sm text-muted-foreground">Không thể parse dữ liệu chỉ số tài chính từ báo cáo này.</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* AI Q&A */}
@@ -154,7 +175,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                         type="text"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAskQuestion()}
+                        onKeyDown={(e) => e.key === 'Enter' && !asking && handleAskQuestion()}
                         placeholder="Đặt câu hỏi về báo cáo tài chính..."
                         className="flex-1 px-4 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
@@ -187,9 +208,88 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                     </div>
 
                     {answer && (
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                        <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-2">Trả lời AI:</p>
-                        <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap">{answer}</p>
+                      <div className="space-y-3">
+                        {/* Answer box with inline citation badges */}
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                          <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-2">
+                            Trả lời AI:
+                            {sources.length > 0 && (
+                              <span className="ml-2 text-[10px] text-muted-foreground">
+                                {sources.map((_, index) => (
+                                  <a
+                                    key={index}
+                                    href={`#source-${index + 1}`}
+                                    className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[9px] font-medium bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-300 dark:hover:bg-blue-700 transition-colors cursor-pointer"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      document.getElementById(`source-${index + 1}`)?.scrollIntoView({ 
+                                        behavior: 'smooth', 
+                                        block: 'nearest' 
+                                      })
+                                    }}
+                                  >
+                                    {index + 1}
+                                  </a>
+                                ))}
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap">
+                            {answer}
+                          </p>
+                        </div>
+                        
+                        {/* Sources section with clickable URLs */}
+                        {sources.length > 0 && (
+                          <div className="p-4 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Nguồn tham khảo:
+                            </p>
+                            <ul className="space-y-2">
+                              {sources.map((source, index) => {
+                                const isUrl = isValidUrl(source)
+                                
+                                return (
+                                  <li 
+                                    key={index}
+                                    id={`source-${index + 1}`}
+                                    className="text-xs text-gray-600 dark:text-gray-400 flex items-start scroll-mt-4"
+                                  >
+                                    <span className="inline-flex items-center justify-center w-5 h-5 mr-2 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full flex-shrink-0">
+                                      {index + 1}
+                                    </span>
+                                    
+                                    {isUrl ? (
+                                      <a
+                                        href={source}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-700 dark:hover:text-blue-300 break-all"
+                                      >
+                                        {source}
+                                        <svg 
+                                          className="inline-block w-3 h-3 ml-1" 
+                                          fill="none" 
+                                          stroke="currentColor" 
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth={2} 
+                                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
+                                          />
+                                        </svg>
+                                      </a>
+                                    ) : (
+                                      <span className="flex-1 break-words">{source}</span>
+                                    )}
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

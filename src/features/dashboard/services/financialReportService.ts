@@ -29,6 +29,7 @@ export interface FinancialMetrics {
 export interface AskQuestionResponse {
   question: string
   answer: string
+  sources: string[]  // Sources from AI with citations
 }
 
 export const financialReportService = {

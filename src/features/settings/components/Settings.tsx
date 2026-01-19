@@ -6,6 +6,7 @@ import {
   ChartBarIcon,
   LockClosedIcon,
 } from '@heroicons/react/24/outline'
+import { NotificationChannelsSettings } from './NotificationChannelsSettings'
 
 export const Settings = () => {
   const [notifications, setNotifications] = useState({
@@ -117,6 +118,9 @@ export const Settings = () => {
               ))}
             </div>
           </div>
+
+          {/* Notification Channels */}
+          <NotificationChannelsSettings />
 
           {/* Trading Preferences */}
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
