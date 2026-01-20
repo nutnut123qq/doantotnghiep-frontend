@@ -5,6 +5,9 @@ import {
   UserPreference,
   DEFAULT_LAYOUT,
   LAYOUT_TEMPLATES,
+  ShareLayoutRequest,
+  ShareLayoutResponse,
+  SharedLayoutInfo,
 } from '@/shared/types/layoutTypes'
 
 const LAYOUT_PREFERENCE_KEY = 'dashboard_layout'
@@ -160,6 +163,41 @@ export const layoutService = {
   async resetToDefault(): Promise<LayoutConfig> {
     await this.deleteLayout()
     return DEFAULT_LAYOUT
+  },
+
+  /**
+   * Share current layout by generating a share code
+   */
+  async shareLayout(
+    layout: LayoutConfig,
+    isPublic: boolean,
+    expiresInDays: number
+  ): Promise<ShareLayoutResponse> {
+    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+    const payload: ShareLayoutRequest = {
+      layoutJson: JSON.stringify(layout),
+      isPublic,
+      expiresAt,
+    }
+
+    const response = await apiClient.post<ShareLayoutResponse>('/api/layouts/share', payload)
+    return response.data
+  },
+
+  /**
+   * Import shared layout by code
+   */
+  async importLayoutByCode(code: string): Promise<LayoutConfig> {
+    const response = await apiClient.get<{ layoutJson: string }>(`/api/layouts/shared/${code}`)
+    return JSON.parse(response.data.layoutJson)
+  },
+
+  /**
+   * Get current user's shared layouts
+   */
+  async getMySharedLayouts(): Promise<SharedLayoutInfo[]> {
+    const response = await apiClient.get<SharedLayoutInfo[]>('/api/layouts/shared')
+    return response.data
   },
 
   /**

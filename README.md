@@ -26,9 +26,11 @@ This project follows Clean Architecture principles with the following structure:
 
 2. Create `.env` file:
    ```
-   VITE_API_URL=http://localhost:5000
+   VITE_API_URL=http://localhost:5000/api
    VITE_SIGNALR_URL=http://localhost:5000/hubs
    ```
+   
+   **Note:** Backend routes are prefixed with `/api`. Ensure `VITE_API_URL` includes `/api` suffix.
 
 3. Run development server:
    ```bash

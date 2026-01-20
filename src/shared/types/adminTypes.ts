@@ -7,8 +7,11 @@ export enum UserRole {
 export interface User {
   id: string;
   email: string;
+  fullName?: string | null;
   role: UserRole;
   isActive: boolean;
+  lockoutEnabled: boolean;
+  lockoutEnd?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -72,6 +75,23 @@ export interface UpdateUserRoleRequest {
 
 export interface SetUserStatusRequest {
   isActive: boolean;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  fullName?: string | null;
+  role: UserRole;
+}
+
+export interface UpdateUserRequest {
+  email?: string | null;
+  fullName?: string | null;
+  role?: UserRole | null;
+}
+
+export interface ResetPasswordRequest {
+  newPassword: string;
 }
 
 export interface PaginatedUsers {

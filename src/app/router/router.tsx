@@ -22,6 +22,12 @@ const Settings = lazy(() => import('@/features/settings/components/Settings').th
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
 const ChartPage = lazy(() => import('@/features/chart/components/ChartPage').then(m => ({ default: m.ChartPage })))
 const WorkspacePage = lazy(() => import('@/features/workspace/components/WorkspacePage').then(m => ({ default: m.WorkspacePage })))
+const AnalysisReportsPage = lazy(() =>
+  import('@/features/analysis-reports/components/AnalysisReportsPage').then(m => ({ default: m.AnalysisReportsPage }))
+)
+const AnalysisReportDetailPage = lazy(() =>
+  import('@/features/analysis-reports/components/AnalysisReportDetailPage').then(m => ({ default: m.AnalysisReportDetailPage }))
+)
 
 export const router = createBrowserRouter(
   [
@@ -136,6 +142,22 @@ export const router = createBrowserRouter(
           element: (
             <Suspense fallback={<LoadingFallback />}>
               <WorkspacePage />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'analysis-reports',
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <AnalysisReportsPage />
+            </Suspense>
+          ),
+        },
+        {
+          path: 'analysis-reports/:id',
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <AnalysisReportDetailPage />
             </Suspense>
           ),
         },

@@ -34,6 +34,30 @@ export interface LayoutTemplate {
   config: LayoutConfig
 }
 
+export interface ShareLayoutRequest {
+  layoutJson: string
+  isPublic?: boolean
+  expiresAt?: string
+}
+
+export interface ShareLayoutResponse {
+  code: string
+  expiresAt: string
+}
+
+export interface SharedLayoutInfo {
+  id: string
+  code: string
+  createdAt: string
+  expiresAt: string
+  isPublic: boolean
+}
+
+export interface AdminSharedLayoutInfo extends SharedLayoutInfo {
+  ownerId: string
+  isExpired: boolean
+}
+
 // Predefined widget defaults
 export const DEFAULT_WIDGET_CONFIGS: Record<string, Partial<WidgetConfig>> = {
   news: {

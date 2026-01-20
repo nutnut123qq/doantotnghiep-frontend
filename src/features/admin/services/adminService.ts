@@ -2,6 +2,9 @@ import { apiClient } from '../../../infrastructure/api/apiClient';
 import type { 
   SystemStats, 
   SystemHealthStatus,
+  CreateUserRequest,
+  UpdateUserRequest,
+  ResetPasswordRequest,
   UpdateUserRoleRequest,
   SetUserStatusRequest,
   PaginatedUsers
@@ -11,6 +14,7 @@ import type {
   PopularStock,
   EndpointMetrics
 } from '../../../shared/types/analyticsTypes';
+import type { AdminSharedLayoutInfo } from '../../../shared/types/layoutTypes';
 
 class AdminService {
   private baseUrl = '/api/Admin';
@@ -40,6 +44,42 @@ class AdminService {
   async getSystemHealth(): Promise<SystemHealthStatus> {
     const response = await apiClient.get<SystemHealthStatus>(`${this.baseUrl}/health`);
     return response.data;
+  }
+
+  /**
+   * Create a new user
+   */
+  async createUser(request: CreateUserRequest): Promise<void> {
+    await apiClient.post(`${this.baseUrl}/users`, request);
+  }
+
+  /**
+   * Update user info/role
+   */
+  async updateUser(userId: string, request: UpdateUserRequest): Promise<void> {
+    await apiClient.put(`${this.baseUrl}/users/${userId}`, request);
+  }
+
+  /**
+   * Reset user password
+   */
+  async resetUserPassword(userId: string, newPassword: string): Promise<void> {
+    const request: ResetPasswordRequest = { newPassword };
+    await apiClient.post(`${this.baseUrl}/users/${userId}/reset-password`, request);
+  }
+
+  /**
+   * Lock user account
+   */
+  async lockUser(userId: string): Promise<void> {
+    await apiClient.post(`${this.baseUrl}/users/${userId}/lock`);
+  }
+
+  /**
+   * Unlock user account
+   */
+  async unlockUser(userId: string): Promise<void> {
+    await apiClient.post(`${this.baseUrl}/users/${userId}/unlock`);
   }
 
   /**
@@ -88,6 +128,28 @@ class AdminService {
       params: { topN }
     });
     return response.data;
+  }
+
+  /**
+   * Get shared layouts for moderation
+   */
+  async getAllSharedLayouts(
+    page: number = 1,
+    pageSize: number = 20,
+    ownerId?: string,
+    status: 'active' | 'expired' | 'all' = 'all'
+  ): Promise<{ items: AdminSharedLayoutInfo[]; totalCount: number; page: number; pageSize: number }> {
+    const params: any = { page, pageSize, status };
+    if (ownerId) params.ownerId = ownerId;
+    const response = await apiClient.get(`${this.baseUrl}/shared-layouts`, { params });
+    return response.data;
+  }
+
+  /**
+   * Delete a shared layout
+   */
+  async deleteSharedLayout(id: string): Promise<void> {
+    await apiClient.delete(`${this.baseUrl}/shared-layouts/${id}`);
   }
 }
 

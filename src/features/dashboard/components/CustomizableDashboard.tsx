@@ -151,6 +151,38 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
     }
   }
 
+  const handleShareLayout = async (isPublic: boolean, expiresInDays: number) => {
+    if (!layout) {
+      throw new Error('Layout not loaded')
+    }
+
+    return await layoutService.shareLayout(layout, isPublic, expiresInDays)
+  }
+
+  const handleImportByCode = async (code: string) => {
+    const importedLayout = await layoutService.importLayoutByCode(code)
+    if (!layoutService.validateLayout(importedLayout)) {
+      throw new Error('Invalid layout configuration')
+    }
+    return importedLayout
+  }
+
+  const handleApplyImportedLayout = async (importedLayout: LayoutConfig) => {
+    try {
+      if (layoutService.validateLayout(importedLayout)) {
+        await layoutService.saveLayout(importedLayout)
+        setLayout(importedLayout)
+        setShowLayoutManager(false)
+        toast.success('Layout imported successfully!')
+      } else {
+        toast.error('Invalid layout configuration')
+      }
+    } catch (error) {
+      console.error('Error applying imported layout:', error)
+      toast.error('Failed to apply imported layout')
+    }
+  }
+
   const renderWidget = (widget: WidgetConfig) => {
     if (!widget.visible) return null
 
@@ -363,6 +395,9 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
             onReset={handleResetLayoutClick}
             onExport={handleExportLayout}
             onImport={handleImportLayout}
+            onShareLayout={handleShareLayout}
+            onImportByCode={handleImportByCode}
+            onApplyImportedLayout={handleApplyImportedLayout}
             onClose={() => setShowLayoutManager(false)}
           />
         )}
