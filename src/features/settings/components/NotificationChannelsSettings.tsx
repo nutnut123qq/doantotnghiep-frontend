@@ -57,15 +57,16 @@ export const NotificationChannelsSettings = () => {
     setLoading(true);
     try {
       // Chỉ gửi webhook nếu có giá trị mới
-      await notificationChannelService.updateConfig({
+      const result = await notificationChannelService.updateConfig({
         slackWebhookUrl: slackWebhookInput || undefined,  // undefined = không update
         enabledSlack: config.enabledSlack,
         telegramChatId: telegramChatIdInput || undefined,
         enabledTelegram: config.enabledTelegram
       });
 
+      // Update config state with result from server
+      setConfig(result);
       toast.success('Notification channels updated successfully');
-      await loadConfig();  // Reload
       setSlackWebhookInput('');  // Clear input sau khi save
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update configuration');
@@ -79,6 +80,18 @@ export const NotificationChannelsSettings = () => {
     if (!config.hasSlackWebhook) {
       toast.error('Please save Slack webhook configuration before testing');
       return;
+    }
+
+    // Warn nếu có unsaved changes (user vừa nhập webhook mới)
+    if (slackWebhookInput) {
+      toast('You have unsaved changes. Test will use the previously saved webhook URL.', {
+        icon: '⚠️',
+        duration: 5000,
+        style: {
+          background: '#f59e0b',
+          color: '#fff'
+        }
+      });
     }
 
     setTestingSlack(true);
@@ -103,10 +116,11 @@ export const NotificationChannelsSettings = () => {
       return;
     }
 
-    // Optional: Warn nếu input khác DB (chưa save changes)
+    // Warn nếu có unsaved changes
     if (telegramChatIdInput && telegramChatIdInput !== config.telegramChatId) {
-      toast('You have unsaved changes. Test will use the saved configuration.', {
+      toast('You have unsaved changes. Test will use the previously saved chat ID.', {
         icon: '⚠️',
+        duration: 5000,
         style: {
           background: '#f59e0b',
           color: '#fff'
