@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
@@ -13,6 +13,11 @@ import {
   CorporateEventType as EventType,
   EVENT_TYPE_LABELS as TypeLabels,
   EVENT_TYPE_COLORS as TypeColors,
+  isEarningsEvent,
+  isDividendEvent,
+  isStockSplitEvent,
+  isAGMEvent,
+  isRightsIssueEvent,
 } from '../../../shared/types/eventTypes'
 
 // Configure date-fns localizer
@@ -45,19 +50,58 @@ export default function EventsCalendar() {
   const [view, setView] = useState<View>('month')
   const [date, setDate] = useState(new Date())
 
-  useEffect(() => {
-    loadEvents()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, view])
+  const getViewStartDate = useCallback((currentDate: Date, currentView: View): Date => {
+    const dateCopy = new Date(currentDate)
+    
+    if (currentView === 'month') {
+      // Start of month minus 7 days (to include previous month's visible dates)
+      dateCopy.setDate(1)
+      dateCopy.setDate(dateCopy.getDate() - 7)
+    } else if (currentView === 'week') {
+      // Start of week
+      const day = dateCopy.getDay()
+      dateCopy.setDate(dateCopy.getDate() - day)
+    } else if (currentView === 'day') {
+      // Current day
+      dateCopy.setHours(0, 0, 0, 0)
+    } else if (currentView === 'agenda') {
+      // Current date
+      dateCopy.setHours(0, 0, 0, 0)
+    }
+    
+    return dateCopy
+  }, [])
 
-  const loadEvents = async () => {
+  const getViewEndDate = useCallback((currentDate: Date, currentView: View): Date => {
+    const dateCopy = new Date(currentDate)
+    
+    if (currentView === 'month') {
+      // End of month plus 14 days (to include next month's visible dates)
+      dateCopy.setMonth(dateCopy.getMonth() + 1, 0)
+      dateCopy.setDate(dateCopy.getDate() + 14)
+    } else if (currentView === 'week') {
+      // End of week
+      const day = dateCopy.getDay()
+      dateCopy.setDate(dateCopy.getDate() + (6 - day))
+    } else if (currentView === 'day') {
+      // End of day
+      dateCopy.setHours(23, 59, 59, 999)
+    } else if (currentView === 'agenda') {
+      // 30 days from current date
+      dateCopy.setDate(dateCopy.getDate() + 30)
+    }
+    
+    return dateCopy
+  }, [])
+
+  const loadEvents = useCallback(async (currentDate: Date, currentView: View) => {
     try {
-      setLoading(false)
+      setLoading(true)
       setError(null)
 
       // Get events for current view range
-      const startDate = getViewStartDate()
-      const endDate = getViewEndDate()
+      const startDate = getViewStartDate(currentDate, currentView)
+      const endDate = getViewEndDate(currentDate, currentView)
 
       const data = await eventService.getEventsByDateRange(
         startDate.toISOString(),
@@ -70,51 +114,11 @@ export default function EventsCalendar() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getViewStartDate, getViewEndDate])
 
-  const getViewStartDate = (): Date => {
-    const currentDate = new Date(date)
-    
-    if (view === 'month') {
-      // Start of month minus 7 days (to include previous month's visible dates)
-      currentDate.setDate(1)
-      currentDate.setDate(currentDate.getDate() - 7)
-    } else if (view === 'week') {
-      // Start of week
-      const day = currentDate.getDay()
-      currentDate.setDate(currentDate.getDate() - day)
-    } else if (view === 'day') {
-      // Current day
-      currentDate.setHours(0, 0, 0, 0)
-    } else if (view === 'agenda') {
-      // Current date
-      currentDate.setHours(0, 0, 0, 0)
-    }
-    
-    return currentDate
-  }
-
-  const getViewEndDate = (): Date => {
-    const currentDate = new Date(date)
-    
-    if (view === 'month') {
-      // End of month plus 14 days (to include next month's visible dates)
-      currentDate.setMonth(currentDate.getMonth() + 1, 0)
-      currentDate.setDate(currentDate.getDate() + 14)
-    } else if (view === 'week') {
-      // End of week
-      const day = currentDate.getDay()
-      currentDate.setDate(currentDate.getDate() + (6 - day))
-    } else if (view === 'day') {
-      // End of day
-      currentDate.setHours(23, 59, 59, 999)
-    } else if (view === 'agenda') {
-      // 30 days from current date
-      currentDate.setDate(currentDate.getDate() + 30)
-    }
-    
-    return currentDate
-  }
+  useEffect(() => {
+    loadEvents(date, view)
+  }, [date, view, loadEvents])
 
   // Convert CorporateEvents to Calendar events
   const calendarEvents: CalendarEvent[] = useMemo(() => {
@@ -177,50 +181,52 @@ export default function EventsCalendar() {
   }
 
   const renderEventDetails = (event: CorporateEvent) => {
-    switch (event.eventType) {
-      case EventType.Earnings:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Period:</strong> {(event as any).period || 'N/A'}</p>
-            <p><strong>Year:</strong> {(event as any).year || 'N/A'}</p>
-            {(event as any).eps && <p><strong>EPS:</strong> {(event as any).eps}</p>}
-          </div>
-        )
-      
-      case EventType.Dividend:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Dividend/Share:</strong> {(event as any).dividendPerShare || 'N/A'}</p>
-            {(event as any).exDividendDate && <p><strong>Ex-Date:</strong> {eventService.formatEventDate((event as any).exDividendDate)}</p>}
-          </div>
-        )
-      
-      case EventType.StockSplit:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Split Ratio:</strong> {(event as any).splitRatio || 'N/A'}</p>
-            <p><strong>Type:</strong> {(event as any).isReverseSplit ? 'Reverse Split' : 'Forward Split'}</p>
-          </div>
-        )
-      
-      case EventType.AGM:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Year:</strong> {(event as any).year || 'N/A'}</p>
-            {(event as any).location && <p><strong>Location:</strong> {(event as any).location}</p>}
-          </div>
-        )
-      
-      case EventType.RightsIssue:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Issue Price:</strong> {(event as any).issuePrice?.toLocaleString() || 'N/A'} VND</p>
-          </div>
-        )
-      
-      default:
-        return null
+    if (isEarningsEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Period:</strong> {event.period || 'N/A'}</p>
+          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
+          {event.eps && <p><strong>EPS:</strong> {event.eps}</p>}
+        </div>
+      )
     }
+    
+    if (isDividendEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Dividend/Share:</strong> {event.dividendPerShare || 'N/A'}</p>
+          {event.exDividendDate && <p><strong>Ex-Date:</strong> {eventService.formatEventDate(event.exDividendDate)}</p>}
+        </div>
+      )
+    }
+    
+    if (isStockSplitEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Split Ratio:</strong> {event.splitRatio || 'N/A'}</p>
+          <p><strong>Type:</strong> {event.isReverseSplit ? 'Reverse Split' : 'Forward Split'}</p>
+        </div>
+      )
+    }
+    
+    if (isAGMEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
+          {event.location && <p><strong>Location:</strong> {event.location}</p>}
+        </div>
+      )
+    }
+    
+    if (isRightsIssueEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Issue Price:</strong> {event.issuePrice?.toLocaleString() || 'N/A'} VND</p>
+        </div>
+      )
+    }
+    
+    return null
   }
 
   if (loading) {
@@ -236,7 +242,7 @@ export default function EventsCalendar() {
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
         <p className="text-red-600 dark:text-red-400">{error}</p>
         <button
-          onClick={loadEvents}
+          onClick={() => loadEvents(date, view)}
           className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
         >
           Try again
@@ -257,7 +263,7 @@ export default function EventsCalendar() {
             List View
           </Link>
           <button
-            onClick={loadEvents}
+            onClick={() => loadEvents(date, view)}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             Refresh

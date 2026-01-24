@@ -14,11 +14,10 @@ export enum EventStatus {
   Cancelled = 4,
 }
 
-// Base Corporate Event interface
-export interface CorporateEvent {
+// Base Corporate Event properties (shared across all event types)
+interface BaseCorporateEvent {
   id: string
   stockTickerId: string
-  eventType: CorporateEventType
   eventDate: string // ISO date string
   title: string
   description?: string
@@ -37,8 +36,9 @@ export interface CorporateEvent {
   }
 }
 
-// Earnings Event
-export interface EarningsEvent extends CorporateEvent {
+// Discriminated union: Earnings Event
+export interface EarningsEvent extends BaseCorporateEvent {
+  eventType: CorporateEventType.Earnings
   period: string // Q1, Q2, Q3, Q4, Year
   year: number
   eps?: number
@@ -46,8 +46,9 @@ export interface EarningsEvent extends CorporateEvent {
   netProfit?: number
 }
 
-// Dividend Event
-export interface DividendEvent extends CorporateEvent {
+// Discriminated union: Dividend Event
+export interface DividendEvent extends BaseCorporateEvent {
+  eventType: CorporateEventType.Dividend
   dividendPerShare: number
   cashDividend?: number
   stockDividendRatio?: number
@@ -56,16 +57,18 @@ export interface DividendEvent extends CorporateEvent {
   paymentDate?: string
 }
 
-// Stock Split Event
-export interface StockSplitEvent extends CorporateEvent {
+// Discriminated union: Stock Split Event
+export interface StockSplitEvent extends BaseCorporateEvent {
+  eventType: CorporateEventType.StockSplit
   splitRatio: string
   isReverseSplit: boolean
   effectiveDate: string
   recordDate?: string
 }
 
-// AGM Event
-export interface AGMEvent extends CorporateEvent {
+// Discriminated union: AGM Event
+export interface AGMEvent extends BaseCorporateEvent {
+  eventType: CorporateEventType.AGM
   location?: string
   meetingTime?: string
   agenda?: string
@@ -73,8 +76,9 @@ export interface AGMEvent extends CorporateEvent {
   year: number
 }
 
-// Rights Issue Event
-export interface RightsIssueEvent extends CorporateEvent {
+// Discriminated union: Rights Issue Event
+export interface RightsIssueEvent extends BaseCorporateEvent {
+  eventType: CorporateEventType.RightsIssue
   numberOfShares: number
   issuePrice: number
   rightsRatio?: string
@@ -82,6 +86,35 @@ export interface RightsIssueEvent extends CorporateEvent {
   subscriptionStartDate?: string
   subscriptionEndDate?: string
   purpose?: string
+}
+
+// Discriminated union type for all Corporate Events
+export type CorporateEvent =
+  | EarningsEvent
+  | DividendEvent
+  | StockSplitEvent
+  | AGMEvent
+  | RightsIssueEvent
+
+// Type guards
+export function isEarningsEvent(event: CorporateEvent): event is EarningsEvent {
+  return event.eventType === CorporateEventType.Earnings
+}
+
+export function isDividendEvent(event: CorporateEvent): event is DividendEvent {
+  return event.eventType === CorporateEventType.Dividend
+}
+
+export function isStockSplitEvent(event: CorporateEvent): event is StockSplitEvent {
+  return event.eventType === CorporateEventType.StockSplit
+}
+
+export function isAGMEvent(event: CorporateEvent): event is AGMEvent {
+  return event.eventType === CorporateEventType.AGM
+}
+
+export function isRightsIssueEvent(event: CorporateEvent): event is RightsIssueEvent {
+  return event.eventType === CorporateEventType.RightsIssue
 }
 
 // Event filter params

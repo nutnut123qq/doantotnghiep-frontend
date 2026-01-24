@@ -133,8 +133,7 @@ export const Portfolio = () => {
 
   useEffect(() => {
     loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run once on mount
+  }, [loadData]) // loadData is memoized with useCallback, so this is safe
 
   // Function to handle adding new holding
   const handleAddHolding = async () => {

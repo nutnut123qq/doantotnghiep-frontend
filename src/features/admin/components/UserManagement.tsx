@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { adminService } from '../services/adminService'
 import { UserRole, type User } from '../../../shared/types/adminTypes'
 import { Card, CardContent } from '@/components/ui/card'
@@ -43,16 +43,11 @@ export function UserManagement() {
   })
   const [resetPassword, setResetPassword] = useState('')
 
-  useEffect(() => {
-    loadUsers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage])
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async (page: number) => {
     try {
       setLoading(true)
       setError(null)
-      const data = await adminService.getAllUsers(currentPage, pageSize)
+      const data = await adminService.getAllUsers(page, pageSize)
       setUsers(data.users)
       setTotalCount(data.totalCount)
     } catch (err) {
@@ -61,7 +56,11 @@ export function UserManagement() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pageSize])
+
+  useEffect(() => {
+    loadUsers(currentPage)
+  }, [currentPage, loadUsers])
 
   const isUserLocked = (user: User) => {
     return (
@@ -97,7 +96,7 @@ export function UserManagement() {
     setIsLockConfirmOpen(true)
   }
 
-  const handleCreateUser = async () => {
+  const handleCreateUser = useCallback(async () => {
     try {
       setActionLoading('create')
       await adminService.createUser({
@@ -108,16 +107,16 @@ export function UserManagement() {
       })
       toast.success('User created successfully')
       setIsCreateOpen(false)
-      await loadUsers()
+      await loadUsers(currentPage)
     } catch (err) {
       console.error('Error creating user:', err)
       toast.error('Failed to create user')
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [createForm, currentPage, loadUsers])
 
-  const handleUpdateUser = async () => {
+  const handleUpdateUser = useCallback(async () => {
     if (!selectedUser) return
     try {
       setActionLoading(selectedUser.id)
@@ -128,32 +127,32 @@ export function UserManagement() {
       })
       toast.success('User updated successfully')
       setIsEditOpen(false)
-      await loadUsers()
+      await loadUsers(currentPage)
     } catch (err) {
       console.error('Error updating user:', err)
       toast.error('Failed to update user')
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [selectedUser, editForm, currentPage, loadUsers])
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = useCallback(async () => {
     if (!selectedUser) return
     try {
       setActionLoading(selectedUser.id)
       await adminService.resetUserPassword(selectedUser.id, resetPassword)
       toast.success('Password reset successfully')
       setIsResetOpen(false)
-      await loadUsers()
+      await loadUsers(currentPage)
     } catch (err) {
       console.error('Error resetting password:', err)
       toast.error('Failed to reset password')
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [selectedUser, resetPassword, currentPage, loadUsers])
 
-  const handleLockToggle = async () => {
+  const handleLockToggle = useCallback(async () => {
     if (!selectedUser) return
     try {
       setActionLoading(selectedUser.id)
@@ -165,28 +164,28 @@ export function UserManagement() {
         toast.success('User locked successfully')
       }
       setIsLockConfirmOpen(false)
-      await loadUsers()
+      await loadUsers(currentPage)
     } catch (err) {
       console.error('Error toggling user lock:', err)
       toast.error('Failed to update user lock')
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [selectedUser, currentPage, loadUsers])
 
-  const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
+  const handleStatusToggle = useCallback(async (userId: string, currentStatus: boolean) => {
     try {
       setActionLoading(userId)
       await adminService.setUserStatus(userId, !currentStatus)
       toast.success(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
-      await loadUsers()
+      await loadUsers(currentPage)
     } catch (err) {
       console.error('Error updating user status:', err)
       toast.error('Failed to update user status')
     } finally {
       setActionLoading(null)
     }
-  }
+  }, [currentPage, loadUsers])
 
   const roleLabels: Record<UserRole, string> = {
     [UserRole.Investor]: 'Investor',
@@ -205,7 +204,7 @@ export function UserManagement() {
     return (
       <ErrorState
         message={error}
-        onRetry={loadUsers}
+        onRetry={() => loadUsers(currentPage)}
       />
     )
   }
@@ -225,7 +224,7 @@ export function UserManagement() {
             <Plus className="h-4 w-4" />
             <span>Create User</span>
           </Button>
-          <Button onClick={loadUsers} variant="outline" className="flex items-center space-x-2">
+          <Button onClick={() => loadUsers(currentPage)} variant="outline" className="flex items-center space-x-2">
             <RefreshCw className="h-4 w-4" />
             <span>Refresh</span>
           </Button>

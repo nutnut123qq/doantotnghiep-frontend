@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { adminService } from '../services/adminService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,21 +27,22 @@ export function SharedLayoutModeration() {
   const [statusFilter, setStatusFilter] = useState<LayoutStatus>('all')
   const [selectedLayout, setSelectedLayout] = useState<AdminSharedLayoutInfo | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  
+  // Applied filter state - tracks the filters that were actually applied
+  const [appliedFilters, setAppliedFilters] = useState({
+    ownerId: '',
+    status: 'all' as LayoutStatus,
+  })
 
-  useEffect(() => {
-    loadLayouts()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, statusFilter])
-
-  const loadLayouts = async () => {
+  const loadLayouts = useCallback(async (page: number, ownerId: string, status: LayoutStatus) => {
     try {
       setLoading(true)
       setError(null)
       const data = await adminService.getAllSharedLayouts(
-        currentPage,
+        page,
         pageSize,
-        ownerIdFilter || undefined,
-        statusFilter
+        ownerId || undefined,
+        status
       )
       setLayouts(data.items)
       setTotalCount(data.totalCount)
@@ -51,30 +52,37 @@ export function SharedLayoutModeration() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pageSize])
 
-  const applyFilters = async () => {
+  useEffect(() => {
+    loadLayouts(currentPage, appliedFilters.ownerId, appliedFilters.status)
+  }, [currentPage, appliedFilters.ownerId, appliedFilters.status, loadLayouts])
+
+  const applyFilters = useCallback(() => {
+    setAppliedFilters({
+      ownerId: ownerIdFilter,
+      status: statusFilter,
+    })
     setCurrentPage(1)
-    await loadLayouts()
-  }
+  }, [ownerIdFilter, statusFilter])
 
   const openDeleteConfirm = (layout: AdminSharedLayoutInfo) => {
     setSelectedLayout(layout)
     setConfirmOpen(true)
   }
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!selectedLayout) return
     try {
       await adminService.deleteSharedLayout(selectedLayout.id)
       toast.success('Shared layout deleted')
       setConfirmOpen(false)
-      await loadLayouts()
+      await loadLayouts(currentPage, appliedFilters.ownerId, appliedFilters.status)
     } catch (err) {
       console.error('Error deleting shared layout:', err)
       toast.error('Failed to delete shared layout')
     }
-  }
+  }, [selectedLayout, currentPage, appliedFilters.ownerId, appliedFilters.status, loadLayouts])
 
   const totalPages = Math.ceil(totalCount / pageSize)
 
@@ -83,7 +91,7 @@ export function SharedLayoutModeration() {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={loadLayouts} />
+    return <ErrorState message={error} onRetry={() => loadLayouts(currentPage, appliedFilters.ownerId, appliedFilters.status)} />
   }
 
   return (
@@ -115,7 +123,11 @@ export function SharedLayoutModeration() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Apply
             </Button>
-            <Button variant="ghost" size="sm" onClick={loadLayouts}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => loadLayouts(currentPage, appliedFilters.ownerId, appliedFilters.status)}
+            >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>

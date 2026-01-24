@@ -3,12 +3,27 @@ import { isAxiosError } from 'axios'
 import type { NotificationTemplate, PushNotificationConfig } from '@/shared/types/notificationTemplateTypes'
 import { NotificationEventType } from '@/shared/types/notificationTemplateTypes'
 
+// Response DTOs
+interface GetNotificationTemplatesResponse {
+  templates: NotificationTemplate[]
+}
+
+interface PreviewTemplateResponse {
+  renderedSubject: string
+  renderedBody: string
+}
+
+interface TestPushNotificationResponse {
+  success: boolean
+  errorMessage?: string
+}
+
 export const notificationTemplateService = {
   async getAll(eventType?: NotificationEventType): Promise<NotificationTemplate[]> {
     const params = new URLSearchParams()
     if (eventType) params.append('eventType', eventType.toString())
     
-    const response = await apiClient.get<{ templates: NotificationTemplate[] }>(
+    const response = await apiClient.get<GetNotificationTemplatesResponse>(
       `/NotificationTemplate?${params.toString()}`
     )
     return response.data.templates || []
@@ -28,8 +43,8 @@ export const notificationTemplateService = {
     await apiClient.delete(`/NotificationTemplate/${id}`)
   },
 
-  async previewTemplate(id: string, sampleData: Record<string, string>): Promise<{ renderedSubject: string; renderedBody: string }> {
-    const response = await apiClient.post<{ renderedSubject: string; renderedBody: string }>(
+  async previewTemplate(id: string, sampleData: Record<string, string>): Promise<PreviewTemplateResponse> {
+    const response = await apiClient.post<PreviewTemplateResponse>(
       `/NotificationTemplate/${id}/preview`,
       sampleData
     )
@@ -56,8 +71,8 @@ export const notificationTemplateService = {
     return response.data
   },
 
-  async testPushNotification(deviceToken: string, title: string, body: string): Promise<{ success: boolean; errorMessage?: string }> {
-    const response = await apiClient.post<{ success: boolean; errorMessage?: string }>(
+  async testPushNotification(deviceToken: string, title: string, body: string): Promise<TestPushNotificationResponse> {
+    const response = await apiClient.post<TestPushNotificationResponse>(
       '/NotificationTemplate/push-notification/test',
       { deviceToken, title, body }
     )

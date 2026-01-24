@@ -1,6 +1,14 @@
-import axios from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import { config } from '../config/env'
 import { storage } from '../storage/localStorage'
+import { notify } from '@/shared/utils/notify'
+
+// Extend AxiosRequestConfig to support silent flag
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    silent?: boolean // If true, don't show toast notifications for errors
+  }
+}
 
 export const apiClient = axios.create({
   baseURL: config.apiUrl,
@@ -27,6 +35,8 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const isSilent = error.config?.silent === true
+    
     if (error.response?.status === 401) {
       storage.remove('token')
       storage.remove('user')
@@ -42,21 +52,16 @@ apiClient.interceptors.response.use(
       const isExpected404 = status === 404 && 
         error.config?.url?.toLowerCase().includes('/userpreference')
       
-      if (status >= 400 && status !== 401 && !isExpected404) {
-        // Import toast dynamically to avoid circular dependencies
-        import('sonner').then(({ toast }) => {
-          if (status >= 500) {
-            toast.error(`Server error: ${message}`)
-          } else {
-            toast.error(message)
-          }
-        })
+      if (status >= 400 && status !== 401 && !isExpected404 && !isSilent) {
+        if (status >= 500) {
+          notify.error(`Server error: ${message}`)
+        } else {
+          notify.error(message)
+        }
       }
-    } else if (error.request) {
+    } else if (error.request && !isSilent) {
       // Network error
-      import('sonner').then(({ toast }) => {
-        toast.error('Network error: Please check your connection')
-      })
+      notify.error('Network error: Please check your connection')
     }
     
     return Promise.reject(error)

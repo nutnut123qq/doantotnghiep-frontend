@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { eventService } from '../services/eventService'
 import type {
@@ -13,6 +13,11 @@ import {
   EVENT_TYPE_LABELS as TypeLabels,
   EVENT_TYPE_COLORS as TypeColors,
   EVENT_STATUS_LABELS as StatusLabels,
+  isEarningsEvent,
+  isDividendEvent,
+  isStockSplitEvent,
+  isAGMEvent,
+  isRightsIssueEvent,
 } from '../../../shared/types/eventTypes'
 
 export default function EventsFeed() {
@@ -38,23 +43,13 @@ export default function EventsFeed() {
     endDate?: string
   }>({})
 
-  useEffect(() => {
-    loadEvents()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbolFilter, eventTypeFilter, statusFilter, dateRangeFilter])
+  // Applied filter state - tracks the filters that were actually applied
+  const [appliedFilters, setAppliedFilters] = useState<EventFilterParams>({})
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async (filters: EventFilterParams) => {
     try {
       setLoading(true)
       setError(null)
-
-      const filters: EventFilterParams = {
-        symbol: symbolFilter || undefined,
-        eventType: eventTypeFilter,
-        status: statusFilter,
-        startDate: dateRangeFilter.startDate,
-        endDate: dateRangeFilter.endDate,
-      }
 
       const data = await eventService.getEvents(filters)
       setEvents(data)
@@ -64,14 +59,29 @@ export default function EventsFeed() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const clearFilters = () => {
+  useEffect(() => {
+    loadEvents(appliedFilters)
+  }, [appliedFilters, loadEvents])
+
+  const applyFilters = useCallback(() => {
+    setAppliedFilters({
+      symbol: symbolFilter || undefined,
+      eventType: eventTypeFilter,
+      status: statusFilter,
+      startDate: dateRangeFilter.startDate,
+      endDate: dateRangeFilter.endDate,
+    })
+  }, [symbolFilter, eventTypeFilter, statusFilter, dateRangeFilter])
+
+  const clearFilters = useCallback(() => {
     setSymbolFilter('')
     setEventTypeFilter(undefined)
     setStatusFilter(undefined)
     setDateRangeFilter({})
-  }
+    setAppliedFilters({})
+  }, [])
 
   const getEventTypeColor = (type: CorporateEventType): string => {
     return TypeColors[type] || 'bg-gray-500'
@@ -98,57 +108,59 @@ export default function EventsFeed() {
   }
 
   const renderEventDetails = (event: CorporateEvent) => {
-    switch (event.eventType) {
-      case EventType.Earnings:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Period:</strong> {(event as any).period || 'N/A'}</p>
-            <p><strong>Year:</strong> {(event as any).year || 'N/A'}</p>
-            {(event as any).eps && <p><strong>EPS:</strong> {(event as any).eps}</p>}
-            {(event as any).revenue && <p><strong>Revenue:</strong> {(event as any).revenue.toLocaleString()} VND</p>}
-          </div>
-        )
-      
-      case EventType.Dividend:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Dividend/Share:</strong> {(event as any).dividendPerShare || 'N/A'}</p>
-            {(event as any).cashDividend && <p><strong>Cash:</strong> {(event as any).cashDividend.toLocaleString()} VND</p>}
-            {(event as any).exDividendDate && <p><strong>Ex-Date:</strong> {eventService.formatEventDate((event as any).exDividendDate)}</p>}
-            {(event as any).paymentDate && <p><strong>Payment:</strong> {eventService.formatEventDate((event as any).paymentDate)}</p>}
-          </div>
-        )
-      
-      case EventType.StockSplit:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Split Ratio:</strong> {(event as any).splitRatio || 'N/A'}</p>
-            <p><strong>Type:</strong> {(event as any).isReverseSplit ? 'Reverse Split' : 'Forward Split'}</p>
-            <p><strong>Effective:</strong> {eventService.formatEventDate((event as any).effectiveDate)}</p>
-          </div>
-        )
-      
-      case EventType.AGM:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Year:</strong> {(event as any).year || 'N/A'}</p>
-            {(event as any).location && <p><strong>Location:</strong> {(event as any).location}</p>}
-            {(event as any).meetingTime && <p><strong>Time:</strong> {(event as any).meetingTime}</p>}
-          </div>
-        )
-      
-      case EventType.RightsIssue:
-        return (
-          <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Shares:</strong> {(event as any).numberOfShares?.toLocaleString() || 'N/A'}</p>
-            <p><strong>Price:</strong> {(event as any).issuePrice?.toLocaleString() || 'N/A'} VND</p>
-            {(event as any).rightsRatio && <p><strong>Ratio:</strong> {(event as any).rightsRatio}</p>}
-          </div>
-        )
-      
-      default:
-        return null
+    if (isEarningsEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Period:</strong> {event.period || 'N/A'}</p>
+          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
+          {event.eps && <p><strong>EPS:</strong> {event.eps}</p>}
+          {event.revenue && <p><strong>Revenue:</strong> {event.revenue.toLocaleString()} VND</p>}
+        </div>
+      )
     }
+    
+    if (isDividendEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Dividend/Share:</strong> {event.dividendPerShare || 'N/A'}</p>
+          {event.cashDividend && <p><strong>Cash:</strong> {event.cashDividend.toLocaleString()} VND</p>}
+          {event.exDividendDate && <p><strong>Ex-Date:</strong> {eventService.formatEventDate(event.exDividendDate)}</p>}
+          {event.paymentDate && <p><strong>Payment:</strong> {eventService.formatEventDate(event.paymentDate)}</p>}
+        </div>
+      )
+    }
+    
+    if (isStockSplitEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Split Ratio:</strong> {event.splitRatio || 'N/A'}</p>
+          <p><strong>Type:</strong> {event.isReverseSplit ? 'Reverse Split' : 'Forward Split'}</p>
+          <p><strong>Effective:</strong> {eventService.formatEventDate(event.effectiveDate)}</p>
+        </div>
+      )
+    }
+    
+    if (isAGMEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
+          {event.location && <p><strong>Location:</strong> {event.location}</p>}
+          {event.meetingTime && <p><strong>Time:</strong> {event.meetingTime}</p>}
+        </div>
+      )
+    }
+    
+    if (isRightsIssueEvent(event)) {
+      return (
+        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>Shares:</strong> {event.numberOfShares?.toLocaleString() || 'N/A'}</p>
+          <p><strong>Price:</strong> {event.issuePrice?.toLocaleString() || 'N/A'} VND</p>
+          {event.rightsRatio && <p><strong>Ratio:</strong> {event.rightsRatio}</p>}
+        </div>
+      )
+    }
+    
+    return null
   }
 
   if (loading) {
@@ -164,7 +176,7 @@ export default function EventsFeed() {
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
         <p className="text-red-600 dark:text-red-400">{error}</p>
         <button
-          onClick={loadEvents}
+          onClick={() => loadEvents(appliedFilters)}
           className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
         >
           Try again
@@ -185,7 +197,7 @@ export default function EventsFeed() {
             Calendar View
           </Link>
           <button
-            onClick={loadEvents}
+            onClick={() => loadEvents(appliedFilters)}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             Refresh
@@ -246,13 +258,19 @@ export default function EventsFeed() {
             </select>
           </div>
 
-          {/* Clear Filters */}
-          <div className="flex items-end">
+          {/* Apply/Clear Filters */}
+          <div className="flex items-end gap-2">
+            <button
+              onClick={applyFilters}
+              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Apply
+            </button>
             <button
               onClick={clearFilters}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
-              Clear Filters
+              Clear
             </button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import * as signalR from '@microsoft/signalr';
-import toast from 'react-hot-toast';
+import { notify } from '@/shared/utils/notify';
 import type { AlertNotification } from '@/features/settings/types/notificationChannel.types';
 
 export const useAlertNotifications = () => {
@@ -29,14 +29,8 @@ Current: ${notification.currentValue.toLocaleString()}
 ${notification.aiExplanation ? `\n💡 ${notification.aiExplanation}` : ''}
       `.trim();
 
-      toast.success(message, {
+      notify.success(message, {
         duration: 8000,
-        icon: '🚨',
-        style: {
-          background: '#1e293b',
-          color: '#fff',
-          maxWidth: '500px'
-        }
       });
     });
 

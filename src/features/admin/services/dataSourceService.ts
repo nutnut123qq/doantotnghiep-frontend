@@ -1,15 +1,26 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
 import type { DataSource, DataSourceType } from '@/shared/types/dataSourceTypes'
 
+// Response DTOs
+interface GetDataSourcesResponse {
+  dataSources: DataSource[]
+}
+
+interface TestConnectionResponse {
+  isConnected: boolean
+  errorMessage?: string
+  lastChecked: string
+}
+
 export const dataSourceService = {
   async getAll(type?: DataSourceType): Promise<DataSource[]> {
     const params = new URLSearchParams()
     if (type) params.append('type', type.toString())
     
-    const response = await apiClient.get<{ dataSources: DataSource[] }>(
+    const response = await apiClient.get<GetDataSourcesResponse>(
       `/DataSource?${params.toString()}`
     )
-    // Backend returns GetDataSourcesResponse with DataSources property
+    // Backend returns GetDataSourcesResponse with dataSources property
     return response.data.dataSources || []
   },
 
@@ -32,8 +43,8 @@ export const dataSourceService = {
     await apiClient.delete(`/DataSource/${id}`)
   },
 
-  async testConnection(id: string): Promise<{ isConnected: boolean; errorMessage?: string; lastChecked: string }> {
-    const response = await apiClient.post<{ isConnected: boolean; errorMessage?: string; lastChecked: string }>(
+  async testConnection(id: string): Promise<TestConnectionResponse> {
+    const response = await apiClient.post<TestConnectionResponse>(
       `/DataSource/${id}/test`
     )
     return response.data

@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import { Provider } from 'react-redux'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
-import { Toaster as HotToaster } from 'react-hot-toast'
 import { AuthProvider } from '@/shared/contexts/AuthContext'
 import { ThemeProvider } from '@/shared/contexts/ThemeContext'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
@@ -37,7 +36,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <AuthProvider>
               <AppWithAlertNotifications />
               <Toaster position="top-right" richColors />
-              <HotToaster position="top-right" />
             </AuthProvider>
           </QueryClientProvider>
         </Provider>

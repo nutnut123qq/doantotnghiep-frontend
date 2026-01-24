@@ -41,6 +41,22 @@ interface GetWatchlistsResponse {
   watchlists: WatchlistDto[]
 }
 
+interface CreateWatchlistResponse {
+  id: string
+  name: string
+  createdAt: string
+}
+
+interface AddStockResponse {
+  success: boolean
+  message: string
+}
+
+interface RemoveStockResponse {
+  success: boolean
+  message: string
+}
+
 // Transform backend DTO to frontend interface
 const transformStockTicker = (ticker: StockTickerDto): WatchlistStock => {
   return {
@@ -83,11 +99,6 @@ export const watchlistService = {
   },
 
   async createWatchlist(name: string): Promise<Watchlist> {
-    interface CreateWatchlistResponse {
-      id: string
-      name: string
-      createdAt: string
-    }
     const response = await apiClient.post<CreateWatchlistResponse>('/Watchlist', { name })
     // CreateWatchlistResponse doesn't include stocks, so we return a minimal watchlist
     const id = response.data.id ? String(response.data.id) : ''
@@ -121,10 +132,6 @@ export const watchlistService = {
   },
 
   async addStock(watchlistId: string, symbol: string): Promise<void> {
-    interface AddStockResponse {
-      success: boolean
-      message: string
-    }
     const response = await apiClient.post<AddStockResponse>(`/Watchlist/${watchlistId}/stocks`, { symbol })
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to add stock')
@@ -132,10 +139,6 @@ export const watchlistService = {
   },
 
   async removeStock(watchlistId: string, symbol: string): Promise<void> {
-    interface RemoveStockResponse {
-      success: boolean
-      message: string
-    }
     const response = await apiClient.delete<RemoveStockResponse>(`/Watchlist/${watchlistId}/stocks/${symbol}`)
     if (response.data && !response.data.success) {
       throw new Error(response.data.message || 'Failed to remove stock')

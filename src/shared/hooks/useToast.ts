@@ -1,26 +1,14 @@
-import { toast as sonnerToast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
+import type { NotifyType, NotifyOptions } from '@/shared/utils/notify'
 
 export const useToast = () => {
   return {
-    success: (message: string) => sonnerToast.success(message),
-    error: (message: string) => sonnerToast.error(message),
-    info: (message: string) => sonnerToast.info(message),
-    warning: (message: string) => sonnerToast.warning(message),
-    showToast: (type: 'success' | 'error' | 'info' | 'warning', message: string) => {
-      switch (type) {
-        case 'success':
-          sonnerToast.success(message)
-          break
-        case 'error':
-          sonnerToast.error(message)
-          break
-        case 'info':
-          sonnerToast.info(message)
-          break
-        case 'warning':
-          sonnerToast.warning(message)
-          break
-      }
+    success: (message: string, options?: NotifyOptions) => notify.success(message, options),
+    error: (message: string, options?: NotifyOptions) => notify.error(message, options),
+    info: (message: string, options?: NotifyOptions) => notify.info(message, options),
+    warning: (message: string, options?: NotifyOptions) => notify.warning(message, options),
+    showToast: (type: NotifyType, message: string, options?: NotifyOptions) => {
+      notify.show(type, message, options)
     },
   }
 }

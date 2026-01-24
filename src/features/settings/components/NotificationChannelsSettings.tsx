@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Switch } from '@headlessui/react';
 import { ChatBubbleLeftRightIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { notificationChannelService } from '../services/notificationChannelService';
-import toast from 'react-hot-toast';
+import { notify } from '@/shared/utils/notify';
 import type { NotificationChannelConfig } from '../types/notificationChannel.types';
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError';
 
@@ -37,7 +37,7 @@ export const NotificationChannelsSettings = () => {
         setTelegramChatIdInput(data.telegramChatId);
       }
     } catch (error) {
-      toast.error('Failed to load configuration');
+      notify.error('Failed to load configuration');
     }
   };
 
@@ -45,13 +45,13 @@ export const NotificationChannelsSettings = () => {
     // FE Validation: Check "effective value" (input mới OR webhook đã có)
     // Slack: Pass nếu có webhook đã lưu HOẶC có input mới
     if (config.enabledSlack && !slackWebhookInput && !config.hasSlackWebhook) {
-      toast.error('Please enter Slack webhook URL to enable Slack notifications');
+      notify.error('Please enter Slack webhook URL to enable Slack notifications');
       return;
     }
 
     // Telegram: Phải có chat ID (không có "đã lưu" vì chat ID không mask)
     if (config.enabledTelegram && !telegramChatIdInput) {
-      toast.error('Please enter Telegram chat ID to enable Telegram notifications');
+      notify.error('Please enter Telegram chat ID to enable Telegram notifications');
       return;
     }
 
@@ -67,11 +67,11 @@ export const NotificationChannelsSettings = () => {
 
       // Update config state with result from server
       setConfig(result);
-      toast.success('Notification channels updated successfully');
+      notify.success('Notification channels updated successfully');
       setSlackWebhookInput('');  // Clear input sau khi save
     } catch (error: unknown) {
       const errorMessage = getAxiosErrorMessage(error);
-      toast.error(errorMessage === 'Unknown error' ? 'Failed to update configuration' : errorMessage);
+      notify.error(errorMessage === 'Unknown error' ? 'Failed to update configuration' : errorMessage);
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export const NotificationChannelsSettings = () => {
   const handleTestSlack = async () => {
     // API test lấy từ DB, phải Save trước khi Test
     if (!config.hasSlackWebhook) {
-      toast.error('Please save Slack webhook configuration before testing');
+      notify.error('Please save Slack webhook configuration before testing');
       return;
     }
 
@@ -100,13 +100,13 @@ export const NotificationChannelsSettings = () => {
     try {
       const result = await notificationChannelService.testChannel('Slack');
       if (result.success) {
-        toast.success('Test notification sent to Slack!');
+        notify.success('Test notification sent to Slack!');
       } else {
-        toast.error('Failed to send test notification');
+        notify.error('Failed to send test notification');
       }
     } catch (error: unknown) {
       const errorMessage = getAxiosErrorMessage(error);
-      toast.error(errorMessage === 'Unknown error' ? 'Failed to test Slack' : errorMessage);
+      notify.error(errorMessage === 'Unknown error' ? 'Failed to test Slack' : errorMessage);
     } finally {
       setTestingSlack(false);
     }
@@ -115,19 +115,14 @@ export const NotificationChannelsSettings = () => {
   const handleTestTelegram = async () => {
     // API test lấy từ DB, phải Save trước khi Test
     if (!config.telegramChatId) {
-      toast.error('Please save Telegram chat ID configuration before testing');
+      notify.error('Please save Telegram chat ID configuration before testing');
       return;
     }
 
     // Warn nếu có unsaved changes
     if (telegramChatIdInput && telegramChatIdInput !== config.telegramChatId) {
-      toast('You have unsaved changes. Test will use the previously saved chat ID.', {
-        icon: '⚠️',
+      notify.warning('You have unsaved changes. Test will use the previously saved chat ID.', {
         duration: 5000,
-        style: {
-          background: '#f59e0b',
-          color: '#fff'
-        }
       });
     }
 
@@ -135,13 +130,13 @@ export const NotificationChannelsSettings = () => {
     try {
       const result = await notificationChannelService.testChannel('Telegram');
       if (result.success) {
-        toast.success('Test notification sent to Telegram!');
+        notify.success('Test notification sent to Telegram!');
       } else {
-        toast.error('Failed to send test notification');
+        notify.error('Failed to send test notification');
       }
     } catch (error: unknown) {
       const errorMessage = getAxiosErrorMessage(error);
-      toast.error(errorMessage === 'Unknown error' ? 'Failed to test Telegram' : errorMessage);
+      notify.error(errorMessage === 'Unknown error' ? 'Failed to test Telegram' : errorMessage);
     } finally {
       setTestingTelegram(false);
     }
