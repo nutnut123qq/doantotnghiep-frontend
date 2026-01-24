@@ -1,41 +1,30 @@
-import { useEffect } from 'react';
-import * as signalR from '@microsoft/signalr';
-import { notify } from '@/shared/utils/notify';
-import type { AlertNotification } from '@/features/settings/types/notificationChannel.types';
+import { useCallback, useEffect } from 'react'
+import { useSignalR } from '@/shared/hooks/useSignalR'
+import { notify } from '@/shared/utils/notify'
+import type { AlertNotification } from '@/features/settings/types/notificationChannel.types'
 
+/**
+ * Subscribes to real-time alert notifications via SignalR Trading hub.
+ * Uses shared useSignalR (token key "token", config.signalRUrl + hub "trading").
+ */
 export const useAlertNotifications = () => {
+  const { on } = useSignalR('trading')
+
+  const handleAlertTriggered = useCallback((notification: AlertNotification) => {
+    const msg = [
+      `🔔 Alert: ${notification.symbol} ${notification.type}`,
+      `Threshold: ${Number(notification.threshold).toLocaleString()}`,
+      `Current: ${Number(notification.currentValue).toLocaleString()}`,
+      notification.aiExplanation ? `💡 ${notification.aiExplanation}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    notify.success(msg, { duration: 8000 })
+  }, [])
+
   useEffect(() => {
-    // Use existing auth token
-    const token = localStorage.getItem('accessToken');
-
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl('/hubs/trading', {
-        accessTokenFactory: () => token || ''
-      })
-      .withAutomaticReconnect()
-      .build();
-
-    connection.start()
-      .then(() => console.log('Connected to TradingHub for alerts'))
-      .catch(err => console.error('SignalR connection error:', err));
-
-    // Event name: "AlertTriggered"
-    // Payload: camelCase
-    connection.on('AlertTriggered', (notification: AlertNotification) => {
-      const message = `
-🔔 Alert: ${notification.symbol} ${notification.type}
-Threshold: ${notification.threshold.toLocaleString()}
-Current: ${notification.currentValue.toLocaleString()}
-${notification.aiExplanation ? `\n💡 ${notification.aiExplanation}` : ''}
-      `.trim();
-
-      notify.success(message, {
-        duration: 8000,
-      });
-    });
-
-    return () => {
-      connection.stop();
-    };
-  }, []);
-};
+    const unsub = on('AlertTriggered', handleAlertTriggered as (...args: unknown[]) => void)
+    return unsub
+  }, [on, handleAlertTriggered])
+}

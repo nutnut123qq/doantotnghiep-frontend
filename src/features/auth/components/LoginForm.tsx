@@ -6,6 +6,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useToast } from '@/shared/hooks/useToast'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
+
+const LOGIN_RETURN_URL_KEY = 'login_returnUrl'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -36,10 +38,15 @@ export const LoginForm = () => {
       setLoading(true)
       await login(data)
       toast.success('Login successful!')
-      // Small delay to ensure state updates before navigation
-      setTimeout(() => {
-        navigate('/', { replace: true })
-      }, 100)
+      let returnUrl: string | null = null
+      try {
+        returnUrl = sessionStorage.getItem(LOGIN_RETURN_URL_KEY)
+        if (returnUrl) sessionStorage.removeItem(LOGIN_RETURN_URL_KEY)
+      } catch {
+        /* ignore */
+      }
+      const target = (returnUrl && returnUrl !== '/login') ? returnUrl : '/'
+      setTimeout(() => navigate(target, { replace: true }), 100)
     } catch (err: unknown) {
       const errorMessage = getAxiosErrorMessage(err)
       toast.error(errorMessage === 'Unknown error' ? 'Login failed. Please check your credentials.' : errorMessage)

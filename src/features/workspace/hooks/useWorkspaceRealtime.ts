@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useSignalR } from '@/shared/hooks/useSignalR'
 
 export interface WorkspaceMessage {
@@ -9,96 +9,98 @@ export interface WorkspaceMessage {
   timestamp: string
 }
 
+export interface WorkspaceMemberDto {
+  userId?: string
+  userName?: string
+  email?: string
+  [key: string]: unknown
+}
+
 export const useWorkspaceRealtime = (
   workspaceId: string | null,
   onMessage?: (message: WorkspaceMessage) => void,
   onWatchlistUpdate?: (watchlistId: string) => void,
   onLayoutUpdate?: (layoutId: string) => void,
-  onMemberJoined?: (member: any) => void
+  onMemberJoined?: (member: WorkspaceMemberDto) => void
 ) => {
-  // Use 'workspace' hub name - backend maps to /hubs/workspace
   const { invoke, on, isConnected } = useSignalR('workspace')
   const hasJoinedRef = useRef(false)
+  const lastWorkspaceIdRef = useRef<string | null>(null)
 
-  // Join workspace group when connected
   useEffect(() => {
-    if (isConnected && workspaceId && !hasJoinedRef.current) {
-      invoke('JoinWorkspace', workspaceId)
-        .then(() => {
-          hasJoinedRef.current = true
-        })
-        .catch((err) => {
-          console.error('Error joining workspace:', err)
-        })
+    if (!isConnected || !workspaceId) {
+      if (!isConnected) {
+        hasJoinedRef.current = false
+        lastWorkspaceIdRef.current = null
+      }
+      return
     }
 
+    if (hasJoinedRef.current && lastWorkspaceIdRef.current === workspaceId) return
+    if (hasJoinedRef.current && lastWorkspaceIdRef.current !== workspaceId) {
+      invoke('LeaveWorkspace', lastWorkspaceIdRef.current!).catch(console.error)
+      hasJoinedRef.current = false
+    }
+
+    lastWorkspaceIdRef.current = workspaceId
+    invoke('JoinWorkspace', workspaceId)
+      .then(() => {
+        hasJoinedRef.current = true
+      })
+      .catch((err) => {
+        console.error('Error joining workspace:', err)
+        lastWorkspaceIdRef.current = null
+      })
+
     return () => {
-      if (hasJoinedRef.current && workspaceId) {
-        invoke('LeaveWorkspace', workspaceId).catch(console.error)
+      if (hasJoinedRef.current && lastWorkspaceIdRef.current) {
+        invoke('LeaveWorkspace', lastWorkspaceIdRef.current).catch(console.error)
         hasJoinedRef.current = false
+        lastWorkspaceIdRef.current = null
       }
     }
   }, [isConnected, workspaceId, invoke])
 
-  // Listen for messages
+  const handleMessage = useCallback(
+    (message: WorkspaceMessage) => onMessage?.(message),
+    [onMessage]
+  )
+  const handleWatchlist = useCallback(
+    (data: { watchlistId: string }) => onWatchlistUpdate?.(data.watchlistId),
+    [onWatchlistUpdate]
+  )
+  const handleLayout = useCallback(
+    (data: { layoutId: string }) => onLayoutUpdate?.(data.layoutId),
+    [onLayoutUpdate]
+  )
+  const handleMember = useCallback(
+    (member: WorkspaceMemberDto) => onMemberJoined?.(member),
+    [onMemberJoined]
+  )
+
   useEffect(() => {
     if (!onMessage) return
+    const unsub = on('ReceiveMessage', handleMessage as (...args: unknown[]) => void)
+    return unsub
+  }, [on, onMessage, handleMessage])
 
-    const handleMessage = (message: WorkspaceMessage) => {
-      onMessage(message)
-    }
-
-    on('ReceiveMessage', handleMessage)
-
-    return () => {
-      // Cleanup handled by useSignalR
-    }
-  }, [on, onMessage])
-
-  // Listen for watchlist updates
   useEffect(() => {
     if (!onWatchlistUpdate) return
+    const unsub = on('WatchlistUpdated', handleWatchlist as (...args: unknown[]) => void)
+    return unsub
+  }, [on, onWatchlistUpdate, handleWatchlist])
 
-    const handleWatchlistUpdate = (data: { watchlistId: string }) => {
-      onWatchlistUpdate(data.watchlistId)
-    }
-
-    on('WatchlistUpdated', handleWatchlistUpdate)
-
-    return () => {
-      // Cleanup handled by useSignalR
-    }
-  }, [on, onWatchlistUpdate])
-
-  // Listen for layout updates
   useEffect(() => {
     if (!onLayoutUpdate) return
+    const unsub = on('LayoutUpdated', handleLayout as (...args: unknown[]) => void)
+    return unsub
+  }, [on, onLayoutUpdate, handleLayout])
 
-    const handleLayoutUpdate = (data: { layoutId: string }) => {
-      onLayoutUpdate(data.layoutId)
-    }
-
-    on('LayoutUpdated', handleLayoutUpdate)
-
-    return () => {
-      // Cleanup handled by useSignalR
-    }
-  }, [on, onLayoutUpdate])
-
-  // Listen for member joined
   useEffect(() => {
     if (!onMemberJoined) return
-
-    const handleMemberJoined = (member: any) => {
-      onMemberJoined(member)
-    }
-
-    on('MemberJoined', handleMemberJoined)
-
-    return () => {
-      // Cleanup handled by useSignalR
-    }
-  }, [on, onMemberJoined])
+    const unsub = on('MemberJoined', handleMember as (...args: unknown[]) => void)
+    return unsub
+  }, [on, onMemberJoined, handleMember])
 
   const sendMessage = async (content: string) => {
     if (!workspaceId) throw new Error('Workspace ID is required')

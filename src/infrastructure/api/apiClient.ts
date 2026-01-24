@@ -31,16 +31,29 @@ apiClient.interceptors.request.use(
   }
 )
 
+const LOGIN_RETURN_URL_KEY = 'login_returnUrl'
+
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const isSilent = error.config?.silent === true
-    
+
     if (error.response?.status === 401) {
+      const path = typeof window !== 'undefined' ? window.location.pathname : ''
+      if (path === '/login') return Promise.reject(error)
       storage.remove('token')
       storage.remove('user')
-      window.location.href = '/login'
+      if (typeof window !== 'undefined') {
+        const returnUrl = window.location.pathname + window.location.search || '/'
+        try {
+          sessionStorage.setItem(LOGIN_RETURN_URL_KEY, returnUrl)
+        } catch {
+          /* ignore */
+        }
+        window.location.href = '/login'
+      }
+      return Promise.reject(error)
     } else if (error.response) {
       // Handle other HTTP errors
       const status = error.response.status

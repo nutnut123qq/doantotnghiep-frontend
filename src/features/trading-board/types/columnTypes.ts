@@ -33,6 +33,7 @@ export const DEFAULT_COLUMN_ORDER: ColumnId[] = [
   'change',
   'changePercent',
   'volume',
+  'value',
 ]
 
 export const DEFAULT_VISIBLE_COLUMNS: ColumnId[] = [
@@ -43,5 +44,13 @@ export const DEFAULT_VISIBLE_COLUMNS: ColumnId[] = [
   'change',
   'changePercent',
   'volume',
+  'value',
 ]
+
+/** Customizable columns (ColumnId). Indicators rsi, ma20, ma50 are fixed and always visible. */
+export const ALL_CUSTOMIZABLE_COLUMN_IDS: ColumnId[] = Object.keys(
+  COLUMN_DEFINITIONS
+) as ColumnId[]
+
+export const INDICATOR_COLUMN_IDS = ['rsi', 'ma20', 'ma50'] as const
 

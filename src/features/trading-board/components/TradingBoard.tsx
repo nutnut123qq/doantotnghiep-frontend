@@ -20,7 +20,11 @@ import { ColumnCustomizationModal } from './ColumnCustomizationModal'
 import { columnPreferencesService } from '../services/columnPreferencesService'
 import type { TradingBoardFilters as TradingBoardFiltersType } from '../services/tradingBoardService'
 import type { TradingBoardColumnPreferences } from '../types/columnTypes'
-import { DEFAULT_COLUMN_ORDER } from '../types/columnTypes'
+import {
+  DEFAULT_COLUMN_ORDER,
+  ALL_CUSTOMIZABLE_COLUMN_IDS,
+  INDICATOR_COLUMN_IDS,
+} from '../types/columnTypes'
 import type { StockTicker } from '@/domain/entities/StockTicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,10 +56,10 @@ export const TradingBoard = () => {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [, setColumnPreferences] = useState<TradingBoardColumnPreferences>({
-    visibleColumns: DEFAULT_COLUMN_ORDER,
-    columnOrder: DEFAULT_COLUMN_ORDER,
-  })
+  const [columnOrder, setColumnOrder] = useState<string[]>([
+    ...DEFAULT_COLUMN_ORDER,
+    ...INDICATOR_COLUMN_IDS,
+  ])
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
   const { tickers: baseTickers, isLoading, error } = useTradingBoard(filters)
   const { tickers, isLoadingIndicators } = useTradingBoardWithIndicators(baseTickers)
@@ -73,28 +77,45 @@ export const TradingBoard = () => {
     loadColumnPreferences()
   }, [])
 
+  const buildVisibility = (visibleColumns: string[]) => {
+    const visibleSet = new Set(visibleColumns)
+    const visibility: VisibilityState = {}
+    for (const id of ALL_CUSTOMIZABLE_COLUMN_IDS) {
+      visibility[id] = visibleSet.has(id)
+    }
+    for (const id of INDICATOR_COLUMN_IDS) {
+      visibility[id] = true
+    }
+    return visibility
+  }
+
+  const buildFullColumnOrder = (prefs: TradingBoardColumnPreferences) => {
+    const order = prefs.columnOrder?.length
+      ? [...prefs.columnOrder]
+      : [...DEFAULT_COLUMN_ORDER]
+    const seen = new Set(order)
+    for (const id of ALL_CUSTOMIZABLE_COLUMN_IDS) {
+      if (!seen.has(id)) {
+        order.push(id)
+        seen.add(id)
+      }
+    }
+    return [...order, ...INDICATOR_COLUMN_IDS]
+  }
+
   const loadColumnPreferences = async () => {
     try {
       const prefs = await columnPreferencesService.getColumnPreferences()
-      setColumnPreferences(prefs)
-      // Set column visibility based on preferences
-      const visibility: VisibilityState = {}
-      prefs.visibleColumns.forEach((col) => {
-        visibility[col] = true
-      })
-      setColumnVisibility(visibility)
+      setColumnVisibility(buildVisibility(prefs.visibleColumns ?? DEFAULT_COLUMN_ORDER))
+      setColumnOrder(buildFullColumnOrder(prefs))
     } catch (error) {
       console.error('Error loading column preferences:', error)
     }
   }
 
   const handleSaveColumnPreferences = (prefs: TradingBoardColumnPreferences) => {
-    setColumnPreferences(prefs)
-    const visibility: VisibilityState = {}
-    prefs.visibleColumns.forEach((col) => {
-      visibility[col] = true
-    })
-    setColumnVisibility(visibility)
+    setColumnVisibility(buildVisibility(prefs.visibleColumns))
+    setColumnOrder(buildFullColumnOrder(prefs))
   }
 
   // Filter tickers based on search query
@@ -115,10 +136,10 @@ export const TradingBoard = () => {
     }))
   }
 
-  // Column definitions
   const columns = useMemo<ColumnDef<StockTickerWithIndicators>[]>(
     () => [
       {
+        id: 'symbol',
         accessorKey: 'symbol',
         header: ({ column }) => {
           return (
@@ -139,6 +160,7 @@ export const TradingBoard = () => {
         ),
       },
       {
+        id: 'name',
         accessorKey: 'name',
         header: ({ column }) => {
           return (
@@ -157,6 +179,7 @@ export const TradingBoard = () => {
         ),
       },
       {
+        id: 'exchange',
         accessorKey: 'exchange',
         header: 'Exchange',
         cell: ({ row }) => (
@@ -166,6 +189,7 @@ export const TradingBoard = () => {
         ),
       },
       {
+        id: 'price',
         accessorKey: 'currentPrice',
         header: ({ column }) => {
           return (
@@ -191,6 +215,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'change',
         accessorKey: 'change',
         header: ({ column }) => {
           return (
@@ -220,6 +245,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'changePercent',
         accessorKey: 'changePercent',
         header: ({ column }) => {
           return (
@@ -249,6 +275,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'volume',
         accessorKey: 'volume',
         header: ({ column }) => {
           return (
@@ -274,6 +301,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'value',
         accessorKey: 'value',
         header: ({ column }) => {
           return (
@@ -299,6 +327,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'rsi',
         accessorKey: 'rsi',
         header: ({ column }) => {
           return (
@@ -332,6 +361,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'ma20',
         accessorKey: 'ma20',
         header: ({ column }) => {
           return (
@@ -367,6 +397,7 @@ export const TradingBoard = () => {
         },
       },
       {
+        id: 'ma50',
         accessorKey: 'ma50',
         header: ({ column }) => {
           return (
@@ -415,10 +446,17 @@ export const TradingBoard = () => {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: (updater) => {
+      setColumnOrder((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        return next ?? prev
+      })
+    },
     state: {
       sorting,
       columnFilters,
       columnVisibility,
+      columnOrder,
     },
     initialState: {
       pagination: {

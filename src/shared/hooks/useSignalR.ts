@@ -1,20 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
 import { config } from '@/infrastructure/config/env'
 import { storage } from '@/infrastructure/storage/localStorage'
+
+/** Unsubscribe function returned by `on()`. Call to remove the handler. */
+export type SignalRUnsubscribe = () => void
 
 export const useSignalR = (hubName: string, onConnected?: () => void) => {
   const connectionRef = useRef<signalR.HubConnection | null>(null)
   const onConnectedRef = useRef(onConnected)
   const [isConnected, setIsConnected] = useState(false)
 
-  // Update the callback ref without causing re-renders
   useEffect(() => {
     onConnectedRef.current = onConnected
   }, [onConnected])
 
   useEffect(() => {
-    // Don't create a new connection if one already exists and is connected or connecting
     if (connectionRef.current) {
       const state = connectionRef.current.state
       if (
@@ -23,7 +24,6 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
       ) {
         return
       }
-      // If disconnected, clean up the old connection
       if (state === signalR.HubConnectionState.Disconnected) {
         connectionRef.current = null
       }
@@ -39,54 +39,36 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
       })
       .withAutomaticReconnect()
       .configureLogging(
-        // Reduce logging in development to avoid "stopped during negotiation" noise
-        // This error is expected in React Strict Mode and doesn't affect functionality
         import.meta.env.DEV
-          ? signalR.LogLevel.Warning 
+          ? signalR.LogLevel.Warning
           : signalR.LogLevel.Information
       )
       .build()
 
     connectionRef.current = connection
-
     let isMounted = true
 
-    // Track connection state changes
     const updateConnectionState = () => {
       if (isMounted) {
         setIsConnected(connection.state === signalR.HubConnectionState.Connected)
       }
     }
 
-    connection.onclose(() => {
-      updateConnectionState()
-    })
+    connection.onclose(updateConnectionState)
+    connection.onreconnecting(updateConnectionState)
+    connection.onreconnected(updateConnectionState)
 
-    connection.onreconnecting(() => {
-      updateConnectionState()
-    })
-
-    connection.onreconnected(() => {
-      updateConnectionState()
-    })
-
-    // Connection started
     void connection
       .start()
       .then(() => {
         if (isMounted) {
-          console.log(`Connected to ${hubName} hub`)
           setIsConnected(true)
           onConnectedRef.current?.()
         } else {
-          // Component unmounted during connection, stop immediately
-          connection.stop().catch(() => {
-            // Ignore errors
-          })
+          connection.stop().catch(() => {})
         }
       })
       .catch((err) => {
-        // Only log errors if component is still mounted and it's not an abort/negotiation error
         if (
           isMounted &&
           err.name !== 'AbortError' &&
@@ -95,55 +77,44 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
         ) {
           console.error(`Error connecting to ${hubName}:`, err)
         }
-        if (isMounted) {
-          setIsConnected(false)
-        }
+        if (isMounted) setIsConnected(false)
       })
 
     return () => {
       isMounted = false
       setIsConnected(false)
-      
-      // Stop connection gracefully without waiting
-      // In React Strict Mode, cleanup runs immediately, so we just mark as unmounted
-      // and let the connection stop naturally or via automatic reconnect handling
       if (connection.state === signalR.HubConnectionState.Connecting) {
-        // If still connecting, stop it (this will cause the "stopped during negotiation" error,
-        // but it's expected in React Strict Mode cleanup)
-        connection.stop().catch(() => {
-          // Ignore all errors during cleanup
-        })
+        connection.stop().catch(() => {})
       } else if (connection.state !== signalR.HubConnectionState.Disconnected) {
-        connection.stop().catch(() => {
-          // Ignore all errors during cleanup
-        })
+        connection.stop().catch(() => {})
       }
-      
       connectionRef.current = null
     }
-  }, [hubName]) // Removed onConnected from dependencies
+  }, [hubName])
 
-  const invoke = async (methodName: string, ...args: unknown[]) => {
-    if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
-      return connectionRef.current.invoke(methodName, ...args)
+  const invoke = useCallback(async (methodName: string, ...args: unknown[]) => {
+    const conn = connectionRef.current
+    if (conn?.state === signalR.HubConnectionState.Connected) {
+      return conn.invoke(methodName, ...args)
     }
-  }
+  }, [])
 
-  const on = (methodName: string, callback: (...args: any[]) => void) => {
-    if (connectionRef.current) {
-      connectionRef.current.on(methodName, callback)
+  /** Register a handler. Returns unsubscribe; call it in useEffect cleanup to avoid duplicate handlers / leaks. */
+  const on = useCallback((methodName: string, callback: (...args: unknown[]) => void): SignalRUnsubscribe => {
+    const conn = connectionRef.current
+    if (!conn) return () => {}
+    conn.on(methodName, callback)
+    return () => {
+      connectionRef.current?.off(methodName, callback)
     }
-  }
+  }, [])
 
-  const off = (methodName: string, callback?: (...args: any[]) => void) => {
-    if (connectionRef.current) {
-      if (callback) {
-        connectionRef.current.off(methodName, callback)
-      } else {
-        connectionRef.current.off(methodName)
-      }
-    }
-  }
+  const off = useCallback((methodName: string, callback?: (...args: unknown[]) => void) => {
+    const conn = connectionRef.current
+    if (!conn) return
+    if (callback) conn.off(methodName, callback)
+    else conn.off(methodName)
+  }, [])
 
   return {
     connection: connectionRef.current,
