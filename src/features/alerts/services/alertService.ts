@@ -18,7 +18,7 @@ export const alertService = {
     }
 
     const response = await apiClient.get<GetAlertsResponse>(
-      `/api/Alert?${params.toString()}`
+      `/Alert?${params.toString()}`
     )
     return response.data.alerts || []
   },
@@ -27,7 +27,7 @@ export const alertService = {
    * Parse natural language alert input without creating the alert
    */
   async parseAlert(naturalLanguageInput: string): Promise<ParsedAlert> {
-    const response = await apiClient.post<ParsedAlert>('/api/Alert/parse', {
+    const response = await apiClient.post<ParsedAlert>('/Alert/parse', {
       naturalLanguageInput,
     })
     return response.data
@@ -37,7 +37,7 @@ export const alertService = {
    * Create a new alert (with NLP support)
    */
   async createAlert(data: CreateAlertRequest): Promise<CreateAlertResponse> {
-    const response = await apiClient.post<CreateAlertResponse>('/api/Alert', {
+    const response = await apiClient.post<CreateAlertResponse>('/Alert', {
       symbol: data.symbol,
       naturalLanguageInput: data.naturalLanguageInput,
       type: data.type,
@@ -55,7 +55,7 @@ export const alertService = {
     id: string,
     data: Partial<CreateAlertRequest>
   ): Promise<Alert> {
-    const response = await apiClient.put<Alert>(`/api/Alert/${id}`, data)
+    const response = await apiClient.put<Alert>(`/Alert/${id}`, data)
     return response.data
   },
 
@@ -63,14 +63,14 @@ export const alertService = {
    * Delete an alert
    */
   async deleteAlert(id: string): Promise<void> {
-    await apiClient.delete(`/api/Alert/${id}`)
+    await apiClient.delete(`/Alert/${id}`)
   },
 
   /**
    * Toggle alert active status
    */
   async toggleAlert(id: string, isActive: boolean): Promise<Alert> {
-    const response = await apiClient.patch<Alert>(`/api/Alert/${id}`, {
+    const response = await apiClient.patch<Alert>(`/Alert/${id}`, {
       isActive,
     })
     return response.data

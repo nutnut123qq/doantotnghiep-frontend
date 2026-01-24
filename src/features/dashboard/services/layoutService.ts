@@ -20,7 +20,7 @@ export const layoutService = {
   async getLayout(): Promise<LayoutConfig> {
     try {
       const response = await apiClient.get<UserPreference>(
-        `/api/UserPreference/${LAYOUT_PREFERENCE_KEY}`
+        `/UserPreference/${LAYOUT_PREFERENCE_KEY}`
       )
       
       if (response.data && response.data.preferenceValue) {
@@ -44,7 +44,7 @@ export const layoutService = {
    */
   async saveLayout(layout: LayoutConfig): Promise<void> {
     try {
-      await apiClient.post('/api/UserPreference', {
+      await apiClient.post('/UserPreference', {
         preferenceKey: LAYOUT_PREFERENCE_KEY,
         preferenceValue: JSON.stringify(layout),
       })
@@ -64,7 +64,7 @@ export const layoutService = {
    */
   async deleteLayout(): Promise<void> {
     try {
-      await apiClient.delete(`/api/UserPreference/${LAYOUT_PREFERENCE_KEY}`)
+      await apiClient.delete(`/UserPreference/${LAYOUT_PREFERENCE_KEY}`)
       localStorage.removeItem(LOCALSTORAGE_LAYOUT_KEY)
     } catch (error) {
       console.error('Error deleting layout:', error)
@@ -180,7 +180,7 @@ export const layoutService = {
       expiresAt,
     }
 
-    const response = await apiClient.post<ShareLayoutResponse>('/api/layouts/share', payload)
+    const response = await apiClient.post<ShareLayoutResponse>('/layouts/share', payload)
     return response.data
   },
 
@@ -188,7 +188,7 @@ export const layoutService = {
    * Import shared layout by code
    */
   async importLayoutByCode(code: string): Promise<LayoutConfig> {
-    const response = await apiClient.get<{ layoutJson: string }>(`/api/layouts/shared/${code}`)
+    const response = await apiClient.get<{ layoutJson: string }>(`/layouts/shared/${code}`)
     return JSON.parse(response.data.layoutJson)
   },
 
@@ -196,7 +196,7 @@ export const layoutService = {
    * Get current user's shared layouts
    */
   async getMySharedLayouts(): Promise<SharedLayoutInfo[]> {
-    const response = await apiClient.get<SharedLayoutInfo[]>('/api/layouts/shared')
+    const response = await apiClient.get<SharedLayoutInfo[]>('/layouts/shared')
     return response.data
   },
 

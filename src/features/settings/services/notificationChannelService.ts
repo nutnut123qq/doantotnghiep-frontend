@@ -7,17 +7,17 @@ import type {
 
 export const notificationChannelService = {
   getMyConfig: async (): Promise<NotificationChannelConfig> => {
-    const response = await apiClient.get('/api/notification-channels/me');
+    const response = await apiClient.get('/notification-channels/me');
     return response.data;
   },
 
   updateConfig: async (config: UpdateNotificationChannelRequest): Promise<NotificationChannelConfig> => {
-    const response = await apiClient.put('/api/notification-channels/me', config);
+    const response = await apiClient.put('/notification-channels/me', config);
     return response.data;
   },
 
   testChannel: async (channel: 'Slack' | 'Telegram'): Promise<TestNotificationResponse> => {
-    const response = await apiClient.post('/api/notification-channels/me/test', { channel });
+    const response = await apiClient.post('/notification-channels/me/test', { channel });
     return response.data;
   }
 };

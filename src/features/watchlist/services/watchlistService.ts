@@ -1,4 +1,5 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
+import { isAxiosError } from 'axios'
 
 export interface WatchlistStock {
   symbol: string
@@ -67,26 +68,17 @@ const transformWatchlist = (dto: WatchlistDto): Watchlist => {
 
 export const watchlistService = {
   async getWatchlists(): Promise<Watchlist[]> {
-    const response = await apiClient.get<GetWatchlistsResponse | WatchlistDto[]>('/api/Watchlist')
+    const response = await apiClient.get<GetWatchlistsResponse | WatchlistDto[]>('/Watchlist')
     
     // Handle both response formats: object with Watchlists property or array directly
-    let watchlistDtos: WatchlistDto[]
-    if (Array.isArray(response.data)) {
-      // If response is array, use it directly
-      watchlistDtos = response.data as any[]
-    } else if ('watchlists' in response.data) {
-      // If response has Watchlists property
-      watchlistDtos = (response.data as GetWatchlistsResponse).watchlists
-    } else {
-      // Fallback: try to use response.data as array
-      watchlistDtos = response.data as any[]
-    }
+    const data = response.data
+    const watchlistDtos = Array.isArray(data) ? data : data.watchlists
     
     return watchlistDtos.map(transformWatchlist)
   },
 
   async getWatchlistById(id: string): Promise<Watchlist> {
-    const response = await apiClient.get<WatchlistDto>(`/api/Watchlist/${id}`)
+    const response = await apiClient.get<WatchlistDto>(`/Watchlist/${id}`)
     return transformWatchlist(response.data)
   },
 
@@ -96,7 +88,7 @@ export const watchlistService = {
       name: string
       createdAt: string
     }
-    const response = await apiClient.post<CreateWatchlistResponse>('/api/Watchlist', { name })
+    const response = await apiClient.post<CreateWatchlistResponse>('/Watchlist', { name })
     // CreateWatchlistResponse doesn't include stocks, so we return a minimal watchlist
     const id = response.data.id ? String(response.data.id) : ''
     if (!id) {
@@ -114,10 +106,10 @@ export const watchlistService = {
     // Note: Backend may not have update endpoint yet
     // This will throw an error if endpoint doesn't exist
     try {
-      const response = await apiClient.put<WatchlistDto>(`/api/Watchlist/${id}`, { name })
+      const response = await apiClient.put<WatchlistDto>(`/Watchlist/${id}`, { name })
       return transformWatchlist(response.data)
-    } catch (error: any) {
-      if (error.response?.status === 404 || error.response?.status === 405) {
+    } catch (error: unknown) {
+      if (isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 405)) {
         throw new Error('Chức năng cập nhật watchlist chưa được hỗ trợ')
       }
       throw error
@@ -125,7 +117,7 @@ export const watchlistService = {
   },
 
   async deleteWatchlist(id: string): Promise<void> {
-    await apiClient.delete(`/api/Watchlist/${id}`)
+    await apiClient.delete(`/Watchlist/${id}`)
   },
 
   async addStock(watchlistId: string, symbol: string): Promise<void> {
@@ -133,7 +125,7 @@ export const watchlistService = {
       success: boolean
       message: string
     }
-    const response = await apiClient.post<AddStockResponse>(`/api/Watchlist/${watchlistId}/stocks`, { symbol })
+    const response = await apiClient.post<AddStockResponse>(`/Watchlist/${watchlistId}/stocks`, { symbol })
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to add stock')
     }
@@ -144,7 +136,7 @@ export const watchlistService = {
       success: boolean
       message: string
     }
-    const response = await apiClient.delete<RemoveStockResponse>(`/api/Watchlist/${watchlistId}/stocks/${symbol}`)
+    const response = await apiClient.delete<RemoveStockResponse>(`/Watchlist/${watchlistId}/stocks/${symbol}`)
     if (response.data && !response.data.success) {
       throw new Error(response.data.message || 'Failed to remove stock')
     }

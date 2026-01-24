@@ -12,3 +12,4 @@ export interface PaginatedResponse<T> {
   totalPages: number
 }
 
+export type QueryParams = Record<string, string | number | boolean | undefined>

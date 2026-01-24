@@ -28,7 +28,7 @@ describe('authService', () => {
         password: 'password123',
       })
 
-      expect(apiClient.post).toHaveBeenCalledWith('/api/auth/login', {
+      expect(apiClient.post).toHaveBeenCalledWith('/auth/login', {
         email: 'test@example.com',
         password: 'password123',
       })
@@ -59,7 +59,7 @@ describe('authService', () => {
         confirmPassword: 'password123',
       })
 
-      expect(apiClient.post).toHaveBeenCalledWith('/api/auth/register', {
+      expect(apiClient.post).toHaveBeenCalledWith('/auth/register', {
         email: 'test@example.com',
         password: 'password123',
         confirmPassword: 'password123',
@@ -91,7 +91,7 @@ describe('authService', () => {
       const result = await authService.verifyEmail('test-token')
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/api/auth/verify-email?token=test-token'
+        '/auth/verify-email?token=test-token'
       )
       expect(result).toEqual(mockResponse.data)
     })
@@ -111,7 +111,7 @@ describe('authService', () => {
       const result = await authService.resendVerification('test@example.com')
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/api/auth/resend-verification',
+        '/auth/resend-verification',
         { email: 'test@example.com' }
       )
       expect(result).toEqual(mockResponse.data)

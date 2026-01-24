@@ -9,7 +9,7 @@ import type {
  * Service for managing corporate events
  */
 class EventService {
-  private readonly BASE_URL = '/api/CorporateEvent'
+  private readonly BASE_URL = '/CorporateEvent'
 
   /**
    * Get all events with optional filtering

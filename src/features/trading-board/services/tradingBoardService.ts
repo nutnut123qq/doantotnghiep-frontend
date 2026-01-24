@@ -16,12 +16,12 @@ export const tradingBoardService = {
     if (filters?.industry) params.append('industry', filters.industry)
     if (filters?.watchlistId) params.append('watchlistId', filters.watchlistId)
 
-    const response = await apiClient.get<StockTicker[]>(`/api/TradingBoard?${params.toString()}`)
+    const response = await apiClient.get<StockTicker[]>(`/TradingBoard?${params.toString()}`)
     return response.data
   },
 
   async getTickerById(id: string): Promise<StockTicker> {
-    const response = await apiClient.get<StockTicker>(`/api/TradingBoard/${id}`)
+    const response = await apiClient.get<StockTicker>(`/TradingBoard/${id}`)
     return response.data
   },
 }

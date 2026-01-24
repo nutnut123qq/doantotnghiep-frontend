@@ -20,7 +20,7 @@ export const technicalIndicatorService = {
    */
   async getIndicators(symbol: string): Promise<IndicatorsResponse> {
     const response = await apiClient.get<IndicatorsResponse>(
-      `/api/TechnicalIndicator/${symbol}`
+      `/TechnicalIndicator/${symbol}`
     )
     return response.data
   }

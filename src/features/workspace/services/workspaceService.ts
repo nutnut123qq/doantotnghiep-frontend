@@ -79,7 +79,7 @@ export const workspaceService = {
    * Get all workspaces for current user
    */
   async getWorkspaces(): Promise<Workspace[]> {
-    const response = await apiClient.get<Workspace[]>('/api/Workspace')
+    const response = await apiClient.get<Workspace[]>('/Workspace')
     return response.data
   },
 
@@ -87,7 +87,7 @@ export const workspaceService = {
    * Get workspace by ID
    */
   async getWorkspaceById(id: string): Promise<Workspace> {
-    const response = await apiClient.get<Workspace>(`/api/Workspace/${id}`)
+    const response = await apiClient.get<Workspace>(`/Workspace/${id}`)
     return response.data
   },
 
@@ -95,7 +95,7 @@ export const workspaceService = {
    * Create a new workspace
    */
   async createWorkspace(data: CreateWorkspaceRequest): Promise<Workspace> {
-    const response = await apiClient.post<Workspace>('/api/Workspace', data)
+    const response = await apiClient.post<Workspace>('/Workspace', data)
     return response.data
   },
 
@@ -103,7 +103,7 @@ export const workspaceService = {
    * Update workspace
    */
   async updateWorkspace(id: string, data: UpdateWorkspaceRequest): Promise<Workspace> {
-    const response = await apiClient.put<Workspace>(`/api/Workspace/${id}`, data)
+    const response = await apiClient.put<Workspace>(`/Workspace/${id}`, data)
     return response.data
   },
 
@@ -111,7 +111,7 @@ export const workspaceService = {
    * Delete workspace
    */
   async deleteWorkspace(id: string): Promise<void> {
-    await apiClient.delete(`/api/Workspace/${id}`)
+    await apiClient.delete(`/Workspace/${id}`)
   },
 
   /**
@@ -119,7 +119,7 @@ export const workspaceService = {
    */
   async addMember(workspaceId: string, data: AddMemberRequest): Promise<WorkspaceMember> {
     const response = await apiClient.post<WorkspaceMember>(
-      `/api/Workspace/${workspaceId}/members`,
+      `/Workspace/${workspaceId}/members`,
       data
     )
     return response.data
@@ -129,7 +129,7 @@ export const workspaceService = {
    * Remove member from workspace
    */
   async removeMember(workspaceId: string, memberUserId: string): Promise<void> {
-    await apiClient.delete(`/api/Workspace/${workspaceId}/members/${memberUserId}`)
+    await apiClient.delete(`/Workspace/${workspaceId}/members/${memberUserId}`)
   },
 
   /**
@@ -140,14 +140,14 @@ export const workspaceService = {
     memberUserId: string,
     role: 'Owner' | 'Admin' | 'Member'
   ): Promise<void> {
-    await apiClient.put(`/api/Workspace/${workspaceId}/members/${memberUserId}/role`, { role })
+    await apiClient.put(`/Workspace/${workspaceId}/members/${memberUserId}/role`, { role })
   },
 
   /**
    * Get shared watchlists in workspace
    */
   async getSharedWatchlists(workspaceId: string): Promise<any[]> {
-    const response = await apiClient.get<any[]>(`/api/Workspace/${workspaceId}/watchlists`)
+    const response = await apiClient.get<any[]>(`/Workspace/${workspaceId}/watchlists`)
     return response.data
   },
 
@@ -155,21 +155,21 @@ export const workspaceService = {
    * Add watchlist to workspace
    */
   async addWatchlist(workspaceId: string, watchlistId: string): Promise<void> {
-    await apiClient.post(`/api/Workspace/${workspaceId}/watchlists`, { watchlistId })
+    await apiClient.post(`/Workspace/${workspaceId}/watchlists`, { watchlistId })
   },
 
   /**
    * Remove watchlist from workspace
    */
   async removeWatchlist(workspaceId: string, watchlistId: string): Promise<void> {
-    await apiClient.delete(`/api/Workspace/${workspaceId}/watchlists/${watchlistId}`)
+    await apiClient.delete(`/Workspace/${workspaceId}/watchlists/${watchlistId}`)
   },
 
   /**
    * Get shared layouts in workspace
    */
   async getSharedLayouts(workspaceId: string): Promise<any[]> {
-    const response = await apiClient.get<any[]>(`/api/Workspace/${workspaceId}/layouts`)
+    const response = await apiClient.get<any[]>(`/Workspace/${workspaceId}/layouts`)
     return response.data
   },
 
@@ -177,14 +177,14 @@ export const workspaceService = {
    * Add layout to workspace
    */
   async addLayout(workspaceId: string, layoutId: string): Promise<void> {
-    await apiClient.post(`/api/Workspace/${workspaceId}/layouts`, { layoutId })
+    await apiClient.post(`/Workspace/${workspaceId}/layouts`, { layoutId })
   },
 
   /**
    * Remove layout from workspace
    */
   async removeLayout(workspaceId: string, layoutId: string): Promise<void> {
-    await apiClient.delete(`/api/Workspace/${workspaceId}/layouts/${layoutId}`)
+    await apiClient.delete(`/Workspace/${workspaceId}/layouts/${layoutId}`)
   },
 
   /**
@@ -192,7 +192,7 @@ export const workspaceService = {
    */
   async getMessages(workspaceId: string, limit: number = 50): Promise<WorkspaceMessage[]> {
     const response = await apiClient.get<WorkspaceMessage[]>(
-      `/api/Workspace/${workspaceId}/messages?limit=${limit}`
+      `/Workspace/${workspaceId}/messages?limit=${limit}`
     )
     return response.data
   },
@@ -202,7 +202,7 @@ export const workspaceService = {
    */
   async sendMessage(workspaceId: string, content: string): Promise<WorkspaceMessage> {
     const response = await apiClient.post<WorkspaceMessage>(
-      `/api/Workspace/${workspaceId}/messages`,
+      `/Workspace/${workspaceId}/messages`,
       { content }
     )
     return response.data

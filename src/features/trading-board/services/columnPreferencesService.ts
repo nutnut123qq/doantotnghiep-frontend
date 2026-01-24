@@ -1,5 +1,6 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
 import { authService } from '@/features/auth/services/authService'
+import { isAxiosError } from 'axios'
 import type { TradingBoardColumnPreferences } from '../types/columnTypes'
 import { DEFAULT_COLUMN_ORDER, DEFAULT_VISIBLE_COLUMNS } from '../types/columnTypes'
 
@@ -20,7 +21,7 @@ export const columnPreferencesService = {
     if (authService.isAuthenticated()) {
       try {
         const response = await apiClient.get<UserPreference>(
-          `/api/UserPreference/${COLUMN_PREFERENCE_KEY}`,
+          `/UserPreference/${COLUMN_PREFERENCE_KEY}`,
           {
             // Suppress 404 errors in console
             validateStatus: (status) => status < 500, // Don't throw for 4xx errors
@@ -30,9 +31,9 @@ export const columnPreferencesService = {
         if (response.status === 200 && response.data && response.data.preferenceValue) {
           return JSON.parse(response.data.preferenceValue)
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 404 is expected when preference doesn't exist yet - don't log it
-        if (error?.response?.status !== 404) {
+        if (!isAxiosError(error) || error.response?.status !== 404) {
           console.error('Error getting column preferences:', error)
         }
       }
@@ -52,7 +53,7 @@ export const columnPreferencesService = {
    */
   async saveColumnPreferences(preferences: TradingBoardColumnPreferences): Promise<void> {
     try {
-      await apiClient.post('/api/UserPreference', {
+      await apiClient.post('/UserPreference', {
         preferenceKey: COLUMN_PREFERENCE_KEY,
         preferenceValue: JSON.stringify(preferences),
       })

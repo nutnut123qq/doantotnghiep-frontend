@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { useToast } from '@/shared/hooks/useToast'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
@@ -32,12 +33,13 @@ export const VerifyEmailPage = () => {
           setStatus('error')
           setMessage(result.message || 'Failed to verify email.')
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorMessage = getAxiosErrorMessage(error)
         setStatus('error')
         setMessage(
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Failed to verify email. The link may have expired.'
+          errorMessage === 'Unknown error'
+            ? 'Failed to verify email. The link may have expired.'
+            : errorMessage
         )
       }
     }
@@ -58,10 +60,12 @@ export const VerifyEmailPage = () => {
       } else {
         toast.error(result.message || 'Failed to resend verification email')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = getAxiosErrorMessage(error)
       toast.error(
-        error.response?.data?.message ||
-        'Failed to resend verification email. Please try again.'
+        errorMessage === 'Unknown error'
+          ? 'Failed to resend verification email. Please try again.'
+          : errorMessage
       )
     }
   }

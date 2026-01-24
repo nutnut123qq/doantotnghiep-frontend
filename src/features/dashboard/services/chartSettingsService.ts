@@ -1,4 +1,5 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
+import { isAxiosError } from 'axios'
 
 export interface ChartSettings {
   id?: string
@@ -114,7 +115,7 @@ export const chartSettingsService = {
   async saveToBackend(symbol: string, settings: Partial<ChartSettings>): Promise<ChartSettings | null> {
     try {
       const payload = convertToBackend({ symbol, ...settings })
-      const response = await apiClient.post<BackendChartSettings>('/api/ChartSettings', payload)
+      const response = await apiClient.post<BackendChartSettings>('/ChartSettings', payload)
       const converted = convertFromBackend(response.data)
       
       // Update cache with backend response
@@ -182,7 +183,7 @@ export const chartSettingsService = {
    */
   async loadFromBackend(symbol: string): Promise<ChartSettings | null> {
     try {
-      const response = await apiClient.get<BackendChartSettings>(`/api/ChartSettings/${symbol}`)
+      const response = await apiClient.get<BackendChartSettings>(`/ChartSettings/${symbol}`)
       const converted = convertFromBackend(response.data)
       
       // Update cache
@@ -191,8 +192,8 @@ export const chartSettingsService = {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(allSettings))
       
       return converted
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response?.status === 404) {
         // Settings don't exist yet, return null
         return null
       }
@@ -225,9 +226,9 @@ export const chartSettingsService = {
 
       // Delete from backend
       try {
-        await apiClient.delete(`/api/ChartSettings/${symbol}`)
-      } catch (error: any) {
-        if (error.response?.status !== 404) {
+        await apiClient.delete(`/ChartSettings/${symbol}`)
+      } catch (error: unknown) {
+        if (!isAxiosError(error) || error.response?.status !== 404) {
           // Ignore 404 (already deleted), but log other errors
           console.error('Error deleting from backend:', error)
         }

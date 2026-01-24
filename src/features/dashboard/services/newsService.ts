@@ -32,17 +32,17 @@ export const newsService = {
       params.append('tickerId', tickerId)
     }
     
-    const response = await apiClient.get<News[]>(`/api/News?${params.toString()}`)
+    const response = await apiClient.get<News[]>(`/News?${params.toString()}`)
     return response.data
   },
 
   async getNewsById(id: string): Promise<News> {
-    const response = await apiClient.get<News>(`/api/News/${id}`)
+    const response = await apiClient.get<News>(`/News/${id}`)
     return response.data
   },
 
   async requestSummarization(newsId: string): Promise<void> {
-    await apiClient.post(`/api/News/${newsId}/summarize`)
+    await apiClient.post(`/News/${newsId}/summarize`)
   },
 }
 

@@ -22,27 +22,27 @@ export interface PortfolioSummary {
 
 export const portfolioService = {
   async getHoldings(): Promise<Holding[]> {
-    const response = await apiClient.get<Holding[]>('/api/Portfolio/holdings')
+    const response = await apiClient.get<Holding[]>('/Portfolio/holdings')
     return response.data
   },
 
   async getSummary(): Promise<PortfolioSummary> {
-    const response = await apiClient.get<PortfolioSummary>('/api/Portfolio/summary')
+    const response = await apiClient.get<PortfolioSummary>('/Portfolio/summary')
     return response.data
   },
 
   async addHolding(data: { symbol: string; shares: number; avgPrice: number }): Promise<Holding> {
-    const response = await apiClient.post<Holding>('/api/Portfolio/holdings', data)
+    const response = await apiClient.post<Holding>('/Portfolio/holdings', data)
     return response.data
   },
 
   async updateHolding(id: string, data: { shares: number; avgPrice: number }): Promise<Holding> {
-    const response = await apiClient.put<Holding>(`/api/Portfolio/holdings/${id}`, data)
+    const response = await apiClient.put<Holding>(`/Portfolio/holdings/${id}`, data)
     return response.data
   },
 
   async deleteHolding(id: string): Promise<void> {
-    await apiClient.delete(`/api/Portfolio/holdings/${id}`)
+    await apiClient.delete(`/Portfolio/holdings/${id}`)
   },
 }
 

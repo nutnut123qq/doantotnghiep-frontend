@@ -4,6 +4,7 @@ import { ChatBubbleLeftRightIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react
 import { notificationChannelService } from '../services/notificationChannelService';
 import toast from 'react-hot-toast';
 import type { NotificationChannelConfig } from '../types/notificationChannel.types';
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError';
 
 export const NotificationChannelsSettings = () => {
   const [config, setConfig] = useState<NotificationChannelConfig>({
@@ -68,8 +69,9 @@ export const NotificationChannelsSettings = () => {
       setConfig(result);
       toast.success('Notification channels updated successfully');
       setSlackWebhookInput('');  // Clear input sau khi save
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update configuration');
+    } catch (error: unknown) {
+      const errorMessage = getAxiosErrorMessage(error);
+      toast.error(errorMessage === 'Unknown error' ? 'Failed to update configuration' : errorMessage);
     } finally {
       setLoading(false);
     }
@@ -102,8 +104,9 @@ export const NotificationChannelsSettings = () => {
       } else {
         toast.error('Failed to send test notification');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to test Slack');
+    } catch (error: unknown) {
+      const errorMessage = getAxiosErrorMessage(error);
+      toast.error(errorMessage === 'Unknown error' ? 'Failed to test Slack' : errorMessage);
     } finally {
       setTestingSlack(false);
     }
@@ -136,8 +139,9 @@ export const NotificationChannelsSettings = () => {
       } else {
         toast.error('Failed to send test notification');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to test Telegram');
+    } catch (error: unknown) {
+      const errorMessage = getAxiosErrorMessage(error);
+      toast.error(errorMessage === 'Unknown error' ? 'Failed to test Telegram' : errorMessage);
     } finally {
       setTestingTelegram(false);
     }

@@ -15,9 +15,10 @@ import type {
   EndpointMetrics
 } from '../../../shared/types/analyticsTypes';
 import type { AdminSharedLayoutInfo } from '../../../shared/types/layoutTypes';
+import type { QueryParams } from '../../../shared/types/common.types';
 
 class AdminService {
-  private baseUrl = '/api/Admin';
+  private baseUrl = '/Admin';
 
   /**
    * Get all users with pagination
@@ -102,7 +103,7 @@ class AdminService {
    * Get API analytics
    */
   async getAnalytics(startDate?: Date, endDate?: Date): Promise<ApiAnalytics> {
-    const params: any = {};
+    const params: QueryParams = {};
     if (startDate) params.startDate = startDate.toISOString();
     if (endDate) params.endDate = endDate.toISOString();
     
@@ -139,7 +140,7 @@ class AdminService {
     ownerId?: string,
     status: 'active' | 'expired' | 'all' = 'all'
   ): Promise<{ items: AdminSharedLayoutInfo[]; totalCount: number; page: number; pageSize: number }> {
-    const params: any = { page, pageSize, status };
+    const params: QueryParams = { page, pageSize, status };
     if (ownerId) params.ownerId = ownerId;
     const response = await apiClient.get(`${this.baseUrl}/shared-layouts`, { params });
     return response.data;

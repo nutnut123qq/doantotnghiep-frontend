@@ -4,7 +4,7 @@ import type { LoginRequest, RegisterRequest, AuthResponse, RegisterResponse } fr
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials)
+    const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
     if (response.data.token) {
       storage.set('token', response.data.token)
       storage.set('user', { email: response.data.email, role: response.data.role })
@@ -13,7 +13,7 @@ export const authService = {
   },
 
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await apiClient.post<RegisterResponse>('/api/auth/register', data)
+    const response = await apiClient.post<RegisterResponse>('/auth/register', data)
     return response.data
   },
 
@@ -32,14 +32,14 @@ export const authService = {
 
   async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.post<{ success: boolean; message: string }>(
-      `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+      `/auth/verify-email?token=${encodeURIComponent(token)}`
     )
     return response.data
   },
 
   async resendVerification(email: string): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.post<{ success: boolean; message: string }>(
-      '/api/auth/resend-verification',
+      '/auth/resend-verification',
       { email }
     )
     return response.data

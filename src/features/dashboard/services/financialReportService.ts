@@ -34,25 +34,25 @@ export interface AskQuestionResponse {
 
 export const financialReportService = {
   async getReportsBySymbol(symbol: string): Promise<FinancialReport[]> {
-    const response = await apiClient.get<FinancialReport[]>(`/api/FinancialReport/symbol/${symbol}`)
+    const response = await apiClient.get<FinancialReport[]>(`/FinancialReport/symbol/${symbol}`)
     return response.data
   },
 
   async getReportById(id: string): Promise<FinancialReport> {
-    const response = await apiClient.get<FinancialReport>(`/api/FinancialReport/${id}`)
+    const response = await apiClient.get<FinancialReport>(`/FinancialReport/${id}`)
     return response.data
   },
 
   async crawlReports(symbol: string, maxReports = 10): Promise<{ symbol: string; count: number; reports: FinancialReport[] }> {
     const response = await apiClient.post<{ symbol: string; count: number; reports: FinancialReport[] }>(
-      `/api/FinancialReport/crawl/${symbol}?maxReports=${maxReports}`
+      `/FinancialReport/crawl/${symbol}?maxReports=${maxReports}`
     )
     return response.data
   },
 
   async askQuestion(reportId: string, question: string): Promise<AskQuestionResponse> {
     const response = await apiClient.post<AskQuestionResponse>(
-      `/api/FinancialReport/${reportId}/ask`,
+      `/FinancialReport/${reportId}/ask`,
       { question }
     )
     return response.data

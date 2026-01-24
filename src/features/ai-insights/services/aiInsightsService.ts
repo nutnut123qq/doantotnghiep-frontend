@@ -37,26 +37,26 @@ export const aiInsightsService = {
     if (filters?.type) params.append('type', filters.type)
     if (filters?.symbol) params.append('symbol', filters.symbol)
     
-    const response = await apiClient.get<AIInsight[]>(`/api/AIInsights?${params.toString()}`)
+    const response = await apiClient.get<AIInsight[]>(`/AIInsights?${params.toString()}`)
     return response.data
   },
 
   async getInsightById(id: string): Promise<AIInsight> {
-    const response = await apiClient.get<AIInsight>(`/api/AIInsights/${id}`)
+    const response = await apiClient.get<AIInsight>(`/AIInsights/${id}`)
     return response.data
   },
 
   async getMarketSentiment(): Promise<MarketSentiment> {
-    const response = await apiClient.get<MarketSentiment>('/api/AIInsights/sentiment')
+    const response = await apiClient.get<MarketSentiment>('/AIInsights/sentiment')
     return response.data
   },
 
   async dismissInsight(id: string): Promise<void> {
-    await apiClient.post(`/api/AIInsights/${id}/dismiss`)
+    await apiClient.post(`/AIInsights/${id}/dismiss`)
   },
 
   async generateInsight(symbol: string): Promise<AIInsight> {
-    const response = await apiClient.post<AIInsight>(`/api/AIInsights/generate`, { symbol })
+    const response = await apiClient.post<AIInsight>(`/AIInsights/generate`, { symbol })
     return response.data
   },
 }

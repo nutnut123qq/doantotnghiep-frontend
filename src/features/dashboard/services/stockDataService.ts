@@ -43,19 +43,19 @@ export const stockDataService = {
     }
 
     const response = await apiClient.get<OHLCVData[]>(
-      `/api/StockData/ohlcv/${symbol}?${params.toString()}`
+      `/StockData/ohlcv/${symbol}?${params.toString()}`
     )
     return response.data
   },
 
   async getQuote(symbol: string): Promise<StockQuote> {
-    const response = await apiClient.get<StockQuote>(`/api/StockData/quote/${symbol}`)
+    const response = await apiClient.get<StockQuote>(`/StockData/quote/${symbol}`)
     return response.data
   },
 
   async getSymbols(exchange?: string): Promise<StockSymbol[]> {
     const params = exchange ? `?exchange=${exchange}` : ''
-    const response = await apiClient.get<StockSymbol[]>(`/api/StockData/symbols${params}`)
+    const response = await apiClient.get<StockSymbol[]>(`/StockData/symbols${params}`)
     return response.data
   },
 }

@@ -1,4 +1,5 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 export interface ForecastResult {
   symbol: string
@@ -33,7 +34,7 @@ export interface BatchForecastItem {
 export const forecastService = {
   async getForecast(symbol: string, timeHorizon: 'short' | 'medium' | 'long' = 'short'): Promise<ForecastResult> {
     try {
-      const response = await apiClient.get<ForecastResult>(`/api/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
+      const response = await apiClient.get<ForecastResult>(`/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
       // Normalize data to ensure arrays are never null
       const data = response.data
       return {
@@ -41,20 +42,19 @@ export const forecastService = {
         keyDrivers: data.keyDrivers || [],
         risks: data.risks || [],
       }
-    } catch (error: any) {
-      // Extract error message from API response
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Không thể tải dự báo'
-      throw new Error(errorMessage)
+    } catch (error: unknown) {
+      const errorMessage = getAxiosErrorMessage(error)
+      throw new Error(errorMessage === 'Unknown error' ? 'Không thể tải dự báo' : errorMessage)
     }
   },
 
   async getAllForecasts(symbol: string): Promise<AllForecasts> {
-    const response = await apiClient.get<AllForecasts>(`/api/Forecast/${symbol}/all`)
+    const response = await apiClient.get<AllForecasts>(`/Forecast/${symbol}/all`)
     return response.data
   },
 
   async getBatchForecasts(symbols: string[], timeHorizon: 'short' | 'medium' | 'long' = 'short'): Promise<{ forecasts: BatchForecastItem[] }> {
-    const response = await apiClient.post<{ forecasts: BatchForecastItem[] }>('/api/Forecast/batch', {
+    const response = await apiClient.post<{ forecasts: BatchForecastItem[] }>('/Forecast/batch', {
       symbols,
       timeHorizon,
     })

@@ -28,7 +28,7 @@ describe('columnPreferencesService', () => {
       const result = await columnPreferencesService.getColumnPreferences()
 
       expect(apiClient.get).toHaveBeenCalledWith(
-        '/api/UserPreference/trading_board_columns'
+        '/UserPreference/trading_board_columns'
       )
       expect(result).toEqual(mockPreferences)
     })
@@ -62,7 +62,7 @@ describe('columnPreferencesService', () => {
 
       await columnPreferencesService.saveColumnPreferences(preferences)
 
-      expect(apiClient.post).toHaveBeenCalledWith('/api/UserPreference', {
+      expect(apiClient.post).toHaveBeenCalledWith('/UserPreference', {
         preferenceKey: 'trading_board_columns',
         preferenceValue: JSON.stringify(preferences),
       })
