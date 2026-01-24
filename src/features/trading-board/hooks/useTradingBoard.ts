@@ -1,8 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { tradingBoardService, type TradingBoardFilters } from '../services/tradingBoardService'
 import { useSignalR } from '@/shared/hooks/useSignalR'
 import type { StockTicker } from '@/domain/entities/StockTicker'
+
+/**
+ * Stable key: only changes when the set of symbols changes (e.g. filters/refetch),
+ * NOT when ticker prices update. Used for join/leave effect deps to avoid churn.
+ */
+function useSymbolsKey(data: StockTicker[] | undefined) {
+  return useMemo(() => {
+    const symbols = (data ?? []).map((t) => t.symbol.toUpperCase())
+    return [...new Set(symbols)].sort().join(',')
+  }, [data])
+}
 
 export const useTradingBoard = (filters?: TradingBoardFilters) => {
   const [tickers, setTickers] = useState<StockTicker[]>([])
@@ -14,6 +25,7 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
   })
 
   const { on, invoke, isConnected } = useSignalR('stock-price')
+  const symbolsKey = useSymbolsKey(data)
 
   useEffect(() => {
     if (data) setTickers(data)
@@ -40,7 +52,7 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
       return
     }
 
-    const wanted = new Set((tickers ?? []).map((t) => t.symbol.toUpperCase()))
+    const wanted = new Set(symbolsKey ? symbolsKey.split(',') : [])
     const joined = joinedGroupsRef.current
 
     for (const symbol of wanted) {
@@ -61,14 +73,16 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
       joined.delete(symbol)
       invoke('LeaveTickerGroup', symbol).catch(() => {})
     }
+  }, [isConnected, symbolsKey, invoke])
 
+  useEffect(() => {
     return () => {
       for (const symbol of joinedGroupsRef.current) {
         invoke('LeaveTickerGroup', symbol).catch(() => {})
       }
       joinedGroupsRef.current.clear()
     }
-  }, [isConnected, tickers, invoke])
+  }, [invoke])
 
   return {
     tickers,
