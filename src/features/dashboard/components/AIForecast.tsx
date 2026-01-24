@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { forecastService, ForecastResult } from '../services/forecastService'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import {
   SparklesIcon,
   ArrowTrendingUpIcon,
@@ -36,10 +37,10 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
       setHasRequested(true)
       const data = await forecastService.getForecast(symbol, timeHorizon)
       setForecast(data)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading forecast:', err)
-      const errorMessage = err.message || 'Không thể tải dự báo. Vui lòng kiểm tra kết nối AI service.'
-      setError(errorMessage)
+      const msg = getAxiosErrorMessage(err)
+      setError(msg === 'Unknown error' ? 'Không thể tải dự báo. Vui lòng kiểm tra kết nối AI service.' : msg)
       setForecast(null) // Clear forecast data on error
     } finally {
       setLoading(false)

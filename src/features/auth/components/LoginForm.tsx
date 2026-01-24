@@ -5,6 +5,7 @@ import * as yup from 'yup'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useToast } from '@/shared/hooks/useToast'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -39,9 +40,9 @@ export const LoginForm = () => {
       setTimeout(() => {
         navigate('/', { replace: true })
       }, 100)
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Login failed. Please check your credentials.'
-      toast.error(errorMessage)
+    } catch (err: unknown) {
+      const errorMessage = getAxiosErrorMessage(err)
+      toast.error(errorMessage === 'Unknown error' ? 'Login failed. Please check your credentials.' : errorMessage)
     } finally {
       setLoading(false)
     }

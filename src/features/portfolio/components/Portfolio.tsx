@@ -27,7 +27,9 @@ import { ArrowUpDown, RefreshCw, Plus, Search, X } from 'lucide-react'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { cn } from '@/lib/utils'
 import { portfolioService, type Holding, type PortfolioSummary } from '../services/portfolioService'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
+import { isAxiosError } from 'axios'
 import {
   Dialog,
   DialogContent,
@@ -112,18 +114,14 @@ export const Portfolio = () => {
           holdingsCount: transformedHoldings.length,
         })
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading portfolio data:', err)
-      
-      // Handle 404 specifically (API endpoint not found)
-      if (err.response?.status === 404) {
-        const errorMessage = 'API endpoint chưa được implement. Vui lòng liên hệ admin.'
-        setError(errorMessage)
+      if (isAxiosError(err) && err.response?.status === 404) {
+        setError('API endpoint chưa được implement. Vui lòng liên hệ admin.')
       } else {
-        const errorMessage = err.response?.data?.message || err.message || 'Không thể tải dữ liệu portfolio. Vui lòng thử lại.'
-        setError(errorMessage)
+        const msg = getAxiosErrorMessage(err)
+        setError(msg === 'Unknown error' ? 'Không thể tải dữ liệu portfolio. Vui lòng thử lại.' : msg)
       }
-      
       setHoldings([])
       setSummaryStats(null)
     } finally {
@@ -143,7 +141,7 @@ export const Portfolio = () => {
       const avgPrice = parseFloat(newHolding.avgPrice)
 
       if (!newHolding.symbol.trim() || !shares || !avgPrice || shares <= 0 || avgPrice <= 0) {
-        toast.error('Vui lòng nhập đầy đủ thông tin hợp lệ')
+        notify.error('Vui lòng nhập đầy đủ thông tin hợp lệ')
         return
       }
 
@@ -161,10 +159,10 @@ export const Portfolio = () => {
       
       // Reload data
       await loadData()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding holding:', err)
-      const errorMessage = err.response?.data?.message || err.message || 'Không thể thêm mã cổ phiếu. Vui lòng thử lại.'
-      toast.error(errorMessage)
+      const msg = getAxiosErrorMessage(err)
+      notify.error(msg === 'Unknown error' ? 'Không thể thêm mã cổ phiếu. Vui lòng thử lại.' : msg)
     } finally {
       setIsSubmitting(false)
     }

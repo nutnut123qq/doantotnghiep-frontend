@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService'
 import type { LoginRequest, RegisterRequest } from '../types/auth.types'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(false)
@@ -14,8 +15,9 @@ export const useAuth = () => {
       setError(null)
       await authService.login(credentials)
       navigate('/')
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed')
+    } catch (err: unknown) {
+      const msg = getAxiosErrorMessage(err)
+      setError(msg === 'Unknown error' ? 'Login failed' : msg)
       throw err
     } finally {
       setLoading(false)
@@ -28,8 +30,9 @@ export const useAuth = () => {
       setError(null)
       await authService.register(data)
       navigate('/login')
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed')
+    } catch (err: unknown) {
+      const msg = getAxiosErrorMessage(err)
+      setError(msg === 'Unknown error' ? 'Registration failed' : msg)
       throw err
     } finally {
       setLoading(false)

@@ -86,13 +86,8 @@ export const NotificationChannelsSettings = () => {
 
     // Warn nếu có unsaved changes (user vừa nhập webhook mới)
     if (slackWebhookInput) {
-      toast('You have unsaved changes. Test will use the previously saved webhook URL.', {
-        icon: '⚠️',
+      notify.warning('You have unsaved changes. Test will use the previously saved webhook URL.', {
         duration: 5000,
-        style: {
-          background: '#f59e0b',
-          color: '#fff'
-        }
       });
     }
 

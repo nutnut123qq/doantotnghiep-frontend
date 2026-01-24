@@ -13,7 +13,8 @@ import {
 } from 'lucide-react'
 import { aiInsightsService, type AIInsight, type MarketSentiment } from '../services/aiInsightsService'
 import { motion } from 'framer-motion'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -76,9 +77,10 @@ export const AIInsights = () => {
 
       setInsights(insightsData)
       setMarketSentiment(sentimentData)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading AI insights:', err)
-      setError(err.message || 'Không thể tải dữ liệu AI Insights')
+      const msg = getAxiosErrorMessage(err)
+      setError(msg === 'Unknown error' ? 'Không thể tải dữ liệu AI Insights' : msg)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -96,9 +98,10 @@ export const AIInsights = () => {
       // Reload market sentiment as counts may have changed
       const sentiment = await aiInsightsService.getMarketSentiment()
       setMarketSentiment(sentiment)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error dismissing insight:', err)
-      toast.error('Không thể bỏ qua insight. Vui lòng thử lại.')
+      const msg = getAxiosErrorMessage(err)
+      notify.error(msg === 'Unknown error' ? 'Không thể bỏ qua insight. Vui lòng thử lại.' : msg)
     } finally {
       setDismissingIds(prev => {
         const newSet = new Set(prev)
@@ -112,9 +115,10 @@ export const AIInsights = () => {
     try {
       const detail = await aiInsightsService.getInsightById(insightId)
       setSelectedInsight(detail)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading insight details:', err)
-      toast.error('Không thể tải chi tiết insight')
+      const msg = getAxiosErrorMessage(err)
+      notify.error(msg === 'Unknown error' ? 'Không thể tải chi tiết insight' : msg)
     }
   }
 
@@ -129,17 +133,18 @@ export const AIInsights = () => {
       for (const symbol of commonSymbols) {
         try {
           await aiInsightsService.generateInsight(symbol)
-        } catch (err) {
+        } catch (err: unknown) {
           console.warn(`Failed to generate insight for ${symbol}:`, err)
         }
       }
       
       // Reload data after generation
       await loadData()
-      toast.success('Đã tạo insights cho một số mã cổ phiếu phổ biến. Vui lòng đợi vài giây để xem kết quả.')
-    } catch (err: any) {
+      notify.success('Đã tạo insights cho một số mã cổ phiếu phổ biến. Vui lòng đợi vài giây để xem kết quả.')
+    } catch (err: unknown) {
       console.error('Error generating insights:', err)
-      setError(err.message || 'Không thể tạo insights. Vui lòng kiểm tra AI service.')
+      const msg = getAxiosErrorMessage(err)
+      setError(msg === 'Unknown error' ? 'Không thể tạo insights. Vui lòng kiểm tra AI service.' : msg)
     } finally {
       setGenerating(false)
     }

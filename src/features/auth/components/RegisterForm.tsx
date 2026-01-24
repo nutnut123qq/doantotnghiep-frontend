@@ -5,6 +5,7 @@ import * as yup from 'yup'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useToast } from '@/shared/hooks/useToast'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,9 +44,9 @@ export const RegisterForm = () => {
       setTimeout(() => {
         navigate('/login')
       }, 2000)
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Registration failed. Please try again.'
-      toast.error(errorMessage)
+    } catch (err: unknown) {
+      const errorMessage = getAxiosErrorMessage(err)
+      toast.error(errorMessage === 'Unknown error' ? 'Registration failed. Please try again.' : errorMessage)
     } finally {
       setLoading(false)
     }
