@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Send, Sparkles, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/shared/components/EmptyState'
+import { forecastService } from '@/features/dashboard/services/forecastService'
+import { notify } from '@/shared/utils/notify'
 
 interface ForecastMessage {
   id: string
@@ -25,21 +27,26 @@ interface ForecastChatProps {
   symbol: string
 }
 
-const INITIAL_MESSAGE: ForecastMessage = {
+const createInitialMessage = (symbol: string): ForecastMessage => ({
   id: '1',
   role: 'assistant',
-  content: `I can help you forecast ${'VIC'} stock price. Ask me questions like:
+  content: `I can help you forecast ${symbol} stock price. Ask me questions like:
 - "What's the 3-month forecast?"
-- "What are the key drivers?"
-- "What's the price target?"`,
+- "What's the short-term forecast?"
+- "What are the key drivers?"`,
   timestamp: new Date(),
-}
+})
 
 export const ForecastChat = ({ symbol }: ForecastChatProps) => {
-  const [messages, setMessages] = useState<ForecastMessage[]>([INITIAL_MESSAGE])
+  const [messages, setMessages] = useState<ForecastMessage[]>([createInitialMessage(symbol)])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Update initial message when symbol changes
+  useEffect(() => {
+    setMessages([createInitialMessage(symbol)])
+  }, [symbol])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -48,6 +55,18 @@ export const ForecastChat = ({ symbol }: ForecastChatProps) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Parse user query to determine time horizon
+  const parseTimeHorizon = (query: string): 'short' | 'medium' | 'long' => {
+    const lowerQuery = query.toLowerCase()
+    if (lowerQuery.includes('long') || lowerQuery.includes('month') || lowerQuery.includes('3 month')) {
+      return 'long'
+    }
+    if (lowerQuery.includes('medium') || lowerQuery.includes('week') || lowerQuery.includes('2 week')) {
+      return 'medium'
+    }
+    return 'short' // Default to short term
+  }
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return
@@ -60,31 +79,42 @@ export const ForecastChat = ({ symbol }: ForecastChatProps) => {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const userInput = input
     setInput('')
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Parse time horizon from query
+      const timeHorizon = parseTimeHorizon(userInput)
+      const forecast = await forecastService.getForecast(symbol, timeHorizon)
+
+      // Transform API response to chat message format
       const assistantMessage: ForecastMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Based on technical analysis and market data for ${symbol}, I predict a moderate upward trend over the next 3 months. Key factors include strong fundamentals and positive market sentiment.`,
+        content: forecast.analysis || `Based on technical analysis for ${symbol}, the forecast indicates a ${forecast.trend.toLowerCase()} trend with ${forecast.confidence} confidence.`,
         timestamp: new Date(),
         forecastData: {
-          trend: 'up',
-          period: '3 months',
-          confidence: 75,
-          targetPrice: 105000,
-          drivers: [
-            'Strong Q4 earnings expected',
-            'Positive analyst coverage',
-            'Technical breakout pattern',
-          ],
+          trend: (forecast.trend === 'Up' ? 'up' : forecast.trend === 'Down' ? 'down' : 'neutral') as 'up' | 'down' | 'neutral',
+          period: forecastService.getTimeHorizonLabel(timeHorizon),
+          confidence: forecast.confidenceScore || (forecast.confidence === 'High' ? 80 : forecast.confidence === 'Medium' ? 60 : 40),
+          targetPrice: undefined, // API doesn't provide target price directly
+          drivers: forecast.keyDrivers || [],
         },
       }
       setMessages((prev) => [...prev, assistantMessage])
+    } catch (error) {
+      notify.error('Failed to get forecast. Please try again.')
+      const errorMessage: ForecastMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `Sorry, I couldn't retrieve the forecast for ${symbol} at this time. Please try again later.`,
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const getTrendIcon = (trend?: string) => {

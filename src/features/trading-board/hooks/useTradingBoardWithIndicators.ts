@@ -11,12 +11,18 @@ export interface StockTickerWithIndicators extends StockTicker {
 
 /**
  * Hook để extend Trading Board tickers với technical indicators
- * Batch fetch indicators cho tất cả tickers
+ * Optimized: Limit concurrent requests and only fetch for visible tickers
  */
-export const useTradingBoardWithIndicators = (tickers: StockTicker[]) => {
-  // Fetch indicators cho tất cả tickers
+export const useTradingBoardWithIndicators = (tickers: StockTicker[], maxConcurrent = 10) => {
+  // Limit the number of tickers to fetch indicators for (to avoid N+1 overload)
+  // Only fetch for first N tickers or all if less than maxConcurrent
+  const tickersToProcess = useMemo(() => {
+    return tickers.slice(0, Math.min(tickers.length, maxConcurrent))
+  }, [tickers, maxConcurrent])
+
+  // Fetch indicators cho limited tickers
   const indicatorQueries = useQueries({
-    queries: tickers.map((ticker) => ({
+    queries: tickersToProcess.map((ticker) => ({
       queryKey: ['technical-indicators', ticker.symbol],
       queryFn: () => technicalIndicatorService.getIndicators(ticker.symbol),
       enabled: !!ticker.symbol,
@@ -27,16 +33,24 @@ export const useTradingBoardWithIndicators = (tickers: StockTicker[]) => {
 
   // Merge indicators vào tickers
   const tickersWithIndicators = useMemo<StockTickerWithIndicators[]>(() => {
-    return tickers.map((ticker, index) => {
-      const indicatorQuery = indicatorQueries[index]
-      const tickerWithIndicators: StockTickerWithIndicators = { ...ticker }
+    // Create a map of symbol to indicators for quick lookup
+    const indicatorsMap = new Map<string, typeof indicatorQueries[0]['data']>()
+    tickersToProcess.forEach((ticker, index) => {
+      if (indicatorQueries[index]?.data) {
+        indicatorsMap.set(ticker.symbol.toUpperCase(), indicatorQueries[index].data)
+      }
+    })
 
-      if (indicatorQuery.data?.indicators) {
+    return tickers.map((ticker) => {
+      const tickerWithIndicators: StockTickerWithIndicators = { ...ticker }
+      const indicatorData = indicatorsMap.get(ticker.symbol.toUpperCase())
+
+      if (indicatorData?.indicators) {
         // Group indicators by type
-        const indicatorsByType = indicatorQuery.data.indicators.reduce((acc, ind) => {
+        const indicatorsByType = indicatorData.indicators.reduce((acc, ind) => {
           acc[ind.indicatorType] = ind
           return acc
-        }, {} as Record<string, typeof indicatorQuery.data.indicators[0]>)
+        }, {} as Record<string, typeof indicatorData.indicators[0]>)
 
         // Extract values
         if (indicatorsByType['RSI']?.value !== undefined) {
@@ -52,7 +66,7 @@ export const useTradingBoardWithIndicators = (tickers: StockTicker[]) => {
 
       return tickerWithIndicators
     })
-  }, [tickers, indicatorQueries])
+  }, [tickers, tickersToProcess, indicatorQueries])
 
   const isLoadingIndicators = indicatorQueries.some((q) => q.isLoading)
 

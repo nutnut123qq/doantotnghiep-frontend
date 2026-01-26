@@ -12,43 +12,11 @@ import { useQuery } from '@tanstack/react-query'
 import { watchlistService } from '@/features/watchlist/services/watchlistService'
 
 export const Dashboard = () => {
-  const [isLoading] = useState(false)
-  const [error] = useState<Error | null>(null)
-
   // Fetch watchlists for snapshot
   const { data: watchlists } = useQuery({
     queryKey: ['watchlists'],
     queryFn: () => watchlistService.getWatchlists(),
   })
-
-  // Mock data - replace with actual API calls
-  const marketBreadth = {
-    up: 450,
-    down: 320,
-    unchanged: 130,
-  }
-
-  const marketVolume = 1250000000
-  const marketValue = 85000000000
-
-  if (error) {
-    return (
-      <div className="p-8">
-        <ErrorState
-          message={error.message || 'Failed to load dashboard data'}
-          onRetry={() => window.location.reload()}
-        />
-      </div>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="p-8">
-        <LoadingSkeleton />
-      </div>
-    )
-  }
 
   return (
     <div className="p-8 animate-fade-in">
@@ -65,11 +33,7 @@ export const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <MarketOverview
-            breadth={marketBreadth}
-            volume={marketVolume}
-            value={marketValue}
-          />
+          <MarketOverview />
         </motion.div>
 
         {/* Top Movers */}

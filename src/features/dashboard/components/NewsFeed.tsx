@@ -4,6 +4,8 @@ import { Newspaper, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { notify } from '@/shared/utils/notify'
 
 // Move formatDate outside component to avoid recreation on each render
 const formatDate = (dateString: string) => {
@@ -28,15 +30,19 @@ const formatDate = (dateString: string) => {
 export const NewsFeed = () => {
   const [news, setNews] = useState<News[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [summarizing, setSummarizing] = useState<string | null>(null)
 
   const loadNews = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await newsService.getNews(1, 10)
       setNews(data)
     } catch (error) {
-      console.error('Error loading news:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load news'
+      setError(errorMessage)
+      notify.error('Failed to load news', { silent: true }) // Silent to avoid double notification
     } finally {
       setLoading(false)
     }
@@ -58,7 +64,7 @@ export const NewsFeed = () => {
         setSummarizing(null)
       }, 1000)
     } catch (error) {
-      console.error('Error summarizing news:', error)
+      notify.error('Failed to summarize news article')
       setSummarizing(null)
     }
   }
@@ -96,6 +102,15 @@ export const NewsFeed = () => {
           </div>
         ))}
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        message={error}
+        onRetry={loadNews}
+      />
     )
   }
 

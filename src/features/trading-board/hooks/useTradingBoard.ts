@@ -31,13 +31,20 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
     if (data) setTickers(data)
   }, [data])
 
-  const handlePriceUpdate = useCallback((updatedTicker: StockTicker) => {
+  const handlePriceUpdate = useCallback((updatedTicker: Partial<StockTicker> & { symbol?: string }) => {
     setTickers((prev) =>
-      prev.map((t) =>
-        t.symbol.toLowerCase() === (updatedTicker.symbol ?? '').toLowerCase()
-          ? updatedTicker
-          : t
-      )
+      prev.map((t) => {
+        const symbolMatch = t.symbol.toLowerCase() === (updatedTicker.symbol ?? '').toLowerCase()
+        if (!symbolMatch) return t
+        
+        // Merge partial update with existing ticker data to preserve all fields
+        return {
+          ...t,
+          ...updatedTicker,
+          // Ensure symbol is preserved
+          symbol: updatedTicker.symbol || t.symbol,
+        }
+      })
     )
   }, [])
 

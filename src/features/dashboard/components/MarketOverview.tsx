@@ -1,6 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { tradingBoardService } from '@/features/trading-board/services/tradingBoardService'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { BarChart3 } from 'lucide-react'
 
 interface MarketIndex {
   name: string
@@ -20,22 +26,72 @@ interface MarketOverviewProps {
   value?: number
 }
 
-const DEFAULT_INDICES: MarketIndex[] = [
-  { name: 'VNINDEX', value: 1250.5, change: 15.2, changePercent: 1.23 },
-  { name: 'VN30', value: 1180.3, change: 12.5, changePercent: 1.07 },
-]
-
 export const MarketOverview = ({
-  indices = DEFAULT_INDICES,
+  indices,
   breadth,
   volume,
   value,
 }: MarketOverviewProps) => {
+  // Fetch tickers to calculate market breadth if not provided
+  const { data: tickers = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['trading-board', 'market-overview'],
+    queryFn: () => tradingBoardService.getTickers(),
+    staleTime: 60000, // 1 minute
+    enabled: !breadth && !volume && !value, // Only fetch if we need to calculate
+  })
+
+  // Calculate market breadth from tickers
+  const calculatedBreadth = breadth || (tickers.length > 0 ? {
+    up: tickers.filter(t => (t.changePercent || 0) > 0).length,
+    down: tickers.filter(t => (t.changePercent || 0) < 0).length,
+    unchanged: tickers.filter(t => (t.changePercent || 0) === 0).length,
+  } : undefined)
+
+  const calculatedVolume = volume || (tickers.length > 0 
+    ? tickers.reduce((sum, t) => sum + (t.volume || 0), 0)
+    : undefined)
+
+  const calculatedValue = value || (tickers.length > 0
+    ? tickers.reduce((sum, t) => sum + (t.value || 0), 0)
+    : undefined)
+
+  if (isLoading && !indices && !breadth && !volume && !value) {
+    return (
+      <div className="space-y-4">
+        <LoadingSkeleton />
+      </div>
+    )
+  }
+
+  if (error && !indices && !breadth && !volume && !value) {
+    return (
+      <div className="space-y-4">
+        <ErrorState
+          message="Failed to load market data"
+          onRetry={() => refetch()}
+        />
+      </div>
+    )
+  }
+
+  // Show empty state if no data available
+  if (!indices && !calculatedBreadth && !calculatedVolume && !calculatedValue) {
+    return (
+      <div className="space-y-4">
+        <EmptyState
+          icon={BarChart3}
+          title="No market data available"
+          description="Market overview will appear here when data is available"
+        />
+      </div>
+    )
+  }
   return (
     <div className="space-y-4">
       {/* Market Indices */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {indices.map((index) => (
+      {indices && indices.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {indices.map((index) => (
           <Card key={index.name} className="bg-[hsl(var(--surface-1))]">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-[hsl(var(--muted))]">
@@ -72,11 +128,12 @@ export const MarketOverview = ({
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Market Breadth */}
-      {breadth && (
+      {calculatedBreadth && (
         <Card className="bg-[hsl(var(--surface-1))]">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-[hsl(var(--muted))]">
@@ -88,20 +145,20 @@ export const MarketOverview = ({
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-[hsl(var(--positive))]"></div>
                 <span className="text-sm text-[hsl(var(--text))]">
-                  <span className="font-semibold tabular-nums">{breadth.up}</span> Up
+                  <span className="font-semibold tabular-nums">{calculatedBreadth.up}</span> Up
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-[hsl(var(--negative))]"></div>
                 <span className="text-sm text-[hsl(var(--text))]">
-                  <span className="font-semibold tabular-nums">{breadth.down}</span> Down
+                  <span className="font-semibold tabular-nums">{calculatedBreadth.down}</span> Down
                 </span>
               </div>
-              {breadth.unchanged > 0 && (
+              {calculatedBreadth.unchanged > 0 && (
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 rounded-full bg-[hsl(var(--muted))]"></div>
                   <span className="text-sm text-[hsl(var(--text))]">
-                    <span className="font-semibold tabular-nums">{breadth.unchanged}</span> Unchanged
+                    <span className="font-semibold tabular-nums">{calculatedBreadth.unchanged}</span> Unchanged
                   </span>
                 </div>
               )}
@@ -111,9 +168,9 @@ export const MarketOverview = ({
       )}
 
       {/* Volume & Value */}
-      {(volume || value) && (
+      {(calculatedVolume || calculatedValue) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {volume && (
+          {calculatedVolume && (
             <Card className="bg-[hsl(var(--surface-1))]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-[hsl(var(--muted))]">
@@ -122,12 +179,12 @@ export const MarketOverview = ({
               </CardHeader>
               <CardContent>
                 <div className="text-xl font-semibold tabular-nums text-[hsl(var(--text))]">
-                  {volume.toLocaleString('vi-VN')}
+                  {calculatedVolume.toLocaleString('vi-VN')}
                 </div>
               </CardContent>
             </Card>
           )}
-          {value && (
+          {calculatedValue && (
             <Card className="bg-[hsl(var(--surface-1))]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-[hsl(var(--muted))]">
@@ -136,7 +193,7 @@ export const MarketOverview = ({
               </CardHeader>
               <CardContent>
                 <div className="text-xl font-semibold tabular-nums text-[hsl(var(--text))]">
-                  {value.toLocaleString('vi-VN')} VNĐ
+                  {calculatedValue.toLocaleString('vi-VN')} VNĐ
                 </div>
               </CardContent>
             </Card>

@@ -1,9 +1,16 @@
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createChart, ColorType, IChartApi } from 'lightweight-charts'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
+import { tradingBoardService } from '@/features/trading-board/services/tradingBoardService'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { BarChart3 } from 'lucide-react'
+import type { StockTicker } from '@/domain/entities/StockTicker'
 
 interface Mover {
   symbol: string
@@ -20,17 +27,6 @@ interface TopMoversProps {
   losers?: Mover[]
   maxItems?: number
 }
-
-const DEFAULT_GAINERS: Mover[] = [
-  { symbol: 'VIC', name: 'Vingroup', price: 100000, change: 5000, changePercent: 5.26, volume: 1000000, sparkline: [95000, 96000, 97000, 98000, 99000, 100000] },
-  { symbol: 'VNM', name: 'Vinamilk', price: 85000, change: 3000, changePercent: 3.66, volume: 500000, sparkline: [82000, 83000, 84000, 84500, 85000] },
-  { symbol: 'FPT', name: 'FPT Corporation', price: 120000, change: 2500, changePercent: 2.13, volume: 800000, sparkline: [117500, 118000, 119000, 119500, 120000] },
-]
-
-const DEFAULT_LOSERS: Mover[] = [
-  { symbol: 'VCB', name: 'Vietcombank', price: 95000, change: -2000, changePercent: -2.06, volume: 600000, sparkline: [97000, 96000, 95500, 95000, 95000] },
-  { symbol: 'BID', name: 'BIDV', price: 45000, change: -1000, changePercent: -2.17, volume: 400000, sparkline: [46000, 45500, 45000, 45000, 45000] },
-]
 
 const MiniSparkline = ({ data }: { data: number[] }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
@@ -75,13 +71,96 @@ const MiniSparkline = ({ data }: { data: number[] }) => {
   return <div ref={chartContainerRef} className="w-20 h-8" />
 }
 
+// Transform StockTicker to Mover format
+const transformTickerToMover = (ticker: StockTicker): Mover => ({
+  symbol: ticker.symbol,
+  name: ticker.name || ticker.symbol,
+  price: ticker.currentPrice || 0,
+  change: ticker.change || 0,
+  changePercent: ticker.changePercent || 0,
+  volume: ticker.volume || 0,
+})
+
 export const TopMovers = ({
-  gainers = DEFAULT_GAINERS,
-  losers = DEFAULT_LOSERS,
+  gainers,
+  losers,
   maxItems = 5,
 }: TopMoversProps) => {
-  const displayGainers = gainers.slice(0, maxItems)
-  const displayLosers = losers.slice(0, maxItems)
+  // Fetch tickers if not provided
+  const { data: tickers = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['trading-board', 'top-movers'],
+    queryFn: () => tradingBoardService.getTickers(),
+    staleTime: 60000, // 1 minute
+    enabled: !gainers && !losers, // Only fetch if not provided
+  })
+
+  // Calculate gainers and losers from tickers
+  const calculatedGainers = gainers || useMemo(() => {
+    return tickers
+      .filter(t => (t.changePercent || 0) > 0)
+      .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0))
+      .slice(0, maxItems)
+      .map(transformTickerToMover)
+  }, [tickers, maxItems])
+
+  const calculatedLosers = losers || useMemo(() => {
+    return tickers
+      .filter(t => (t.changePercent || 0) < 0)
+      .sort((a, b) => (a.changePercent || 0) - (b.changePercent || 0))
+      .slice(0, maxItems)
+      .map(transformTickerToMover)
+  }, [tickers, maxItems])
+
+  const displayGainers = calculatedGainers.slice(0, maxItems)
+  const displayLosers = calculatedLosers.slice(0, maxItems)
+
+  if (isLoading && !gainers && !losers) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="bg-[hsl(var(--surface-1))]">
+          <CardContent className="pt-6">
+            <LoadingSkeleton />
+          </CardContent>
+        </Card>
+        <Card className="bg-[hsl(var(--surface-1))]">
+          <CardContent className="pt-6">
+            <LoadingSkeleton />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error && !gainers && !losers) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="bg-[hsl(var(--surface-1))]">
+          <CardContent className="pt-6">
+            <ErrorState
+              message="Failed to load top movers"
+              onRetry={() => refetch()}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (displayGainers.length === 0 && displayLosers.length === 0) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="bg-[hsl(var(--surface-1))]">
+          <CardContent className="pt-6">
+            <EmptyState
+              icon={BarChart3}
+              title="No market data available"
+              description="Top movers will appear here when data is available"
+            />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

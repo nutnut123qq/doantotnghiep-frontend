@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as signalR from '@microsoft/signalr'
-import { config } from '@/infrastructure/config/env'
-import { storage } from '@/infrastructure/storage/localStorage'
+import { signalRManager } from './signalRManager'
 
 /** Unsubscribe function returned by `on()`. Call to remove the handler. */
 export type SignalRUnsubscribe = () => void
@@ -10,84 +9,49 @@ export const useSignalR = (hubName: string, onConnected?: () => void) => {
   const connectionRef = useRef<signalR.HubConnection | null>(null)
   const onConnectedRef = useRef(onConnected)
   const [isConnected, setIsConnected] = useState(false)
+  const isMountedRef = useRef(true)
 
   useEffect(() => {
     onConnectedRef.current = onConnected
   }, [onConnected])
 
   useEffect(() => {
-    if (connectionRef.current) {
-      const state = connectionRef.current.state
-      if (
-        state === signalR.HubConnectionState.Connected ||
-        state === signalR.HubConnectionState.Connecting
-      ) {
-        return
-      }
-      if (state === signalR.HubConnectionState.Disconnected) {
-        connectionRef.current = null
-      }
-    }
+    isMountedRef.current = true
 
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${config.signalRUrl}/${hubName}`, {
-        withCredentials: false,
-        accessTokenFactory: () => {
-          const token = storage.get<string>('token')
-          return token ?? ''
+    // Get or create connection using singleton manager
+    signalRManager
+      .getOrCreateConnection(hubName)
+      .then((connection) => {
+        if (!isMountedRef.current) {
+          signalRManager.releaseConnection(hubName)
+          return
         }
-      })
-      .withAutomaticReconnect()
-      .configureLogging(
-        import.meta.env.DEV
-          ? signalR.LogLevel.Warning
-          : signalR.LogLevel.Information
-      )
-      .build()
 
-    connectionRef.current = connection
-    let isMounted = true
-
-    const updateConnectionState = () => {
-      if (isMounted) {
+        connectionRef.current = connection
         setIsConnected(connection.state === signalR.HubConnectionState.Connected)
-      }
-    }
+        onConnectedRef.current?.()
+      })
+      .catch(() => {
+        if (isMountedRef.current) {
+          setIsConnected(false)
+        }
+      })
 
-    connection.onclose(updateConnectionState)
-    connection.onreconnecting(updateConnectionState)
-    connection.onreconnected(updateConnectionState)
-
-    void connection
-      .start()
-      .then(() => {
-        if (isMounted) {
-          setIsConnected(true)
+    // Listen to connection state changes
+    const unsubscribe = signalRManager.addStateListener(hubName, (connected) => {
+      if (isMountedRef.current) {
+        setIsConnected(connected)
+        if (connected) {
           onConnectedRef.current?.()
-        } else {
-          connection.stop().catch(() => {})
         }
-      })
-      .catch((err) => {
-        if (
-          isMounted &&
-          err.name !== 'AbortError' &&
-          err.message !== 'The connection was stopped during negotiation.' &&
-          !err.message?.includes('stopped during negotiation')
-        ) {
-          console.error(`Error connecting to ${hubName}:`, err)
-        }
-        if (isMounted) setIsConnected(false)
-      })
+      }
+    })
 
     return () => {
-      isMounted = false
+      isMountedRef.current = false
       setIsConnected(false)
-      if (connection.state === signalR.HubConnectionState.Connecting) {
-        connection.stop().catch(() => {})
-      } else if (connection.state !== signalR.HubConnectionState.Disconnected) {
-        connection.stop().catch(() => {})
-      }
+      unsubscribe()
+      signalRManager.releaseConnection(hubName)
       connectionRef.current = null
     }
   }, [hubName])

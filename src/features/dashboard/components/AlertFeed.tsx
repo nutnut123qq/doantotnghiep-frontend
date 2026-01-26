@@ -1,57 +1,21 @@
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Bell, Sparkles } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/shared/components/EmptyState'
-
-interface AlertFeedItem {
-  id: string
-  symbol: string
-  type: 'price' | 'volume' | 'sentiment' | 'volatility'
-  message: string
-  triggeredAt: string
-  aiExplanation?: string
-  severity: 'high' | 'medium' | 'low'
-}
+import { ErrorState } from '@/shared/components/ErrorState'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { alertService } from '@/features/alerts/services/alertService'
+import type { Alert, AlertType } from '@/features/alerts/types/alert.types'
+import { AlertTypeLabels } from '@/features/alerts/types/alert.types'
 
 interface AlertFeedProps {
-  alerts?: AlertFeedItem[]
   maxItems?: number
 }
 
-const DEFAULT_ALERTS: AlertFeedItem[] = [
-  {
-    id: '1',
-    symbol: 'FPT',
-    type: 'price',
-    message: 'FPT dropped 5% this week',
-    triggeredAt: new Date().toISOString(),
-    aiExplanation: 'High volume spike detected. Possible sell-off due to market sentiment.',
-    severity: 'high',
-  },
-  {
-    id: '2',
-    symbol: 'VIC',
-    type: 'volume',
-    message: 'VIC volume increased 200%',
-    triggeredAt: new Date(Date.now() - 3600000).toISOString(),
-    aiExplanation: 'Unusual trading activity. May indicate institutional interest.',
-    severity: 'medium',
-  },
-]
-
-const getTypeLabel = (type: AlertFeedItem['type']) => {
-  const labels = {
-    price: 'Price',
-    volume: 'Volume',
-    sentiment: 'Sentiment',
-    volatility: 'Volatility',
-  }
-  return labels[type]
-}
-
-const getSeverityColor = (severity: AlertFeedItem['severity']) => {
+const getSeverityColor = (severity: 'high' | 'medium' | 'low') => {
   const colors = {
     high: 'bg-[hsl(var(--negative))] text-[hsl(var(--negative-foreground))]',
     medium: 'bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]',
@@ -60,8 +24,71 @@ const getSeverityColor = (severity: AlertFeedItem['severity']) => {
   return colors[severity]
 }
 
-export const AlertFeed = ({ alerts = DEFAULT_ALERTS, maxItems = 5 }: AlertFeedProps) => {
-  const displayAlerts = alerts.slice(0, maxItems)
+// Transform Alert to display format
+const transformAlert = (alert: Alert) => {
+  const message = alert.condition 
+    ? `${alert.symbol || 'Stock'} ${alert.condition}${alert.threshold ? ` ${alert.threshold}` : ''}`
+    : `${alert.symbol || 'Stock'} alert triggered`
+  
+  return {
+    id: alert.id,
+    symbol: alert.symbol || 'N/A',
+    type: alert.type,
+    message,
+    triggeredAt: alert.triggeredAt || alert.createdAt || new Date().toISOString(),
+    timeframe: alert.timeframe,
+    severity: 'medium' as 'high' | 'medium' | 'low', // Default since Alert doesn't have severity
+  }
+}
+
+export const AlertFeed = ({ maxItems = 5 }: AlertFeedProps) => {
+  const { data: alerts = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['alerts', 'recent'],
+    queryFn: () => alertService.getAlerts(true), // Get active alerts only
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // Refetch every minute
+  })
+
+  const displayAlerts = alerts
+    .filter(alert => alert.triggeredAt) // Only show triggered alerts
+    .map(transformAlert)
+    .sort((a, b) => new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime())
+    .slice(0, maxItems)
+
+  if (isLoading) {
+    return (
+      <Card className="bg-[hsl(var(--surface-1))]">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[hsl(var(--text))] flex items-center space-x-2">
+            <Bell className="h-4 w-4" />
+            <span>Alert Feed</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LoadingSkeleton />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-[hsl(var(--surface-1))]">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[hsl(var(--text))] flex items-center space-x-2">
+            <Bell className="h-4 w-4" />
+            <span>Alert Feed</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ErrorState
+            message="Failed to load alerts"
+            onRetry={() => refetch()}
+          />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="bg-[hsl(var(--surface-1))]">
@@ -91,7 +118,7 @@ export const AlertFeed = ({ alerts = DEFAULT_ALERTS, maxItems = 5 }: AlertFeedPr
                       {alert.symbol}
                     </span>
                     <Badge variant="outline" className="text-xs">
-                      {getTypeLabel(alert.type)}
+                      {AlertTypeLabels[alert.type as AlertType] || 'Alert'}
                     </Badge>
                     <Badge className={cn('text-xs', getSeverityColor(alert.severity))}>
                       {alert.severity}
@@ -102,13 +129,13 @@ export const AlertFeed = ({ alerts = DEFAULT_ALERTS, maxItems = 5 }: AlertFeedPr
                   </span>
                 </div>
                 <p className="text-sm text-[hsl(var(--text))] mb-2">{alert.message}</p>
-                {alert.aiExplanation && (
+                {alert.timeframe && (
                   <div className="mt-2 p-2 rounded bg-[hsl(var(--surface-3))] border border-[hsl(var(--border))]">
                     <div className="flex items-start space-x-2">
                       <Sparkles className="h-3 w-3 text-[hsl(var(--accent))] mt-0.5 flex-shrink-0" />
                       <p className="text-xs text-[hsl(var(--muted))]">
-                        <span className="font-medium text-[hsl(var(--text))]">AI:</span>{' '}
-                        {alert.aiExplanation}
+                        <span className="font-medium text-[hsl(var(--text))]">Timeframe:</span>{' '}
+                        {alert.timeframe}
                       </p>
                     </div>
                   </div>

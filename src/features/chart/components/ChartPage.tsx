@@ -26,7 +26,7 @@ export const ChartPage = () => {
 
   const handleSymbolChange = (newSymbol: string) => {
     setSelectedSymbol(newSymbol)
-    navigate(`/?symbol=${newSymbol}`, { replace: true })
+    navigate(`/chart?symbol=${newSymbol}`, { replace: true })
   }
 
   return (
@@ -45,7 +45,9 @@ export const ChartPage = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchQuery.trim()) {
-                      handleSymbolChange(searchQuery.trim().toUpperCase())
+                      const newSymbol = searchQuery.trim().toUpperCase()
+                      setSelectedSymbol(newSymbol)
+                      navigate(`/chart?symbol=${newSymbol}`, { replace: true })
                       setSearchQuery('')
                     }
                   }}

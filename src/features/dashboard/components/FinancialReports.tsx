@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { financialReportService, FinancialReport, FinancialMetrics } from '../services/financialReportService'
 import { DocumentTextIcon, ChatBubbleLeftRightIcon, ChartBarIcon } from '@heroicons/react/24/outline'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { notify } from '@/shared/utils/notify'
 
 // Helper to check if a string is a valid URL
 const isValidUrl = (str: string): boolean => {
@@ -21,6 +23,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
   const [selectedReport, setSelectedReport] = useState<FinancialReport | null>(null)
   const [metrics, setMetrics] = useState<FinancialMetrics | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [sources, setSources] = useState<string[]>([])
@@ -37,13 +40,16 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
   const loadReports = useCallback(async () => {
     try {
       setLoading(true)
+      setError(null)
       const data = await financialReportService.getReportsBySymbol(symbol)
       setReports(data)
       if (data.length > 0) {
         selectReport(data[0])
       }
     } catch (error) {
-      console.error('Error loading financial reports:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load financial reports'
+      setError(errorMessage)
+      notify.error('Failed to load financial reports', { silent: true })
     } finally {
       setLoading(false)
     }
@@ -63,7 +69,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
       setSources(response.sources || [])
       setQuestion('') // Clear input for next question
     } catch (error) {
-      console.error('Error asking question:', error)
+      notify.error('Failed to process question. Please try again.')
       setAnswer('Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại.')
       setSources([])
     } finally {
@@ -82,6 +88,21 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
           <div className="h-4 bg-muted rounded w-3/4"></div>
           <div className="h-4 bg-muted rounded w-1/2"></div>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
+        <div className="flex items-center space-x-3 mb-6">
+          <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính - {symbol}</h3>
+        </div>
+        <ErrorState
+          message={error}
+          onRetry={loadReports}
+        />
       </div>
     )
   }

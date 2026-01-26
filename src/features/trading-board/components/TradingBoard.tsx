@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { watchlistService } from '@/features/watchlist/services/watchlistService'
@@ -47,11 +47,16 @@ import { TradingBoardFilters } from './TradingBoardFilters'
 import { DensityToggle } from './DensityToggle'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { BarChart3, Bell, Star } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { notify } from '@/shared/utils/notify'
 
 export const TradingBoard = () => {
   const navigate = useNavigate()
   const [filters, setFilters] = useState<TradingBoardFiltersType>({})
+  const [debouncedFilters, setDebouncedFilters] = useState<TradingBoardFiltersType>({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -61,7 +66,28 @@ export const TradingBoard = () => {
     ...INDICATOR_COLUMN_IDS,
   ])
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
-  const { tickers: baseTickers, isLoading, error } = useTradingBoard(filters)
+  const [watchlistModalOpen, setWatchlistModalOpen] = useState(false)
+  const [selectedTickerForWatchlist, setSelectedTickerForWatchlist] = useState<string | null>(null)
+  const [selectedWatchlistId, setSelectedWatchlistId] = useState<string>('')
+  // Debounce filters (especially industry) to avoid refetch on every keypress
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters(filters)
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timer)
+  }, [filters])
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300) // 300ms debounce for search
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const { tickers: baseTickers, isLoading, error } = useTradingBoard(debouncedFilters)
   const { tickers, isLoadingIndicators } = useTradingBoardWithIndicators(baseTickers)
 
   // Fetch watchlists for filter
@@ -109,7 +135,8 @@ export const TradingBoard = () => {
       setColumnVisibility(buildVisibility(prefs.visibleColumns ?? DEFAULT_COLUMN_ORDER))
       setColumnOrder(buildFullColumnOrder(prefs))
     } catch (error) {
-      console.error('Error loading column preferences:', error)
+      // Silent error - column preferences are optional, fallback to defaults
+      // notify.error('Failed to load column preferences', { silent: true })
     }
   }
 
@@ -118,22 +145,44 @@ export const TradingBoard = () => {
     setColumnOrder(buildFullColumnOrder(prefs))
   }
 
-  // Filter tickers based on search query
+  // Filter tickers based on debounced search query
   const filteredTickers = useMemo(() => {
-    if (!searchQuery) return tickers
-    const query = searchQuery.toLowerCase()
+    if (!debouncedSearchQuery) return tickers
+    const query = debouncedSearchQuery.toLowerCase()
     return tickers.filter(
       (ticker) =>
         ticker.symbol.toLowerCase().includes(query) ||
         ticker.name?.toLowerCase().includes(query)
     )
-  }, [tickers, searchQuery])
+  }, [tickers, debouncedSearchQuery])
 
   const handleFilterChange = (key: keyof TradingBoardFiltersType, value: string | undefined) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value === 'all' ? undefined : value || undefined,
     }))
+  }
+
+  const handleAddToWatchlistClick = (symbol: string) => {
+    setSelectedTickerForWatchlist(symbol)
+    setWatchlistModalOpen(true)
+    if (watchlists.length > 0) {
+      setSelectedWatchlistId(watchlists[0].id)
+    }
+  }
+
+  const handleAddToWatchlist = async () => {
+    if (!selectedTickerForWatchlist || !selectedWatchlistId) return
+
+    try {
+      await watchlistService.addStock(selectedWatchlistId, selectedTickerForWatchlist)
+      notify.success(`Added ${selectedTickerForWatchlist} to watchlist`)
+      setWatchlistModalOpen(false)
+      setSelectedTickerForWatchlist(null)
+      setSelectedWatchlistId('')
+    } catch (error) {
+      notify.error('Failed to add stock to watchlist')
+    }
   }
 
   const columns = useMemo<ColumnDef<StockTickerWithIndicators>[]>(
@@ -603,7 +652,7 @@ export const TradingBoard = () => {
                                 className="h-7 w-7"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  navigate(`/?symbol=${ticker.symbol}`)
+                                  navigate(`/chart?symbol=${ticker.symbol}`)
                                 }}
                                 title="Open Chart"
                               >
@@ -627,7 +676,7 @@ export const TradingBoard = () => {
                                 className="h-7 w-7"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  // TODO: Add to watchlist
+                                  handleAddToWatchlistClick(ticker.symbol)
                                 }}
                                 title="Add to Watchlist"
                               >
@@ -691,6 +740,49 @@ export const TradingBoard = () => {
           onClose={() => setIsColumnModalOpen(false)}
           onSave={handleSaveColumnPreferences}
         />
+
+        {/* Add to Watchlist Modal */}
+        <Dialog open={watchlistModalOpen} onOpenChange={setWatchlistModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add to Watchlist</DialogTitle>
+              <DialogDescription>
+                Select a watchlist to add {selectedTickerForWatchlist} to
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {watchlists.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--muted))]">
+                  No watchlists available. Please create a watchlist first.
+                </p>
+              ) : (
+                <Select value={selectedWatchlistId} onValueChange={setSelectedWatchlistId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select watchlist" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {watchlists.map((watchlist) => (
+                      <SelectItem key={watchlist.id} value={watchlist.id}>
+                        {watchlist.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setWatchlistModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddToWatchlist}
+                  disabled={!selectedWatchlistId || watchlists.length === 0}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
