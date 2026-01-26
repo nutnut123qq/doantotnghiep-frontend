@@ -17,14 +17,19 @@ import { TickerSearch } from '@/shared/components/TickerSearch'
 import { analysisReportApi } from '@/infrastructure/api/analysisReportApi'
 import type { AnalysisReportListItem } from '@/shared/types/analysisReportTypes'
 import { ImportReportDialog } from './ImportReportDialog'
+import { useAuthContext } from '@/shared/contexts/AuthContext'
 
 const PAGE_SIZE = 10
 
 export const AnalysisReportsPage = () => {
   const navigate = useNavigate()
+  const { user } = useAuthContext()
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [isImportOpen, setIsImportOpen] = useState(false)
+  
+  // P1 Fix: Only show Import button for Admin users
+  const isAdmin = user?.role === 'Admin'
 
   const normalizedSymbol = useMemo(() => {
     return selectedSymbol ? selectedSymbol.trim().toUpperCase() : ''
@@ -58,12 +63,14 @@ export const AnalysisReportsPage = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Báo cáo phân tích</CardTitle>
-          <Button
-            onClick={() => setIsImportOpen(true)}
-            disabled={!normalizedSymbol}
-          >
-            Nhập báo cáo mới
-          </Button>
+          {isAdmin && (
+            <Button
+              onClick={() => setIsImportOpen(true)}
+              disabled={!normalizedSymbol}
+            >
+              Nhập báo cáo mới
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
