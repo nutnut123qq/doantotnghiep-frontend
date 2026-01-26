@@ -9,9 +9,10 @@ import { DataSourceManagement } from './DataSourceManagement'
 import { AIModelConfiguration } from './AIModelConfiguration'
 import { NotificationTemplateManagement } from './NotificationTemplateManagement'
 import { SharedLayoutModeration } from './SharedLayoutModeration'
-import { BarChart3, Heart, TrendingUp, Users, Settings, Cpu, Bell, Layout } from 'lucide-react'
+import { SystemLogs } from './SystemLogs'
+import { BarChart3, Heart, TrendingUp, Users, Settings, Cpu, Bell, Layout, FileText } from 'lucide-react'
 
-type TabType = 'stats' | 'health' | 'analytics' | 'users' | 'content' | 'ai-config' | 'notifications' | 'shared-layouts'
+type TabType = 'stats' | 'health' | 'analytics' | 'users' | 'content' | 'ai-config' | 'notifications' | 'shared-layouts' | 'logs'
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('stats')
@@ -25,6 +26,7 @@ export function AdminDashboard() {
     { id: 'ai-config' as TabType, label: 'AI Configuration', icon: Cpu },
     { id: 'notifications' as TabType, label: 'Notification Templates', icon: Bell },
     { id: 'shared-layouts' as TabType, label: 'Shared Layouts', icon: Layout },
+    { id: 'logs' as TabType, label: 'System Logs', icon: FileText },
   ]
 
   return (
@@ -38,7 +40,7 @@ export function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
@@ -73,6 +75,9 @@ export function AdminDashboard() {
           </TabsContent>
           <TabsContent value="shared-layouts" className="mt-6">
             <SharedLayoutModeration />
+          </TabsContent>
+          <TabsContent value="logs" className="mt-6">
+            <SystemLogs />
           </TabsContent>
         </Tabs>
       </div>

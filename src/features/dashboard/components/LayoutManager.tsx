@@ -8,7 +8,7 @@ import {
   ArrowPathIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
 
 interface LayoutManagerProps {
   currentLayout: LayoutConfig
@@ -62,10 +62,9 @@ export const LayoutManager = ({
       setShareLoading(true)
       const result = await onShareLayout(shareIsPublic, shareExpiresInDays)
       setShareResult(result)
-      toast.success('Share code created')
+      notify.success('Share code created')
     } catch (error) {
-      console.error('Error sharing layout:', error)
-      toast.error('Failed to create share code')
+      notify.error('Failed to create share code')
     } finally {
       setShareLoading(false)
     }
@@ -74,7 +73,7 @@ export const LayoutManager = ({
   const handleImportByCode = async () => {
     const trimmed = importCode.trim()
     if (!/^[a-zA-Z0-9]{10,12}$/.test(trimmed)) {
-      toast.error('Code không hợp lệ (10-12 ký tự)')
+      notify.error('Code không hợp lệ (10-12 ký tự)')
       return
     }
 
@@ -82,10 +81,9 @@ export const LayoutManager = ({
       setImportLoading(true)
       const layout = await onImportByCode(trimmed)
       setImportedLayout(layout)
-      toast.success('Layout loaded from code')
+      notify.success('Layout loaded from code')
     } catch (error) {
-      console.error('Error importing by code:', error)
-      toast.error('Code không tồn tại hoặc đã hết hạn')
+      notify.error('Code không tồn tại hoặc đã hết hạn')
     } finally {
       setImportLoading(false)
     }
@@ -100,10 +98,9 @@ export const LayoutManager = ({
     if (!shareResult?.code) return
     try {
       await navigator.clipboard.writeText(shareResult.code)
-      toast.success('Code copied')
+      notify.success('Code copied')
     } catch (error) {
-      console.error('Error copying code:', error)
-      toast.error('Failed to copy code')
+      notify.error('Failed to copy code')
     }
   }
 

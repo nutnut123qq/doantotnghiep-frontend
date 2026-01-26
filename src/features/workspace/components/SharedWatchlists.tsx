@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,11 @@ import { EmptyState } from '@/shared/components/EmptyState'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
 import { workspaceService } from '../services/workspaceService'
 import { useWorkspace } from '../hooks/useWorkspace'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { watchlistService } from '@/features/watchlist/services/watchlistService'
 
 interface SharedWatchlistsProps {
   workspaceId: string
@@ -16,21 +21,52 @@ interface SharedWatchlistsProps {
 
 export const SharedWatchlists = ({ workspaceId, canEdit }: SharedWatchlistsProps) => {
   const queryClient = useQueryClient()
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [selectedWatchlistId, setSelectedWatchlistId] = useState<string>('')
   
   // Load workspace to get watchlists
   const { data: workspace, isLoading } = useWorkspace(workspaceId)
+
+  // Load user's watchlists for selection
+  const { data: userWatchlists = [] } = useQuery({
+    queryKey: ['watchlists'],
+    queryFn: () => watchlistService.getWatchlists(),
+    enabled: isAddDialogOpen,
+  })
 
   // Remove watchlist mutation
   const removeWatchlistMutation = useMutation({
     mutationFn: (watchlistId: string) => workspaceService.removeWatchlist(workspaceId, watchlistId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspace', workspaceId] })
-      toast.success('Watchlist removed from workspace')
+      notify.success('Watchlist removed from workspace')
     },
     onError: () => {
-      toast.error('Failed to remove watchlist')
+      notify.error('Failed to remove watchlist')
     },
   })
+
+  // Add watchlist mutation
+  const addWatchlistMutation = useMutation({
+    mutationFn: (watchlistId: string) => workspaceService.addWatchlist(workspaceId, watchlistId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace', workspaceId] })
+      notify.success('Watchlist added to workspace')
+      setIsAddDialogOpen(false)
+      setSelectedWatchlistId('')
+    },
+    onError: () => {
+      notify.error('Failed to add watchlist')
+    },
+  })
+
+  const handleAdd = () => {
+    if (!selectedWatchlistId) {
+      notify.warning('Please select a watchlist')
+      return
+    }
+    addWatchlistMutation.mutate(selectedWatchlistId)
+  }
 
   const watchlists = workspace?.watchlists || []
 
@@ -47,7 +83,7 @@ export const SharedWatchlists = ({ workspaceId, canEdit }: SharedWatchlistsProps
             <span>Shared Watchlists</span>
           </CardTitle>
           {canEdit && (
-            <Button size="sm" className="flex items-center space-x-2" disabled>
+            <Button size="sm" className="flex items-center space-x-2" onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4" />
               <span>Add</span>
             </Button>
@@ -104,6 +140,43 @@ export const SharedWatchlists = ({ workspaceId, canEdit }: SharedWatchlistsProps
           </div>
         )}
       </CardContent>
+
+      {/* Add Watchlist Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Watchlist to Workspace</DialogTitle>
+            <DialogDescription>
+              Select a watchlist from your saved watchlists to share with the workspace
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Select Watchlist</Label>
+              <Select value={selectedWatchlistId} onValueChange={setSelectedWatchlistId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a watchlist" />
+                </SelectTrigger>
+                <SelectContent>
+                  {userWatchlists.map((watchlist) => (
+                    <SelectItem key={watchlist.id} value={watchlist.id}>
+                      {watchlist.name} ({watchlist.stocks.length} stocks)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAdd} disabled={!selectedWatchlistId || addWatchlistMutation.isPending}>
+                {addWatchlistMutation.isPending ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

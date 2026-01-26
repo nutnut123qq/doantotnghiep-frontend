@@ -1,13 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { Provider } from 'react-redux'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/shared/contexts/AuthContext'
 import { ThemeProvider } from '@/shared/contexts/ThemeContext'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import App from './app/App'
-import { store } from './app/store/store'
 import { useAlertNotifications } from '@/hooks/useAlertNotifications'
 import './index.css'
 
@@ -31,14 +29,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ThemeProvider>
-        <Provider store={store}>
-          <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <AppWithAlertNotifications />
-              <Toaster position="top-right" richColors />
-            </AuthProvider>
-          </QueryClientProvider>
-        </Provider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <AppWithAlertNotifications />
+            <Toaster position="top-right" richColors />
+          </AuthProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
   </React.StrictMode>,

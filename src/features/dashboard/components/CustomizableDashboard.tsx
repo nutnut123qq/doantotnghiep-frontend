@@ -9,6 +9,7 @@ import { NewsFeed } from './NewsFeed'
 import { FinancialReports } from './FinancialReports'
 import { TradingViewChart } from './TradingViewChart'
 import { AIForecast } from './AIForecast'
+import { AlertFeed } from './AlertFeed'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,13 +20,248 @@ import {
   X,
   GripVertical
 } from 'lucide-react'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
+import { useQuery } from '@tanstack/react-query'
+import { watchlistService } from '@/features/watchlist/services/watchlistService'
+import { eventService } from '@/features/events/services/eventService'
+import { portfolioService } from '@/features/portfolio/services/portfolioService'
+import { formatNumber, formatPercentage } from '@/lib/table-utils'
+import { cn } from '@/lib/utils'
+import { Link } from 'react-router-dom'
+import { format } from 'date-fns'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { ErrorState } from '@/shared/components/ErrorState'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
+
+// Compact Watchlist Widget
+const WatchlistWidget = () => {
+  const { data: watchlists = [], isLoading, error } = useQuery({
+    queryKey: ['watchlists'],
+    queryFn: () => watchlistService.getWatchlists(),
+  })
+
+  if (isLoading) {
+    return (
+      <Card className="h-full overflow-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-3">Watchlist</h3>
+          <LoadingSkeleton />
+        </div>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="h-full overflow-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-3">Watchlist</h3>
+          <ErrorState message="Failed to load watchlists" />
+        </div>
+      </Card>
+    )
+  }
+
+  const firstWatchlist = watchlists[0]
+  const stocks = firstWatchlist?.stocks || []
+
+  return (
+    <Card className="h-full overflow-auto">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold">Watchlist</h3>
+          <Link to="/watchlist" className="text-xs text-blue-600 hover:underline">
+            View All
+          </Link>
+        </div>
+        {stocks.length === 0 ? (
+          <EmptyState
+            title="No stocks"
+            description="Add stocks to your watchlist"
+          />
+        ) : (
+          <div className="space-y-2">
+            {stocks.slice(0, 5).map((stock) => (
+              <div
+                key={stock.symbol}
+                className="flex items-center justify-between p-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]"
+              >
+                <div>
+                  <div className="font-medium text-sm">{stock.symbol}</div>
+                  <div className="text-xs text-[hsl(var(--muted))]">{stock.name}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold">{formatNumber(stock.price)}</div>
+                  <div
+                    className={cn(
+                      'text-xs',
+                      stock.changePercent >= 0
+                        ? 'text-[hsl(var(--positive))]'
+                        : 'text-[hsl(var(--negative))]'
+                    )}
+                  >
+                    {stock.changePercent >= 0 ? '+' : ''}
+                    {formatPercentage(stock.changePercent)}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {stocks.length > 5 && (
+              <div className="text-xs text-center text-[hsl(var(--muted))] pt-2">
+                +{stocks.length - 5} more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+// Compact Portfolio Widget
+const PortfolioWidget = () => {
+  const { data: summary, isLoading, error } = useQuery({
+    queryKey: ['portfolio', 'summary'],
+    queryFn: () => portfolioService.getSummary(),
+  })
+
+  if (isLoading) {
+    return (
+      <Card className="h-full overflow-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-3">Portfolio</h3>
+          <LoadingSkeleton />
+        </div>
+      </Card>
+    )
+  }
+
+  if (error || !summary) {
+    return (
+      <Card className="h-full overflow-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-3">Portfolio</h3>
+          <ErrorState message="Failed to load portfolio" />
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="h-full overflow-auto">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold">Portfolio</h3>
+          <Link to="/portfolio" className="text-xs text-blue-600 hover:underline">
+            View All
+          </Link>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <div className="text-xs text-[hsl(var(--muted))] mb-1">Total Value</div>
+            <div className="text-lg font-bold">{formatNumber(summary.totalValue)}</div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-[hsl(var(--muted))] mb-1">Gain/Loss</div>
+              <div
+                className={cn(
+                  'text-sm font-semibold',
+                  summary.totalGainLoss >= 0
+                    ? 'text-[hsl(var(--positive))]'
+                    : 'text-[hsl(var(--negative))]'
+                )}
+              >
+                {summary.totalGainLoss >= 0 ? '+' : ''}
+                {formatNumber(summary.totalGainLoss)} ({formatPercentage(summary.totalGainLossPercentage)})
+              </div>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-[hsl(var(--border))]">
+            <div className="text-xs text-[hsl(var(--muted))]">
+              Positions: <span className="font-medium">{summary.holdingsCount}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+// Compact Events Widget
+const EventsWidget = () => {
+  const { data: events = [], isLoading, error } = useQuery({
+    queryKey: ['events', 'upcoming'],
+    queryFn: () => eventService.getUpcomingEvents(30),
+    staleTime: 60000, // 1 minute
+  })
+
+  if (isLoading) {
+    return (
+      <Card className="h-full overflow-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-3">Events</h3>
+          <LoadingSkeleton />
+        </div>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="h-full overflow-auto">
+        <div className="p-4">
+          <h3 className="text-base font-semibold mb-3">Events</h3>
+          <ErrorState message="Failed to load events" />
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="h-full overflow-auto">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold">Upcoming Events</h3>
+          <Link to="/events" className="text-xs text-blue-600 hover:underline">
+            View All
+          </Link>
+        </div>
+        {events.length === 0 ? (
+          <EmptyState
+            title="No events"
+            description="Upcoming events will appear here"
+          />
+        ) : (
+          <div className="space-y-2">
+            {events.slice(0, 5).map((event) => (
+              <div
+                key={event.id}
+                className="p-2 rounded border border-[hsl(var(--border))] bg-[hsl(var(--surface-2))]"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{event.stockTicker?.symbol || 'N/A'}</div>
+                    <div className="text-xs text-[hsl(var(--muted))]">{event.title}</div>
+                  </div>
+                  <div className="text-xs text-[hsl(var(--muted))]">
+                    {format(new Date(event.eventDate), 'MMM dd')}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
 
 interface CustomizableDashboardProps {
   defaultSymbol?: string
@@ -46,7 +282,7 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
       const savedLayout = await layoutService.getLayout()
       setLayout(savedLayout)
     } catch (error) {
-      console.error('Error loading layout:', error)
+      // Silent error - will use default layout
     } finally {
       setIsLoading(false)
     }
@@ -89,10 +325,9 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
     try {
       await layoutService.saveLayout(layout)
       setIsEditMode(false)
-      toast.success('Layout saved successfully!')
+      notify.success('Layout saved successfully!')
     } catch (error) {
-      console.error('Error saving layout:', error)
-      toast.error('Failed to save layout')
+      notify.error('Failed to save layout')
     }
   }
 
@@ -106,10 +341,9 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
       const newLayout = await layoutService.applyTemplate(templateId)
       setLayout(newLayout)
       setShowLayoutManager(false)
-      toast.success('Template applied successfully!')
+      notify.success('Template applied successfully!')
     } catch (error) {
-      console.error('Error applying template:', error)
-      toast.error('Failed to apply template')
+      notify.error('Failed to apply template')
     }
   }
 
@@ -121,10 +355,9 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
     try {
       const defaultLayout = await layoutService.resetToDefault()
       setLayout(defaultLayout)
-      toast.success('Layout reset successfully!')
+      notify.success('Layout reset successfully!')
     } catch (error) {
-      console.error('Error resetting layout:', error)
-      toast.error('Failed to reset layout')
+      notify.error('Failed to reset layout')
     }
   }
 
@@ -141,13 +374,12 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
       if (layoutService.validateLayout(importedLayout)) {
         await layoutService.saveLayout(importedLayout)
         setLayout(importedLayout)
-        toast.success('Layout imported successfully!')
+        notify.success('Layout imported successfully!')
       } else {
-        toast.error('Invalid layout file')
+        notify.error('Invalid layout file')
       }
     } catch (error) {
-      console.error('Error importing layout:', error)
-      toast.error('Failed to import layout')
+      notify.error('Failed to import layout')
     }
   }
 
@@ -173,13 +405,12 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
         await layoutService.saveLayout(importedLayout)
         setLayout(importedLayout)
         setShowLayoutManager(false)
-        toast.success('Layout imported successfully!')
+        notify.success('Layout imported successfully!')
       } else {
-        toast.error('Invalid layout configuration')
+        notify.error('Invalid layout configuration')
       }
     } catch (error) {
-      console.error('Error applying imported layout:', error)
-      toast.error('Failed to apply imported layout')
+      notify.error('Failed to apply imported layout')
     }
   }
 
@@ -200,44 +431,16 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
         return <AIForecast symbol={symbolFromUrl} />
       
       case 'watchlist':
-        return (
-          <Card className="h-full overflow-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Watchlist</h3>
-              <p className="text-muted-foreground">Watchlist widget - Coming soon</p>
-            </div>
-          </Card>
-        )
+        return <WatchlistWidget />
       
       case 'alerts':
-        return (
-          <Card className="h-full overflow-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Alerts</h3>
-              <p className="text-muted-foreground">Alerts widget - Coming soon</p>
-            </div>
-          </Card>
-        )
+        return <AlertFeed maxItems={5} />
       
       case 'portfolio':
-        return (
-          <Card className="h-full overflow-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Portfolio</h3>
-              <p className="text-muted-foreground">Portfolio widget - Coming soon</p>
-            </div>
-          </Card>
-        )
+        return <PortfolioWidget />
       
       case 'events':
-        return (
-          <Card className="h-full overflow-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Events</h3>
-              <p className="text-muted-foreground">Events widget - Coming soon</p>
-            </div>
-          </Card>
-        )
+        return <EventsWidget />
       
       default:
         return (

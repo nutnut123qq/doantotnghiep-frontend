@@ -31,7 +31,7 @@ export const useEChartsDrawing = (symbol: string) => {
         return settings.drawings
       }
     } catch (error) {
-      console.error('Error loading drawings:', error)
+      // Silent error - drawings are optional
     }
     return {}
   }, [symbol])

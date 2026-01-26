@@ -41,7 +41,6 @@ const getInsightColor = (type: AIInsight['type']) => {
 
 export const AIInsightsPanel = ({ symbol }: AIInsightsPanelProps) => {
   const navigate = useNavigate()
-  const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(null)
 
   const { data: insights = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ai-insights', symbol],
@@ -56,18 +55,16 @@ export const AIInsightsPanel = ({ symbol }: AIInsightsPanelProps) => {
   })
 
   const handleAddToWatchlist = async () => {
-    if (!selectedWatchlistId && watchlists.length > 0) {
-      // If no watchlist selected, use the first one
-      setSelectedWatchlistId(watchlists[0].id)
-    }
+    // Use first watchlist if available, don't rely on state (async issue)
+    const watchlistId = watchlists.length > 0 ? watchlists[0].id : null
 
-    if (!selectedWatchlistId) {
+    if (!watchlistId) {
       notify.warning('Please create a watchlist first')
       return
     }
 
     try {
-      await watchlistService.addStock(selectedWatchlistId, symbol)
+      await watchlistService.addStock(watchlistId, symbol)
       notify.success(`Added ${symbol} to watchlist`)
     } catch (err) {
       notify.error('Failed to add stock to watchlist')

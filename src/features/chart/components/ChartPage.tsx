@@ -9,6 +9,7 @@ import { EChartsAdvanced } from './EChartsAdvanced'
 import { AIInsightsPanel } from './AIInsightsPanel'
 import { ForecastChat } from './ForecastChat'
 import { IndicatorsDisplay } from './IndicatorsDisplay'
+import { DrawingToolsPanel } from './DrawingToolsPanel'
 import { Search } from 'lucide-react'
 
 export const ChartPage = () => {
@@ -86,6 +87,9 @@ export const ChartPage = () => {
                 <IndicatorsDisplay symbol={selectedSymbol} />
               </CardContent>
             </Card>
+
+            {/* Drawing Tools */}
+            <DrawingToolsPanel symbol={selectedSymbol} />
           </div>
 
           {/* AI Panel - 1/3 width */}

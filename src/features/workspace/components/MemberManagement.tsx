@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useMemo } from 'react'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +15,13 @@ import { Users, MoreVertical, UserPlus, Crown, Shield, User, X } from 'lucide-re
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useRemoveMember, useUpdateMemberRole } from '../hooks/useWorkspaceMembers'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { workspaceService } from '../services/workspaceService'
+import { adminService } from '@/features/admin/services/adminService'
 
 interface Member {
   id: string
@@ -57,10 +65,62 @@ const getRoleColor = (role: Member['role']) => {
 }
 
 export const MemberManagement = ({ workspace, canManage }: MemberManagementProps) => {
+  const queryClient = useQueryClient()
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'Owner' | 'Admin' | 'Member'>('Member')
+  const [searchQuery, setSearchQuery] = useState('')
+
   const removeMemberMutation = useRemoveMember(workspace.id)
   const updateRoleMutation = useUpdateMemberRole(workspace.id)
 
   const members = useMemo(() => workspace.members || [], [workspace.members])
+
+  // Search users for invite
+  const { data: searchResults } = useQuery({
+    queryKey: ['users', 'search', searchQuery],
+    queryFn: () => adminService.getAllUsers(1, 10),
+    enabled: isInviteDialogOpen && searchQuery.length > 2,
+  })
+
+  // Add member mutation
+  const addMemberMutation = useMutation({
+    mutationFn: async ({ email, role }: { email: string; role: 'Owner' | 'Admin' | 'Member' }) => {
+      // First, find user by email from search results or fetch
+      const users = searchQuery.length > 2 && searchResults
+        ? searchResults.users
+        : (await adminService.getAllUsers(1, 50)).users
+      
+      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase())
+      if (!user) {
+        throw new Error('User not found')
+      }
+      
+      return workspaceService.addMember(workspace.id, {
+        userId: user.id,
+        role,
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspace', workspace.id] })
+      notify.success('Member invited successfully')
+      setIsInviteDialogOpen(false)
+      setInviteEmail('')
+      setInviteRole('Member')
+      setSearchQuery('')
+    },
+    onError: (error: Error) => {
+      notify.error(error.message || 'Failed to invite member')
+    },
+  })
+
+  const handleInvite = () => {
+    if (!inviteEmail.trim()) {
+      notify.warning('Please enter an email address')
+      return
+    }
+    addMemberMutation.mutate({ email: inviteEmail.trim(), role: inviteRole })
+  }
 
   const handleRoleChange = async (memberId: string, newRole: 'Owner' | 'Admin' | 'Member') => {
     try {
@@ -68,9 +128,9 @@ export const MemberManagement = ({ workspace, canManage }: MemberManagementProps
         memberUserId: memberId,
         role: newRole,
       })
-      toast.success('Member role updated')
+      notify.success('Member role updated')
     } catch (error) {
-      toast.error('Failed to update member role')
+      notify.error('Failed to update member role')
     }
   }
 
@@ -79,9 +139,9 @@ export const MemberManagement = ({ workspace, canManage }: MemberManagementProps
     
     try {
       await removeMemberMutation.mutateAsync(memberId)
-      toast.success('Member removed')
+      notify.success('Member removed')
     } catch (error) {
-      toast.error('Failed to remove member')
+      notify.error('Failed to remove member')
     }
   }
 
@@ -103,7 +163,7 @@ export const MemberManagement = ({ workspace, canManage }: MemberManagementProps
             <span>Members ({members.length})</span>
           </CardTitle>
           {canManage && (
-            <Button size="sm" className="flex items-center space-x-2">
+            <Button size="sm" className="flex items-center space-x-2" onClick={() => setIsInviteDialogOpen(true)}>
               <UserPlus className="h-4 w-4" />
               <span>Invite</span>
             </Button>
@@ -182,6 +242,73 @@ export const MemberManagement = ({ workspace, canManage }: MemberManagementProps
           </div>
         )}
       </CardContent>
+
+      {/* Invite Member Dialog */}
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite Member</DialogTitle>
+            <DialogDescription>
+              Enter the email address of the user you want to invite to this workspace
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Email Address</Label>
+              <Input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => {
+                  setInviteEmail(e.target.value)
+                  setSearchQuery(e.target.value)
+                }}
+                placeholder="user@example.com"
+              />
+              {searchQuery.length > 2 && searchResults && (
+                <div className="mt-2 max-h-32 overflow-y-auto border rounded p-2">
+                  {searchResults.users
+                    .filter(u => u.email.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .slice(0, 5)
+                    .map((user) => (
+                      <div
+                        key={user.id}
+                        className="p-2 hover:bg-[hsl(var(--surface-2))] rounded cursor-pointer"
+                        onClick={() => {
+                          setInviteEmail(user.email)
+                          setSearchQuery('')
+                        }}
+                      >
+                        <div className="text-sm font-medium">{user.email}</div>
+                        <div className="text-xs text-[hsl(var(--muted))]">{user.role}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as 'Owner' | 'Admin' | 'Member')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Member">Member</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Owner">Owner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleInvite} disabled={!inviteEmail.trim() || addMemberMutation.isPending}>
+                {addMemberMutation.isPending ? 'Inviting...' : 'Invite'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

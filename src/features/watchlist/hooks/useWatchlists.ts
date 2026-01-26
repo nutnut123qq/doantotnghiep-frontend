@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { watchlistService } from '../services/watchlistService'
-import { useToast } from '@/shared/hooks/useToast'
+import { notify } from '@/shared/utils/notify'
 
 export const useWatchlists = () => {
   const queryClient = useQueryClient()
-  const toast = useToast()
 
   const {
     data: watchlists = [],
@@ -20,10 +19,10 @@ export const useWatchlists = () => {
     mutationFn: (name: string) => watchlistService.createWatchlist(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      toast.success('Đã tạo watchlist thành công!')
+      notify.success('Đã tạo watchlist thành công!')
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Không thể tạo watchlist')
+      notify.error(error.response?.data?.message || error.message || 'Không thể tạo watchlist')
     },
   })
 
@@ -32,10 +31,10 @@ export const useWatchlists = () => {
       watchlistService.updateWatchlist(id, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      toast.success('Đã cập nhật watchlist thành công!')
+      notify.success('Đã cập nhật watchlist thành công!')
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Không thể cập nhật watchlist')
+      notify.error(error.response?.data?.message || error.message || 'Không thể cập nhật watchlist')
     },
   })
 
@@ -43,10 +42,10 @@ export const useWatchlists = () => {
     mutationFn: (id: string) => watchlistService.deleteWatchlist(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      toast.success('Đã xóa watchlist thành công!')
+      notify.success('Đã xóa watchlist thành công!')
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Không thể xóa watchlist')
+      notify.error(error.response?.data?.message || error.message || 'Không thể xóa watchlist')
     },
   })
 
@@ -55,10 +54,10 @@ export const useWatchlists = () => {
       watchlistService.addStock(watchlistId, symbol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      toast.success('Đã thêm cổ phiếu vào watchlist!')
+      notify.success('Đã thêm cổ phiếu vào watchlist!')
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Không thể thêm cổ phiếu')
+      notify.error(error.response?.data?.message || error.message || 'Không thể thêm cổ phiếu')
     },
   })
 
@@ -67,10 +66,10 @@ export const useWatchlists = () => {
       watchlistService.removeStock(watchlistId, symbol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      toast.success('Đã xóa cổ phiếu khỏi watchlist!')
+      notify.success('Đã xóa cổ phiếu khỏi watchlist!')
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Không thể xóa cổ phiếu')
+      notify.error(error.response?.data?.message || error.message || 'Không thể xóa cổ phiếu')
     },
   })
 

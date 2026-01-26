@@ -8,7 +8,7 @@ import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
+import { notify } from '@/shared/utils/notify'
 
 export const Watchlist = () => {
   const {
@@ -44,10 +44,10 @@ export const Watchlist = () => {
     if (!watchlistToDelete) return
     try {
       await deleteWatchlist(watchlistToDelete.id)
-      toast.success(`Watchlist "${watchlistToDelete.name}" đã được xóa`)
+      notify.success(`Watchlist "${watchlistToDelete.name}" đã được xóa`)
       setWatchlistToDelete(null)
     } catch {
-      toast.error('Không thể xóa watchlist')
+      notify.error('Không thể xóa watchlist')
     }
   }
 
@@ -60,10 +60,10 @@ export const Watchlist = () => {
     if (!stockToRemove) return
     try {
       await removeStock(stockToRemove)
-      toast.success(`${stockToRemove.symbol} đã được xóa khỏi watchlist`)
+      notify.success(`${stockToRemove.symbol} đã được xóa khỏi watchlist`)
       setStockToRemove(null)
     } catch {
-      toast.error('Không thể xóa cổ phiếu')
+      notify.error('Không thể xóa cổ phiếu')
     }
   }
 
