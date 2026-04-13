@@ -53,11 +53,6 @@ export interface SharedLayoutInfo {
   isPublic: boolean
 }
 
-export interface AdminSharedLayoutInfo extends SharedLayoutInfo {
-  ownerId: string
-  isExpired: boolean
-}
-
 // Predefined widget defaults
 export const DEFAULT_WIDGET_CONFIGS: Record<string, Partial<WidgetConfig>> = {
   news: {

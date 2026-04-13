@@ -12,6 +12,8 @@ export interface News {
   summary?: string
   sentiment?: 'positive' | 'negative' | 'neutral'
   impactAssessment?: string
+  /** Soft-delete / hidden from users; admin list may include this. */
+  isDeleted?: boolean
 }
 
 export interface SummarizeResponse {

@@ -5,14 +5,11 @@ import { SystemStats } from './SystemStats'
 import { SystemHealthMonitor } from './SystemHealthMonitor'
 import { UserManagement } from './UserManagement'
 import { AnalyticsDashboard } from './AnalyticsDashboard'
-import { DataSourceManagement } from './DataSourceManagement'
-import { AIModelConfiguration } from './AIModelConfiguration'
-import { NotificationTemplateManagement } from './NotificationTemplateManagement'
-import { SharedLayoutModeration } from './SharedLayoutModeration'
 import { SystemLogs } from './SystemLogs'
-import { BarChart3, Heart, TrendingUp, Users, Settings, Cpu, Bell, Layout, FileText } from 'lucide-react'
+import { NewsManagement } from './NewsManagement'
+import { BarChart3, Heart, TrendingUp, Users, FileText, Newspaper } from 'lucide-react'
 
-type TabType = 'stats' | 'health' | 'analytics' | 'users' | 'content' | 'ai-config' | 'notifications' | 'shared-layouts' | 'logs'
+type TabType = 'stats' | 'health' | 'analytics' | 'users' | 'news' | 'logs'
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('stats')
@@ -22,10 +19,7 @@ export function AdminDashboard() {
     { id: 'health' as TabType, label: 'System Health', icon: Heart },
     { id: 'analytics' as TabType, label: 'Analytics', icon: TrendingUp },
     { id: 'users' as TabType, label: 'User Management', icon: Users },
-    { id: 'content' as TabType, label: 'Content Configuration', icon: Settings },
-    { id: 'ai-config' as TabType, label: 'AI Configuration', icon: Cpu },
-    { id: 'notifications' as TabType, label: 'Notification Templates', icon: Bell },
-    { id: 'shared-layouts' as TabType, label: 'Shared Layouts', icon: Layout },
+    { id: 'news' as TabType, label: 'News Management', icon: Newspaper },
     { id: 'logs' as TabType, label: 'System Logs', icon: FileText },
   ]
 
@@ -40,7 +34,7 @@ export function AdminDashboard() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)} className="w-full">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-6">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
@@ -64,17 +58,8 @@ export function AdminDashboard() {
           <TabsContent value="users" className="mt-6">
             <UserManagement />
           </TabsContent>
-          <TabsContent value="content" className="mt-6">
-            <DataSourceManagement />
-          </TabsContent>
-          <TabsContent value="ai-config" className="mt-6">
-            <AIModelConfiguration />
-          </TabsContent>
-          <TabsContent value="notifications" className="mt-6">
-            <NotificationTemplateManagement />
-          </TabsContent>
-          <TabsContent value="shared-layouts" className="mt-6">
-            <SharedLayoutModeration />
+          <TabsContent value="news" className="mt-6">
+            <NewsManagement />
           </TabsContent>
           <TabsContent value="logs" className="mt-6">
             <SystemLogs />

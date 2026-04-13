@@ -24,7 +24,7 @@ export const useChartIndicators = (symbol: string) => {
     queryKey: ['technical-indicators', symbol],
     queryFn: () => technicalIndicatorService.getIndicators(symbol),
     enabled: !!symbol,
-    staleTime: 60000, // Cache 1 phút
+    staleTime: 5 * 60 * 1000, // Chỉ báo đọc từ DB theo job; giảm refetch FE (5 phút)
   })
 
   // Transform backend response sang format dễ sử dụng

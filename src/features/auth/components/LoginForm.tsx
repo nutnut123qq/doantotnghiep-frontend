@@ -36,7 +36,7 @@ export const LoginForm = () => {
   const onSubmit = async (data: LoginRequest) => {
     try {
       setLoading(true)
-      await login(data)
+      const auth = await login(data)
       toast.success('Login successful!')
       let returnUrl: string | null = null
       try {
@@ -45,7 +45,12 @@ export const LoginForm = () => {
       } catch {
         /* ignore */
       }
-      const target = (returnUrl && returnUrl !== '/login') ? returnUrl : '/'
+      let target = '/'
+      if (returnUrl && returnUrl !== '/login') {
+        target = returnUrl
+      } else if (auth.role === 'Admin') {
+        target = '/admin'
+      }
       setTimeout(() => navigate(target, { replace: true }), 100)
     } catch (err: unknown) {
       const errorMessage = getAxiosErrorMessage(err)

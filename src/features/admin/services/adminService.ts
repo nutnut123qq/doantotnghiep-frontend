@@ -14,8 +14,8 @@ import type {
   PopularStock,
   EndpointMetrics
 } from '../../../shared/types/analyticsTypes';
-import type { AdminSharedLayoutInfo } from '../../../shared/types/layoutTypes';
 import type { QueryParams } from '../../../shared/types/common.types';
+import type { News } from '../../dashboard/services/newsService';
 
 class AdminService {
   private baseUrl = '/Admin';
@@ -132,25 +132,20 @@ class AdminService {
   }
 
   /**
-   * Get shared layouts for moderation
+   * List all news including hidden (admin only)
    */
-  async getAllSharedLayouts(
-    page: number = 1,
-    pageSize: number = 20,
-    ownerId?: string,
-    status: 'active' | 'expired' | 'all' = 'all'
-  ): Promise<{ items: AdminSharedLayoutInfo[]; totalCount: number; page: number; pageSize: number }> {
-    const params: QueryParams = { page, pageSize, status };
-    if (ownerId) params.ownerId = ownerId;
-    const response = await apiClient.get(`${this.baseUrl}/shared-layouts`, { params });
+  async getAdminNews(page: number = 1, pageSize: number = 20, tickerId?: string): Promise<News[]> {
+    const params: Record<string, string | number> = { page, pageSize };
+    if (tickerId) params.tickerId = tickerId;
+    const response = await apiClient.get<News[]>(`${this.baseUrl}/news`, { params });
     return response.data;
   }
 
   /**
-   * Delete a shared layout
+   * Show or hide a news article (soft delete)
    */
-  async deleteSharedLayout(id: string): Promise<void> {
-    await apiClient.delete(`${this.baseUrl}/shared-layouts/${id}`);
+  async setNewsDeleted(id: string, isDeleted: boolean): Promise<void> {
+    await apiClient.patch(`${this.baseUrl}/news/${id}`, { isDeleted });
   }
 }
 
