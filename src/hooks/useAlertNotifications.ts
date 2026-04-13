@@ -2,6 +2,11 @@ import { useCallback, useEffect } from 'react'
 import { useSignalR } from '@/shared/hooks/useSignalR'
 import { notify } from '@/shared/utils/notify'
 import type { AlertNotification } from '@/features/settings/types/notificationChannel.types'
+import {
+  coerceAlertType,
+  isPriceAlertType,
+  priceThresholdApiToUser,
+} from '@/features/alerts/types/alert.types'
 
 /**
  * Subscribes to real-time alert notifications via SignalR Trading hub.
@@ -21,10 +26,20 @@ export const useAlertNotifications = (options?: UseAlertNotificationsOptions) =>
     onAlertTriggered?.(notification)
 
     if (showToast) {
+      const t = coerceAlertType(notification.type)
+      const rawThreshold = Number(notification.threshold)
+      const rawCurrent = Number(notification.currentValue)
+      const threshold = isPriceAlertType(notification.type)
+        ? (priceThresholdApiToUser(t, rawThreshold) ?? rawThreshold)
+        : rawThreshold
+      const currentValue = isPriceAlertType(notification.type)
+        ? (priceThresholdApiToUser(t, rawCurrent) ?? rawCurrent)
+        : rawCurrent
+
       const msg = [
         `🔔 Alert: ${notification.symbol} ${notification.type}`,
-        `Threshold: ${Number(notification.threshold).toLocaleString()}`,
-        `Current: ${Number(notification.currentValue).toLocaleString()}`,
+        `Threshold: ${threshold.toLocaleString('vi-VN')}`,
+        `Current: ${currentValue.toLocaleString('vi-VN')}`,
       ].join('\n')
 
       notify.success(msg, { duration: 8000 })

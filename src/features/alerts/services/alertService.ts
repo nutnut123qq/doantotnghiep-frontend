@@ -1,6 +1,9 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
 import {
   AlertType,
+  coerceAlertType,
+  priceThresholdApiToUser,
+  priceThresholdUserToApi,
   type Alert,
   type CreateAlertRequest,
   type CreateAlertResponse,
@@ -8,23 +11,14 @@ import {
   type ParsedAlert,
 } from '../types/alert.types'
 
-function normalizeAlertType(type: unknown): AlertType {
-  if (typeof type === 'number' && type >= 1 && type <= 5) {
-    return type as AlertType
+function mapAlertFromApi(a: Alert): Alert {
+  const type = coerceAlertType(a.type)
+  const threshold = priceThresholdApiToUser(type, a.threshold)
+  return {
+    ...a,
+    type,
+    threshold: threshold === null || threshold === undefined ? undefined : threshold,
   }
-  if (typeof type === 'string') {
-    const byName: Record<string, AlertType> = {
-      Price: AlertType.Price,
-      Volume: AlertType.Volume,
-      TechnicalIndicator: AlertType.TechnicalIndicator,
-      Sentiment: AlertType.Sentiment,
-      Volatility: AlertType.Volatility,
-    }
-    if (byName[type] !== undefined) return byName[type]
-    const n = parseInt(type, 10)
-    if (!Number.isNaN(n) && n >= 1 && n <= 5) return n as AlertType
-  }
-  return AlertType.Price
 }
 
 export const alertService = {
@@ -41,10 +35,7 @@ export const alertService = {
       `/Alert?${params.toString()}`
     )
     const list = response.data.alerts || []
-    return list.map((a) => ({
-      ...a,
-      type: normalizeAlertType(a.type),
-    }))
+    return list.map((a) => mapAlertFromApi(a))
   },
 
   /**
@@ -61,15 +52,29 @@ export const alertService = {
    * Create a new alert (with NLP support)
    */
   async createAlert(data: CreateAlertRequest): Promise<CreateAlertResponse> {
+    const type = data.type ?? AlertType.Price
+    const threshold =
+      data.threshold === undefined || data.threshold === null
+        ? data.threshold
+        : priceThresholdUserToApi(type, data.threshold)
     const response = await apiClient.post<CreateAlertResponse>('/Alert', {
       symbol: data.symbol,
       naturalLanguageInput: data.naturalLanguageInput,
       type: data.type,
       condition: data.condition,
-      threshold: data.threshold,
+      threshold,
       timeframe: data.timeframe,
     })
-    return response.data
+    const r = response.data
+    const rt = coerceAlertType(r.type)
+    return {
+      ...r,
+      type: rt,
+      threshold:
+        r.threshold === undefined || r.threshold === null
+          ? r.threshold
+          : (priceThresholdApiToUser(rt, r.threshold) ?? undefined),
+    }
   },
 
   /**
@@ -79,8 +84,12 @@ export const alertService = {
     id: string,
     data: Partial<CreateAlertRequest>
   ): Promise<Alert> {
-    const response = await apiClient.put<Alert>(`/Alert/${id}`, data)
-    return response.data
+    const body: Partial<CreateAlertRequest> = { ...data }
+    if (body.threshold !== undefined && body.threshold !== null && body.type === AlertType.Price) {
+      body.threshold = priceThresholdUserToApi(AlertType.Price, body.threshold)
+    }
+    const response = await apiClient.put<Alert>(`/Alert/${id}`, body)
+    return mapAlertFromApi(response.data)
   },
 
   /**
@@ -97,6 +106,6 @@ export const alertService = {
     const response = await apiClient.patch<Alert>(`/Alert/${id}`, {
       isActive,
     })
-    return response.data
+    return mapAlertFromApi(response.data)
   },
 }

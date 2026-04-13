@@ -1,20 +1,60 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Switch } from '@headlessui/react'
 import {
   UserIcon,
   BellIcon,
-  ChartBarIcon,
   LockClosedIcon,
 } from '@heroicons/react/24/outline'
 import { NotificationChannelsSettings } from './NotificationChannelsSettings'
+import { ChangePasswordForm } from './ChangePasswordForm'
+import { apiClient } from '@/infrastructure/api/apiClient'
+import { notify } from '@/shared/utils/notify'
 
 export const Settings = () => {
-  const [notifications, setNotifications] = useState({
-    priceAlerts: true,
-    aiRecommendations: true,
-    portfolioUpdates: false,
-    marketNews: true,
-  })
+  const PRICE_ALERTS_PREFERENCE_KEY = 'price_alerts_enabled'
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [priceAlertsEnabled, setPriceAlertsEnabled] = useState(true)
+  const [isSavingPriceAlerts, setIsSavingPriceAlerts] = useState(false)
+
+  useEffect(() => {
+    const loadPriceAlertsPreference = async () => {
+      try {
+        const response = await apiClient.get<{ preferenceValue: string }>(
+          `/UserPreference/${PRICE_ALERTS_PREFERENCE_KEY}`,
+          {
+            validateStatus: (status) => status < 500,
+          }
+        )
+
+        if (response.status === 200 && response.data?.preferenceValue) {
+          setPriceAlertsEnabled(response.data.preferenceValue === 'true')
+        }
+      } catch {
+        // Keep default true when preference is unavailable
+      }
+    }
+
+    void loadPriceAlertsPreference()
+  }, [])
+
+  const handleTogglePriceAlerts = async (checked: boolean) => {
+    const previous = priceAlertsEnabled
+    setPriceAlertsEnabled(checked)
+    setIsSavingPriceAlerts(true)
+
+    try {
+      await apiClient.post('/UserPreference', {
+        preferenceKey: PRICE_ALERTS_PREFERENCE_KEY,
+        preferenceValue: String(checked),
+      })
+      notify.success('Price alert preference updated')
+    } catch {
+      setPriceAlertsEnabled(previous)
+      notify.error('Failed to update price alert preference')
+    } finally {
+      setIsSavingPriceAlerts(false)
+    }
+  }
 
   return (
     <div className="p-8 animate-fade-in">
@@ -80,21 +120,6 @@ export const Settings = () => {
                   label: 'Price Alerts',
                   description: 'Get notified when stock prices hit your targets'
                 },
-                {
-                  key: 'aiRecommendations' as const,
-                  label: 'AI Recommendations',
-                  description: 'Receive AI-powered trading insights'
-                },
-                {
-                  key: 'portfolioUpdates' as const,
-                  label: 'Portfolio Updates',
-                  description: 'Daily summary of your portfolio performance'
-                },
-                {
-                  key: 'marketNews' as const,
-                  label: 'Market News',
-                  description: 'Breaking news and market updates'
-                },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                   <div>
@@ -102,15 +127,16 @@ export const Settings = () => {
                     <p className="text-sm text-slate-600 dark:text-slate-300">{item.description}</p>
                   </div>
                   <Switch
-                    checked={notifications[item.key]}
-                    onChange={(checked) => setNotifications({ ...notifications, [item.key]: checked })}
+                    checked={priceAlertsEnabled}
+                    onChange={(checked) => void handleTogglePriceAlerts(checked)}
+                    disabled={isSavingPriceAlerts}
                     className={`${
-                      notifications[item.key] ? 'bg-blue-600' : 'bg-slate-300'
+                      priceAlertsEnabled ? 'bg-blue-600' : 'bg-slate-300'
                     } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                   >
                     <span
                       className={`${
-                        notifications[item.key] ? 'translate-x-6' : 'translate-x-1'
+                        priceAlertsEnabled ? 'translate-x-6' : 'translate-x-1'
                       } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>
@@ -122,42 +148,6 @@ export const Settings = () => {
           {/* Notification Channels */}
           <NotificationChannelsSettings />
 
-          {/* Trading Preferences */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-                <ChartBarIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-                <span>Trading Preferences</span>
-              </h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Default Exchange</label>
-                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                  <option>HOSE</option>
-                  <option>HNX</option>
-                  <option>UPCOM</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Risk Tolerance</label>
-                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                  <option>Conservative</option>
-                  <option>Moderate</option>
-                  <option>Aggressive</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Investment Horizon</label>
-                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                  <option>Short-term (0-1 year)</option>
-                  <option>Medium-term (1-5 years)</option>
-                  <option>Long-term (5+ years)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
           {/* Security */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
@@ -167,15 +157,16 @@ export const Settings = () => {
               </h3>
             </div>
             <div className="p-6 space-y-4">
-              <button className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
+              <button
+                type="button"
+                onClick={() => setShowChangePassword((prev) => !prev)}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"
+              >
                 Change Password
               </button>
-              <button className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
-                Enable Two-Factor Authentication
-              </button>
-              <button className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
-                Manage Connected Devices
-              </button>
+              {showChangePassword && (
+                <ChangePasswordForm onCancel={() => setShowChangePassword(false)} />
+              )}
             </div>
           </div>
 

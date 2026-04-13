@@ -34,11 +34,12 @@ export interface BatchForecastItem {
 export const forecastService = {
   async getForecast(symbol: string, timeHorizon: 'short' | 'medium' | 'long' = 'short'): Promise<ForecastResult> {
     try {
-      const response = await apiClient.get<ForecastResult>(`/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
+      const response = await apiClient.get<ForecastResult & { confidence_score?: number }>(`/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
       // Normalize data to ensure arrays are never null
       const data = response.data
       return {
         ...data,
+        confidenceScore: data.confidenceScore ?? data.confidence_score ?? 0,
         keyDrivers: data.keyDrivers || [],
         risks: data.risks || [],
       }

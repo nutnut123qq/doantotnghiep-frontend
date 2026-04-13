@@ -102,6 +102,10 @@ export const NLPChatInput = ({
     return AlertType.Price // default
   }
 
+  const formatParsedValue = (_parsedType: string, value: number) => {
+    return value.toLocaleString('vi-VN')
+  }
+
   const examples = [
     'Alert me when VIC price goes above 100000',
     'Notify if VNM volume exceeds 1 million',
@@ -153,7 +157,7 @@ export const NLPChatInput = ({
                       </div>
                       <div>
                         <span className="font-medium">Threshold:</span>{' '}
-                        <span>{message.parsedAlert.value}</span>
+                        <span>{formatParsedValue(message.parsedAlert.type, message.parsedAlert.value)}</span>
                       </div>
                       {message.parsedAlert.timeframe && (
                         <div className="col-span-2">
@@ -187,7 +191,7 @@ export const NLPChatInput = ({
               <strong>Condition:</strong> {currentParsedAlert.operator}
             </div>
             <div>
-              <strong>Value:</strong> {currentParsedAlert.value}
+              <strong>Value:</strong> {formatParsedValue(currentParsedAlert.type, currentParsedAlert.value)}
             </div>
             {currentParsedAlert.timeframe && (
               <div className="col-span-2">

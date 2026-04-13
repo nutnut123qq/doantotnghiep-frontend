@@ -14,7 +14,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Trash2, Bell } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
-import { AlertTypeLabels } from '../types/alert.types'
+import {
+  AlertType,
+  AlertTypeLabels,
+  coerceAlertType,
+  isPriceAlertType,
+  priceThresholdApiToUser,
+} from '../types/alert.types'
 import type { Alert, CreateAlertRequest } from '../types/alert.types'
 import { format } from 'date-fns'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
@@ -88,6 +94,22 @@ export const AlertList = () => {
     return labels[condition] || condition
   }
 
+  /** Bảng alert: threshold đã map sang VND đầy đủ từ API. */
+  const formatAlertMetric = (type: string | AlertType, value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A'
+    return Number(value).toLocaleString('vi-VN')
+  }
+
+  /** SignalR notification: giá vẫn là đơn vị API (nghìn VND). */
+  const formatTriggerMetric = (type: string | AlertType, value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A'
+    const t = coerceAlertType(type)
+    const display =
+      isPriceAlertType(type) ? priceThresholdApiToUser(t, Number(value)) : Number(value)
+    if (display === null || display === undefined) return 'N/A'
+    return Number(display).toLocaleString('vi-VN')
+  }
+
   return (
     <div className="p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -142,10 +164,7 @@ export const AlertList = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <CardTitle className="text-base">Trigger notifications</CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Lưu trong phiên trình duyệt
-                </p>
+                <CardTitle className="text-base">Notifications</CardTitle>
               </div>
               {recentNotifications.length > 0 && (
                 <Button variant="outline" size="sm" onClick={clearAll}>
@@ -157,7 +176,7 @@ export const AlertList = () => {
           <CardContent className="space-y-3">
             {recentNotifications.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">
-                Chưa có thông báo trigger trong phiên này. Kích hoạt alert sẽ hiện tại đây dù bạn đang ở trang khác.
+                Notifications
               </p>
             ) : (
               recentNotifications.map((item) => (
@@ -170,8 +189,8 @@ export const AlertList = () => {
                       {item.symbol} {item.type} alert triggered
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Threshold: {Number(item.threshold).toLocaleString()} | Current:{' '}
-                      {Number(item.currentValue).toLocaleString()}
+                      Threshold: {formatTriggerMetric(item.type, Number(item.threshold))} | Current:{' '}
+                      {formatTriggerMetric(item.type, Number(item.currentValue))}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {item.triggeredAt
@@ -245,9 +264,7 @@ export const AlertList = () => {
                         {getConditionLabel(alert.condition)}
                       </TableCell>
                       <TableCell>
-                        {alert.threshold
-                          ? alert.threshold.toLocaleString()
-                          : 'N/A'}
+                        {formatAlertMetric(alert.type, alert.threshold)}
                       </TableCell>
                       <TableCell>
                         <Badge

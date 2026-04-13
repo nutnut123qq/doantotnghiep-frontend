@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback, type ComponentProps } from 'react'
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type ComponentProps,
+} from 'react'
+import axios from 'axios'
 import { Link } from 'react-router-dom'
 import { Calendar, Loader2, RefreshCw } from 'lucide-react'
 import { eventService } from '../services/eventService'
@@ -48,6 +55,18 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+
+function getQaErrorMessage(error: unknown): string {
+  const fallback = 'Không thể trả lời. Vui lòng thử lại sau.'
+  if (!axios.isAxiosError(error)) return fallback
+
+  const data = error.response?.data as
+    | { error?: string; message?: string; detail?: string }
+    | undefined
+
+  const message = data?.message?.trim() || data?.error?.trim() || data?.detail?.trim()
+  return message || fallback
+}
 
 function statusBadgeVariant(
   status: EventStatus
@@ -160,7 +179,7 @@ export default function EventsFeed() {
       })
     } catch (e) {
       console.error('Events Q&A failed:', e)
-      setQaError('Không thể trả lời (kiểm tra AI service và đăng nhập).')
+      setQaError(getQaErrorMessage(e))
     } finally {
       setQaLoading(false)
     }
@@ -312,6 +331,15 @@ export default function EventsFeed() {
     )
   }
 
+  const sortedEvents = useMemo(
+    () =>
+      [...events].sort(
+        (a, b) =>
+          new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()
+      ),
+    [events]
+  )
+
   if (loading) {
     return (
       <div className="p-8 animate-fade-in">
@@ -459,11 +487,10 @@ export default function EventsFeed() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              Hỏi AI về sự kiện (RAG)
+              Hỏi AI về sự kiện
             </CardTitle>
             <CardDescription>
-              Dựa trên sự kiện đã lưu (crawl + RSS). Nhập mã và câu hỏi tiếng
-              Việt hoặc Anh.
+              Dựa trên sự kiện đã lưu.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -508,7 +535,29 @@ export default function EventsFeed() {
             {qaError && (
               <p className="text-sm text-destructive">{qaError}</p>
             )}
-            {qaResult && (
+            {qaLoading && (
+              <div
+                className="space-y-3 animate-pulse"
+                aria-busy="true"
+                aria-live="polite"
+                aria-label="Đang tạo câu trả lời AI"
+              >
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                  <div className="h-3.5 bg-blue-200/80 dark:bg-blue-800/60 rounded w-28 mb-3" />
+                  <div className="space-y-2">
+                    <div className="h-3 bg-blue-200/60 dark:bg-blue-800/50 rounded w-full" />
+                    <div className="h-3 bg-blue-200/60 dark:bg-blue-800/50 rounded w-[94%]" />
+                    <div className="h-3 bg-blue-200/60 dark:bg-blue-800/50 rounded w-4/5" />
+                  </div>
+                </div>
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="h-3 bg-gray-200/80 dark:bg-gray-700/50 rounded w-36 mb-2" />
+                  <div className="h-2.5 bg-gray-200/70 dark:bg-gray-700/40 rounded w-full mb-1.5" />
+                  <div className="h-2.5 bg-gray-200/70 dark:bg-gray-700/40 rounded w-[88%]" />
+                </div>
+              </div>
+            )}
+            {!qaLoading && qaResult && (
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                 <p className="text-sm text-[hsl(var(--text))] whitespace-pre-wrap">
                   {qaResult.answer}
@@ -558,7 +607,7 @@ export default function EventsFeed() {
               </CardContent>
             </Card>
           ) : (
-            events.map((event) => (
+            sortedEvents.map((event) => (
               <Card
                 key={event.id}
                 className={cn(
@@ -602,10 +651,6 @@ export default function EventsFeed() {
                       <p className="text-sm font-semibold text-[hsl(var(--text))]">
                         {eventService.formatEventDate(event.eventDate)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {eventService.getRelativeTime(event.eventDate)}
-                      </p>
-                      {renderStatusBadge(event)}
                     </div>
                   </div>
                 </CardContent>

@@ -26,7 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <App />
-            <Toaster position="top-right" richColors />
+            <Toaster position="top-right" richColors closeButton />
           </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>

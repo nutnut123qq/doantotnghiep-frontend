@@ -1,6 +1,13 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
 import { storage } from '@/infrastructure/storage/localStorage'
-import type { LoginRequest, RegisterRequest, AuthResponse, RegisterResponse } from '../types/auth.types'
+import type {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  RegisterResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+} from '../types/auth.types'
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
@@ -42,6 +49,11 @@ export const authService = {
       '/auth/resend-verification',
       { email }
     )
+    return response.data
+  },
+
+  async changePassword(payload: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+    const response = await apiClient.post<ChangePasswordResponse>('/auth/change-password', payload)
     return response.data
   },
 }

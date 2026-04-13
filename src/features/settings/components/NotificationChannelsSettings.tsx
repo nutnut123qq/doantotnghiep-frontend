@@ -14,10 +14,12 @@ export const NotificationChannelsSettings = () => {
     enabledTelegram: false
   });
 
-  // Local state cho input (không sync với masked value từ server)
+  // Local state cho input
   const [slackWebhookInput, setSlackWebhookInput] = useState('');
+  const [slackWebhookMasked, setSlackWebhookMasked] = useState('');
   const [telegramChatIdInput, setTelegramChatIdInput] = useState('');
   const [showSlackWebhook, setShowSlackWebhook] = useState(false);
+  const [showTelegramChatId, setShowTelegramChatId] = useState(false);
   const [loading, setLoading] = useState(false);
   const [testingSlack, setTestingSlack] = useState(false);
   const [testingTelegram, setTestingTelegram] = useState(false);
@@ -32,7 +34,14 @@ export const NotificationChannelsSettings = () => {
       const data = await notificationChannelService.getMyConfig();
       setConfig(data);
 
-      // Chỉ set chat ID, không set webhook (vì đã masked)
+      if (data.slackWebhookMasked) {
+        setSlackWebhookMasked(data.slackWebhookMasked);
+        setSlackWebhookInput(data.slackWebhookMasked);
+      } else {
+        setSlackWebhookMasked('');
+        setSlackWebhookInput('');
+      }
+
       if (data.telegramChatId) {
         setTelegramChatIdInput(data.telegramChatId);
       }
@@ -42,9 +51,12 @@ export const NotificationChannelsSettings = () => {
   };
 
   const handleSave = async () => {
-    // FE Validation: Check "effective value" (input mới OR webhook đã có)
-    // Slack: Pass nếu có webhook đã lưu HOẶC có input mới
-    if (config.enabledSlack && !slackWebhookInput && !config.hasSlackWebhook) {
+    const isSlackWebhookChanged =
+      !!slackWebhookInput &&
+      (!config.hasSlackWebhook || slackWebhookInput !== slackWebhookMasked);
+
+    // FE Validation: enabled Slack requires either existing saved webhook or newly changed input
+    if (config.enabledSlack && !config.hasSlackWebhook && !isSlackWebhookChanged) {
       notify.error('Please enter Slack webhook URL to enable Slack notifications');
       return;
     }
@@ -57,9 +69,9 @@ export const NotificationChannelsSettings = () => {
 
     setLoading(true);
     try {
-      // Chỉ gửi webhook nếu có giá trị mới
+      // Only send webhook when user actually changed from masked value
       const result = await notificationChannelService.updateConfig({
-        slackWebhookUrl: slackWebhookInput || undefined,  // undefined = không update
+        slackWebhookUrl: isSlackWebhookChanged ? slackWebhookInput : undefined,
         enabledSlack: config.enabledSlack,
         telegramChatId: telegramChatIdInput || undefined,
         enabledTelegram: config.enabledTelegram
@@ -67,8 +79,14 @@ export const NotificationChannelsSettings = () => {
 
       // Update config state with result from server
       setConfig(result);
+      if (result.slackWebhookMasked) {
+        setSlackWebhookMasked(result.slackWebhookMasked);
+        setSlackWebhookInput(result.slackWebhookMasked);
+      } else {
+        setSlackWebhookMasked('');
+        setSlackWebhookInput('');
+      }
       notify.success('Notification channels updated successfully');
-      setSlackWebhookInput('');  // Clear input sau khi save
     } catch (error: unknown) {
       const errorMessage = getAxiosErrorMessage(error);
       notify.error(errorMessage === 'Unknown error' ? 'Failed to update configuration' : errorMessage);
@@ -84,8 +102,8 @@ export const NotificationChannelsSettings = () => {
       return;
     }
 
-    // Warn nếu có unsaved changes (user vừa nhập webhook mới)
-    if (slackWebhookInput) {
+    // Warn if there is an unsaved webhook change
+    if (slackWebhookInput && slackWebhookInput !== slackWebhookMasked) {
       notify.warning('You have unsaved changes. Test will use the previously saved webhook URL.', {
         duration: 5000,
       });
@@ -239,13 +257,22 @@ export const NotificationChannelsSettings = () => {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Chat ID
             </label>
-            <input
-              type="text"
-              value={telegramChatIdInput}
-              onChange={(e) => setTelegramChatIdInput(e.target.value)}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500"
-              placeholder="123456789 or -100123456789"
-            />
+            <div className="relative">
+              <input
+                type={showTelegramChatId ? 'text' : 'password'}
+                value={telegramChatIdInput}
+                onChange={(e) => setTelegramChatIdInput(e.target.value)}
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 pr-10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500"
+                placeholder="123456789 or -100123456789"
+              />
+              <button
+                type="button"
+                onClick={() => setShowTelegramChatId(!showTelegramChatId)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+              >
+                {showTelegramChatId ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+              </button>
+            </div>
             <div className="mt-1 flex items-center justify-between">
               <button
                 type="button"

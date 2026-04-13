@@ -56,3 +56,47 @@ export const AlertTypeLabels: Record<AlertType, string> = {
   [AlertType.Sentiment]: 'Sentiment',
   [AlertType.Volatility]: 'Volatility',
 }
+
+/** API / DB / SignalR dùng nghìn VND cho giá; form & bảng dùng VND đầy đủ. */
+export const PRICE_ALERT_VND_SCALE = 1000
+
+export function coerceAlertType(type: unknown): AlertType {
+  if (typeof type === 'number' && type >= 1 && type <= 5) {
+    return type as AlertType
+  }
+  if (typeof type === 'string') {
+    const byName: Record<string, AlertType> = {
+      Price: AlertType.Price,
+      Volume: AlertType.Volume,
+      TechnicalIndicator: AlertType.TechnicalIndicator,
+      Sentiment: AlertType.Sentiment,
+      Volatility: AlertType.Volatility,
+    }
+    if (byName[type] !== undefined) return byName[type]
+    const n = parseInt(type, 10)
+    if (!Number.isNaN(n) && n >= 1 && n <= 5) return n as AlertType
+  }
+  return AlertType.Price
+}
+
+export function isPriceAlertType(type: string | AlertType): boolean {
+  return type === 'Price' || type === AlertType.Price
+}
+
+export function priceThresholdUserToApi(
+  type: AlertType | undefined,
+  threshold: number | undefined
+): number | undefined {
+  if (threshold === undefined || threshold === null) return undefined
+  if (type === AlertType.Price) return threshold / PRICE_ALERT_VND_SCALE
+  return threshold
+}
+
+export function priceThresholdApiToUser(
+  type: AlertType | undefined,
+  threshold: number | null | undefined
+): number | null | undefined {
+  if (threshold === null || threshold === undefined) return threshold
+  if (type === AlertType.Price) return threshold * PRICE_ALERT_VND_SCALE
+  return threshold
+}

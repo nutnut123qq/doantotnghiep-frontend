@@ -1,5 +1,6 @@
 export interface NotificationChannelConfig {
-  hasSlackWebhook: boolean;  // Không nhận webhook URL, chỉ flag
+  hasSlackWebhook: boolean;
+  slackWebhookMasked?: string;
   enabledSlack: boolean;
   telegramChatId?: string;
   enabledTelegram: boolean;

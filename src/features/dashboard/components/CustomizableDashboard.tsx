@@ -1,26 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Responsive, WidthProvider, Layout as GridLayout } from 'react-grid-layout'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { layoutService } from '../services/layoutService'
 import { LayoutConfig, WidgetConfig } from '@/shared/types/layoutTypes'
-import { LayoutManager } from './LayoutManager'
 import { NewsFeed } from './NewsFeed'
 import { FinancialReports } from './FinancialReports'
 import { TradingViewChart } from './TradingViewChart'
 import { AIForecast } from './AIForecast'
 import { AlertFeed } from './AlertFeed'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { 
-  Settings,
-  Pencil,
-  Check,
-  X,
-  GripVertical
-} from 'lucide-react'
-import { notify } from '@/shared/utils/notify'
 import { useQuery } from '@tanstack/react-query'
 import { watchlistService } from '@/features/watchlist/services/watchlistService'
 import { eventService } from '@/features/events/services/eventService'
@@ -32,7 +21,6 @@ import { format } from 'date-fns'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
 import { ErrorState } from '@/shared/components/ErrorState'
-import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { PageHeader } from '@/shared/components/PageHeader'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
@@ -271,10 +259,7 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
   const [searchParams, setSearchParams] = useSearchParams()
   const symbolFromUrl = searchParams.get('symbol') || defaultSymbol
   const [layout, setLayout] = useState<LayoutConfig | null>(null)
-  const [isEditMode, setIsEditMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [showLayoutManager, setShowLayoutManager] = useState(false)
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const updateSymbolInUrl = useCallback((symbol: string) => {
     const normalizedSymbol = (symbol || '').trim().toUpperCase()
@@ -302,127 +287,6 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
   useEffect(() => {
     loadLayout()
   }, [loadLayout])
-
-  const handleLayoutChange = useCallback((newGridLayout: GridLayout[]) => {
-    if (!layout || !isEditMode) return
-
-    // Update widget positions
-    const updatedWidgets = layout.widgets.map(widget => {
-      const gridItem = newGridLayout.find(item => item.i === widget.id)
-      if (gridItem) {
-        return {
-          ...widget,
-          x: gridItem.x,
-          y: gridItem.y,
-          w: gridItem.w,
-          h: gridItem.h,
-        }
-      }
-      return widget
-    })
-
-    const updatedLayout: LayoutConfig = {
-      ...layout,
-      widgets: updatedWidgets,
-    }
-
-    setLayout(updatedLayout)
-  }, [layout, isEditMode])
-
-  const handleSaveLayout = async () => {
-    if (!layout) return
-
-    try {
-      await layoutService.saveLayout(layout)
-      setIsEditMode(false)
-      notify.success('Layout saved successfully!')
-    } catch (error) {
-      notify.error('Failed to save layout')
-    }
-  }
-
-  const handleCancelEdit = () => {
-    setIsEditMode(false)
-    loadLayout() // Reload original layout
-  }
-
-  const handleApplyTemplate = async (templateId: string) => {
-    try {
-      const newLayout = await layoutService.applyTemplate(templateId)
-      setLayout(newLayout)
-      setShowLayoutManager(false)
-      notify.success('Template applied successfully!')
-    } catch (error) {
-      notify.error('Failed to apply template')
-    }
-  }
-
-  const handleResetLayoutClick = () => {
-    setResetConfirmOpen(true)
-  }
-
-  const handleResetLayout = async () => {
-    try {
-      const defaultLayout = await layoutService.resetToDefault()
-      setLayout(defaultLayout)
-      notify.success('Layout reset successfully!')
-    } catch (error) {
-      notify.error('Failed to reset layout')
-    }
-  }
-
-  const handleExportLayout = () => {
-    if (layout) {
-      layoutService.exportLayout(layout)
-    }
-  }
-
-  const handleImportLayout = async (file: File) => {
-    try {
-      const importedLayout = await layoutService.importLayout(file)
-      
-      if (layoutService.validateLayout(importedLayout)) {
-        await layoutService.saveLayout(importedLayout)
-        setLayout(importedLayout)
-        notify.success('Layout imported successfully!')
-      } else {
-        notify.error('Invalid layout file')
-      }
-    } catch (error) {
-      notify.error('Failed to import layout')
-    }
-  }
-
-  const handleShareLayout = async (isPublic: boolean, expiresInDays: number) => {
-    if (!layout) {
-      throw new Error('Layout not loaded')
-    }
-
-    return await layoutService.shareLayout(layout, isPublic, expiresInDays)
-  }
-
-  const handleImportByCode = async (code: string) => {
-    const importedLayout = await layoutService.importLayoutByCode(code)
-    if (!layoutService.validateLayout(importedLayout)) {
-      throw new Error('Invalid layout configuration')
-    }
-    return importedLayout
-  }
-
-  const handleApplyImportedLayout = async (importedLayout: LayoutConfig) => {
-    try {
-      if (layoutService.validateLayout(importedLayout)) {
-        await layoutService.saveLayout(importedLayout)
-        setLayout(importedLayout)
-        setShowLayoutManager(false)
-        notify.success('Layout imported successfully!')
-      } else {
-        notify.error('Invalid layout configuration')
-      }
-    } catch (error) {
-      notify.error('Failed to apply imported layout')
-    }
-  }
 
   const renderWidget = (widget: WidgetConfig) => {
     if (!widget.visible) return null
@@ -506,65 +370,8 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
         {/* Header with controls */}
         <PageHeader
           title="Dashboard"
-          description={isEditMode ? 'Edit mode - Drag and resize widgets' : 'Customizable dashboard layout'}
-          actions={
-            <div className="flex items-center space-x-2">
-              {isEditMode ? (
-                <>
-                  <Button
-                    onClick={handleSaveLayout}
-                    className="flex items-center space-x-2"
-                  >
-                    <Check className="h-5 w-5" />
-                    <span>Save Layout</span>
-                  </Button>
-                  <Button
-                    onClick={handleCancelEdit}
-                    variant="outline"
-                    className="flex items-center space-x-2"
-                  >
-                    <X className="h-5 w-5" />
-                    <span>Cancel</span>
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    onClick={() => setIsEditMode(true)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Pencil className="h-5 w-5" />
-                    <span>Edit Layout</span>
-                  </Button>
-                  <Button
-                    onClick={() => setShowLayoutManager(true)}
-                    variant="outline"
-                    className="flex items-center space-x-2"
-                  >
-                    <Settings className="h-5 w-5" />
-                    <span>Manage</span>
-                  </Button>
-                </>
-              )}
-            </div>
-          }
+          description="Customizable dashboard layout"
         />
-
-        {/* Edit mode banner */}
-        <AnimatePresence>
-          {isEditMode && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
-            >
-              <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                <strong>Edit Mode:</strong> Drag widgets to reposition, resize using the corner handle. Click "Save Layout" when done.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Grid Layout */}
         <ResponsiveGridLayout
@@ -573,9 +380,8 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
           breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
           cols={{ lg: layout.cols, md: 10, sm: 6, xs: 4, xxs: 2 }}
           rowHeight={layout.rowHeight}
-          isDraggable={isEditMode && layout.isDraggable}
-          isResizable={isEditMode && layout.isResizable}
-          onLayoutChange={handleLayoutChange}
+          isDraggable={false}
+          isResizable={false}
           draggableHandle=".drag-handle"
           containerPadding={[0, 0]}
           margin={[24, 24]}
@@ -588,50 +394,12 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
                 transition={{ delay: index * 0.1 }}
                 className="h-full w-full min-h-0"
               >
-                {isEditMode && (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="drag-handle absolute top-2 left-2 z-10"
-                  >
-                    <Badge variant="default" className="cursor-move flex items-center space-x-1">
-                      <GripVertical className="h-3 w-3" />
-                      <span className="text-xs font-medium">{widget.type}</span>
-                    </Badge>
-                  </motion.div>
-                )}
                 {renderWidget(widget)}
               </motion.div>
             </div>
           ))}
         </ResponsiveGridLayout>
 
-        {/* Layout Manager Modal */}
-        {showLayoutManager && (
-          <LayoutManager
-            currentLayout={layout}
-            onApplyTemplate={handleApplyTemplate}
-            onReset={handleResetLayoutClick}
-            onExport={handleExportLayout}
-            onImport={handleImportLayout}
-            onShareLayout={handleShareLayout}
-            onImportByCode={handleImportByCode}
-            onApplyImportedLayout={handleApplyImportedLayout}
-            onClose={() => setShowLayoutManager(false)}
-          />
-        )}
-
-        {/* Reset Confirm Dialog */}
-        <ConfirmDialog
-          open={resetConfirmOpen}
-          onOpenChange={setResetConfirmOpen}
-          title="Reset Layout"
-          description="Are you sure you want to reset to default layout? This action cannot be undone."
-          confirmText="Reset"
-          cancelText="Cancel"
-          onConfirm={handleResetLayout}
-          variant="destructive"
-        />
       </div>
     </div>
   )

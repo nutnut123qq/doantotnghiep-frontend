@@ -17,29 +17,105 @@ interface AIForecastProps {
   symbol: string
 }
 
+const renderAnalysisContent = (text: string) => {
+  const lines = text.split(/\r?\n/)
+  const elements: JSX.Element[] = []
+  let i = 0
+  let key = 0
+
+  while (i < lines.length) {
+    const line = lines[i].trim()
+
+    // Ignore markdown separators for cleaner UI.
+    if (!line || /^---+$/.test(line)) {
+      i++
+      continue
+    }
+
+    if (/^#{1,6}\s+/.test(line)) {
+      const headingText = line.replace(/^#{1,6}\s+/, '')
+      elements.push(
+        <h5 key={`h-${key++}`} className="mt-3 mb-1 font-semibold text-purple-900 dark:text-purple-200">
+          {parseMarkdownBold(headingText, 'text-purple-900 dark:text-purple-200')}
+        </h5>
+      )
+      i++
+      continue
+    }
+
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^[-*]\s+/, ''))
+        i++
+      }
+      elements.push(
+        <ul key={`ul-${key++}`} className="list-disc ml-5 space-y-1">
+          {items.map((item, idx) => (
+            <li key={`uli-${idx}`}>
+              {parseMarkdownBold(item, 'text-purple-900 dark:text-purple-200')}
+            </li>
+          ))}
+        </ul>
+      )
+      continue
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = []
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^\d+\.\s+/, ''))
+        i++
+      }
+      elements.push(
+        <ol key={`ol-${key++}`} className="list-decimal ml-5 space-y-1">
+          {items.map((item, idx) => (
+            <li key={`oli-${idx}`}>
+              {parseMarkdownBold(item, 'text-purple-900 dark:text-purple-200')}
+            </li>
+          ))}
+        </ol>
+      )
+      continue
+    }
+
+    elements.push(
+      <p key={`p-${key++}`}>
+        {parseMarkdownBold(line, 'text-purple-900 dark:text-purple-200')}
+      </p>
+    )
+    i++
+  }
+
+  if (elements.length === 0) {
+    return <p>{text}</p>
+  }
+
+  return <div className="space-y-2">{elements}</div>
+}
+
 export const AIForecast = ({ symbol }: AIForecastProps) => {
   const [forecast, setForecast] = useState<ForecastResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [timeHorizon, setTimeHorizon] = useState<'short' | 'medium' | 'long'>('short')
   const [hasRequested, setHasRequested] = useState(false)
 
-  // Reset forecast when symbol or timeHorizon changes (but don't auto-load)
+  // Reset forecast when symbol changes (but don't auto-load)
   useEffect(() => {
     setForecast(null)
     setError(null)
     setHasRequested(false)
-  }, [symbol, timeHorizon])
+  }, [symbol])
 
   const loadForecast = async () => {
     try {
       setLoading(true)
       setError(null)
       setHasRequested(true)
-      const data = await forecastService.getForecast(symbol, timeHorizon)
+      const data = await forecastService.getForecast(symbol, 'short')
       setForecast(data)
     } catch (err: unknown) {
-      logger.error('Error loading AI forecast', { error: err, symbol, timeHorizon })
+      logger.error('Error loading AI forecast', { error: err, symbol })
       const msg = getAxiosErrorMessage(err)
       setError(msg === 'Unknown error' ? 'Không thể tải dự báo. Vui lòng kiểm tra kết nối AI service.' : msg)
       setForecast(null) // Clear forecast data on error
@@ -69,12 +145,6 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
             <div className="h-6 w-32 bg-muted rounded animate-pulse"></div>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Time Horizon Selector Skeleton */}
-            <div className="flex space-x-1 bg-muted rounded-lg p-1">
-              <div className="h-8 w-16 bg-background rounded-md animate-pulse"></div>
-              <div className="h-8 w-20 bg-background rounded-md animate-pulse"></div>
-              <div className="h-8 w-16 bg-background rounded-md animate-pulse"></div>
-            </div>
             {/* Refresh Button Skeleton */}
             <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
           </div>
@@ -246,23 +316,6 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Time Horizon Selector */}
-          <div className="flex space-x-1 bg-muted rounded-lg p-1">
-            {(['short', 'medium', 'long'] as const).map((horizon) => (
-              <button
-                key={horizon}
-                onClick={() => setTimeHorizon(horizon)}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                  timeHorizon === horizon
-                    ? 'bg-background text-purple-600 dark:text-purple-400 shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {forecastService.getTimeHorizonLabel(horizon)}
-              </button>
-            ))}
-          </div>
-
           {/* Refresh Button */}
           <button
             onClick={loadForecast}
@@ -359,8 +412,8 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
         {/* Analysis */}
         <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
           <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-2">Phân tích chi tiết</h4>
-          <div className="text-sm text-purple-800 dark:text-purple-300 whitespace-pre-wrap">
-            {parseMarkdownBold(forecast.analysis, 'text-purple-900 dark:text-purple-200')}
+          <div className="text-sm text-purple-800 dark:text-purple-300">
+            {renderAnalysisContent(forecast.analysis)}
           </div>
         </div>
 

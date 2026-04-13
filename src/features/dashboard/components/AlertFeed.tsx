@@ -8,8 +8,8 @@ import { EmptyState } from '@/shared/components/EmptyState'
 import { ErrorState } from '@/shared/components/ErrorState'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
 import { alertService } from '@/features/alerts/services/alertService'
-import type { Alert, AlertType } from '@/features/alerts/types/alert.types'
-import { AlertTypeLabels } from '@/features/alerts/types/alert.types'
+import type { Alert } from '@/features/alerts/types/alert.types'
+import { AlertType, AlertTypeLabels } from '@/features/alerts/types/alert.types'
 
 interface AlertFeedProps {
   maxItems?: number
@@ -26,8 +26,12 @@ const getSeverityColor = (severity: 'high' | 'medium' | 'low') => {
 
 // Transform Alert to display format
 const transformAlert = (alert: Alert) => {
+  const formattedThreshold = alert.threshold
+    ? alert.threshold.toLocaleString('vi-VN')
+    : ''
+
   const message = alert.condition 
-    ? `${alert.symbol || 'Stock'} ${alert.condition}${alert.threshold ? ` ${alert.threshold}` : ''}`
+    ? `${alert.symbol || 'Stock'} ${alert.condition}${formattedThreshold ? ` ${formattedThreshold}` : ''}`
     : `${alert.symbol || 'Stock'} alert triggered`
   
   return {
