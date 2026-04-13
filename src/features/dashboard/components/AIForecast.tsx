@@ -11,6 +11,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 import { parseMarkdownBold } from '../utils/markdownParser'
+import { logger } from '@/shared/utils/logger'
 
 interface AIForecastProps {
   symbol: string
@@ -38,7 +39,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
       const data = await forecastService.getForecast(symbol, timeHorizon)
       setForecast(data)
     } catch (err: unknown) {
-      console.error('Error loading forecast:', err)
+      logger.error('Error loading AI forecast', { error: err, symbol, timeHorizon })
       const msg = getAxiosErrorMessage(err)
       setError(msg === 'Unknown error' ? 'Không thể tải dự báo. Vui lòng kiểm tra kết nối AI service.' : msg)
       setForecast(null) // Clear forecast data on error
@@ -60,7 +61,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border max-h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-6 flex-shrink-0">
           <div className="flex items-center space-x-3">
@@ -170,12 +171,13 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
   if (!hasRequested) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
-        <div className="flex items-center space-x-3 mb-6">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
+        <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <SparklesIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Dự báo AI - {symbol}</h3>
         </div>
-        <div className="text-center py-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <div className="text-center py-8">
           <SparklesIcon className="h-12 w-12 text-purple-300 dark:text-purple-600 mx-auto mb-4" />
           <p className="text-muted-foreground mb-6">Nhấn nút bên dưới để tạo dự báo AI cho {symbol}</p>
           <button
@@ -195,6 +197,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
               </>
             )}
           </button>
+          </div>
         </div>
       </div>
     )
@@ -202,37 +205,39 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
   if (error || !forecast) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
-        <div className="flex items-center space-x-3 mb-6">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
+        <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <SparklesIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Dự báo AI - {symbol}</h3>
         </div>
-        <div className="text-center py-8 text-muted-foreground">
-          <p className="mb-4">{error || 'Không có dữ liệu'}</p>
-          <button
-            onClick={loadForecast}
-            disabled={loading}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 mx-auto"
-          >
-            {loading ? (
-              <>
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                <span>Đang tải...</span>
-              </>
-            ) : (
-              <>
-                <ArrowPathIcon className="h-4 w-4" />
-                <span>Thử lại</span>
-              </>
-            )}
-          </button>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="mb-4">{error || 'Không có dữ liệu'}</p>
+            <button
+              onClick={loadForecast}
+              disabled={loading}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2 mx-auto"
+            >
+              {loading ? (
+                <>
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  <span>Đang tải...</span>
+                </>
+              ) : (
+                <>
+                  <ArrowPathIcon className="h-4 w-4" />
+                  <span>Thử lại</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border max-h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center space-x-3">

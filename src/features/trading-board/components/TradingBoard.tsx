@@ -6,7 +6,6 @@ import {
   useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   ColumnDef,
   flexRender,
@@ -15,7 +14,6 @@ import {
   VisibilityState,
 } from '@tanstack/react-table'
 import { useTradingBoard } from '../hooks/useTradingBoard'
-import { useTradingBoardWithIndicators, type StockTickerWithIndicators } from '../hooks/useTradingBoardWithIndicators'
 import { ColumnCustomizationModal } from './ColumnCustomizationModal'
 import { columnPreferencesService } from '../services/columnPreferencesService'
 import type { TradingBoardFilters as TradingBoardFiltersType } from '../services/tradingBoardService'
@@ -23,7 +21,7 @@ import type { TradingBoardColumnPreferences } from '../types/columnTypes'
 import {
   DEFAULT_COLUMN_ORDER,
   ALL_CUSTOMIZABLE_COLUMN_IDS,
-  INDICATOR_COLUMN_IDS,
+  type ColumnId,
 } from '../types/columnTypes'
 import type { StockTicker } from '@/domain/entities/StockTicker'
 import { Button } from '@/components/ui/button'
@@ -41,6 +39,7 @@ import { Settings } from 'lucide-react'
 import { ArrowUpDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
+import { effectivePrice, hasQuotablePrice } from '@/lib/stockTickerNormalize'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { TradingBoardFilters } from './TradingBoardFilters'
@@ -61,14 +60,21 @@ export const TradingBoard = () => {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [columnOrder, setColumnOrder] = useState<string[]>([
-    ...DEFAULT_COLUMN_ORDER,
-    ...INDICATOR_COLUMN_IDS,
-  ])
+  const [columnOrder, setColumnOrder] = useState<string[]>([...DEFAULT_COLUMN_ORDER])
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
   const [watchlistModalOpen, setWatchlistModalOpen] = useState(false)
   const [selectedTickerForWatchlist, setSelectedTickerForWatchlist] = useState<string | null>(null)
   const [selectedWatchlistId, setSelectedWatchlistId] = useState<string>('')
+
+  const formatExchange = (exchange: unknown) => {
+    if (exchange === 'HOSE' || exchange === 'HNX' || exchange === 'UPCOM') return exchange
+    if (exchange === 1 || exchange === '1') return 'HOSE'
+    if (exchange === 2 || exchange === '2') return 'HNX'
+    if (exchange === 3 || exchange === '3') return 'UPCOM'
+    return 'N/A'
+  }
+
+  const hasValidQuote = (ticker: StockTicker) => hasQuotablePrice(ticker)
   // Debounce filters (especially industry) to avoid refetch on every keypress
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,7 +94,6 @@ export const TradingBoard = () => {
   }, [searchQuery])
 
   const { tickers: baseTickers, isLoading, error } = useTradingBoard(debouncedFilters)
-  const { tickers, isLoadingIndicators } = useTradingBoardWithIndicators(baseTickers)
 
   // Fetch watchlists for filter
   const { data: watchlistsData } = useQuery({
@@ -109,16 +114,14 @@ export const TradingBoard = () => {
     for (const id of ALL_CUSTOMIZABLE_COLUMN_IDS) {
       visibility[id] = visibleSet.has(id)
     }
-    for (const id of INDICATOR_COLUMN_IDS) {
-      visibility[id] = true
-    }
     return visibility
   }
 
   const buildFullColumnOrder = (prefs: TradingBoardColumnPreferences) => {
-    const order = prefs.columnOrder?.length
-      ? [...prefs.columnOrder]
-      : [...DEFAULT_COLUMN_ORDER]
+    const allowed = new Set<string>(ALL_CUSTOMIZABLE_COLUMN_IDS)
+    const order = (
+      prefs.columnOrder?.length ? [...prefs.columnOrder] : [...DEFAULT_COLUMN_ORDER]
+    ).filter((id) => allowed.has(id as ColumnId))
     const seen = new Set(order)
     for (const id of ALL_CUSTOMIZABLE_COLUMN_IDS) {
       if (!seen.has(id)) {
@@ -126,7 +129,7 @@ export const TradingBoard = () => {
         seen.add(id)
       }
     }
-    return [...order, ...INDICATOR_COLUMN_IDS]
+    return order
   }
 
   const loadColumnPreferences = async () => {
@@ -145,16 +148,15 @@ export const TradingBoard = () => {
     setColumnOrder(buildFullColumnOrder(prefs))
   }
 
-  // Filter tickers based on debounced search query
-  const filteredTickers = useMemo(() => {
-    if (!debouncedSearchQuery) return tickers
+  const filteredBaseTickers = useMemo(() => {
+    if (!debouncedSearchQuery) return baseTickers
     const query = debouncedSearchQuery.toLowerCase()
-    return tickers.filter(
+    return baseTickers.filter(
       (ticker) =>
         ticker.symbol.toLowerCase().includes(query) ||
         ticker.name?.toLowerCase().includes(query)
     )
-  }, [tickers, debouncedSearchQuery])
+  }, [baseTickers, debouncedSearchQuery])
 
   const handleFilterChange = (key: keyof TradingBoardFiltersType, value: string | undefined) => {
     setFilters((prev) => ({
@@ -185,7 +187,7 @@ export const TradingBoard = () => {
     }
   }
 
-  const columns = useMemo<ColumnDef<StockTickerWithIndicators>[]>(
+  const columns = useMemo<ColumnDef<StockTicker>[]>(
     () => [
       {
         id: 'symbol',
@@ -233,7 +235,7 @@ export const TradingBoard = () => {
         header: 'Exchange',
         cell: ({ row }) => (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-            {row.getValue('exchange')}
+            {formatExchange(row.getValue('exchange'))}
           </span>
         ),
       },
@@ -255,7 +257,10 @@ export const TradingBoard = () => {
           )
         },
         cell: ({ row }) => {
-          const price = row.getValue('currentPrice') as number
+          const price = effectivePrice(row.original)
+          if (price == null) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           return (
             <div className="text-right font-semibold">
               {formatNumber(price)}
@@ -281,14 +286,20 @@ export const TradingBoard = () => {
           )
         },
         cell: ({ row }) => {
+          if (!hasValidQuote(row.original)) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           const change = row.getValue('change') as number | null
+          if (change === null || change === undefined) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           const isPositive = change !== null && change >= 0
           return (
             <div className={cn(
               'text-right font-medium tabular-nums',
               isPositive ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
             )}>
-              {change !== null ? (change >= 0 ? '+' : '') + formatNumber(change) : '-'}
+              {(change >= 0 ? '+' : '') + formatNumber(change)}
             </div>
           )
         },
@@ -311,14 +322,20 @@ export const TradingBoard = () => {
           )
         },
         cell: ({ row }) => {
+          if (!hasValidQuote(row.original)) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           const changePercent = row.getValue('changePercent') as number | null
+          if (changePercent === null || changePercent === undefined) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           const isPositive = changePercent !== null && changePercent >= 0
           return (
             <div className={cn(
               'text-right font-bold tabular-nums',
               isPositive ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
             )}>
-              {changePercent !== null ? formatPercentage(changePercent) : '-'}
+              {formatPercentage(changePercent)}
             </div>
           )
         },
@@ -341,10 +358,13 @@ export const TradingBoard = () => {
           )
         },
         cell: ({ row }) => {
+          if (!hasValidQuote(row.original)) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           const volume = row.getValue('volume') as number | null
           return (
             <div className="text-right">
-              {volume !== null ? formatNumber(volume) : '-'}
+              {volume !== null && volume !== undefined ? formatNumber(volume) : 'N/A'}
             </div>
           )
         },
@@ -367,129 +387,25 @@ export const TradingBoard = () => {
           )
         },
         cell: ({ row }) => {
+          if (!hasValidQuote(row.original)) {
+            return <div className="text-right text-[hsl(var(--muted))]">N/A</div>
+          }
           const value = row.getValue('value') as number | null
           return (
             <div className="text-right">
-              {value !== null ? formatNumber(value) : '-'}
-            </div>
-          )
-        },
-      },
-      {
-        id: 'rsi',
-        accessorKey: 'rsi',
-        header: ({ column }) => {
-          return (
-            <div className="text-right">
-              <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                className="h-8 px-2 lg:px-3"
-              >
-                RSI(14)
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          )
-        },
-        cell: ({ row }) => {
-          const rsi = row.getValue('rsi') as number | undefined
-          if (rsi === undefined) {
-            return (
-              <div className="text-right text-[hsl(var(--muted))]">
-                {isLoadingIndicators ? '...' : '-'}
-              </div>
-            )
-          }
-          const color = rsi > 70 ? 'text-[hsl(var(--negative))]' : rsi < 30 ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--text))]'
-          return (
-            <div className={cn('text-right font-medium tabular-nums', color)}>
-              {rsi.toFixed(2)}
-            </div>
-          )
-        },
-      },
-      {
-        id: 'ma20',
-        accessorKey: 'ma20',
-        header: ({ column }) => {
-          return (
-            <div className="text-right">
-              <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                className="h-8 px-2 lg:px-3"
-              >
-                MA(20)
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          )
-        },
-        cell: ({ row }) => {
-          const ma20 = row.getValue('ma20') as number | undefined
-          const currentPrice = row.original.currentPrice
-          if (ma20 === undefined) {
-            return (
-              <div className="text-right text-[hsl(var(--muted))]">
-                {isLoadingIndicators ? '...' : '-'}
-              </div>
-            )
-          }
-          // Color code: green if price > MA20 (bullish), red if price < MA20 (bearish)
-          const color = currentPrice > ma20 ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
-          return (
-            <div className={cn('text-right font-medium tabular-nums', color)}>
-              {formatNumber(ma20)}
-            </div>
-          )
-        },
-      },
-      {
-        id: 'ma50',
-        accessorKey: 'ma50',
-        header: ({ column }) => {
-          return (
-            <div className="text-right">
-              <Button
-                variant="ghost"
-                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                className="h-8 px-2 lg:px-3"
-              >
-                MA(50)
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          )
-        },
-        cell: ({ row }) => {
-          const ma50 = row.getValue('ma50') as number | undefined
-          const currentPrice = row.original.currentPrice
-          if (ma50 === undefined) {
-            return (
-              <div className="text-right text-[hsl(var(--muted))]">
-                {isLoadingIndicators ? '...' : '-'}
-              </div>
-            )
-          }
-          // Color code: green if price > MA50 (bullish), red if price < MA50 (bearish)
-          const color = currentPrice > ma50 ? 'text-[hsl(var(--positive))]' : 'text-[hsl(var(--negative))]'
-          return (
-            <div className={cn('text-right font-medium tabular-nums', color)}>
-              {formatNumber(ma50)}
+              {value !== null && value !== undefined ? formatNumber(value) : 'N/A'}
             </div>
           )
         },
       },
     ],
-    [isLoadingIndicators]
+    []
   )
 
   const table = useReactTable({
-    data: filteredTickers,
+    data: filteredBaseTickers,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
@@ -506,11 +422,6 @@ export const TradingBoard = () => {
       columnFilters,
       columnVisibility,
       columnOrder,
-    },
-    initialState: {
-      pagination: {
-        pageSize: 20,
-      },
     },
   })
 
@@ -597,19 +508,27 @@ export const TradingBoard = () => {
           transition={{ delay: 0.2 }}
         >
           <Card className="bg-[hsl(var(--surface-1))]">
-            <div className="overflow-x-auto">
-              <div className="relative max-h-[calc(100vh-300px)] overflow-y-auto">
-                <Table className={cn(density === 'compact' ? 'text-sm' : 'text-base')}>
-                  <TableHeader className="sticky top-0 z-10 bg-[hsl(var(--surface-1))] border-b border-[hsl(var(--border))]">
+            <div className="relative max-h-[min(70vh,calc(100vh-220px))] overflow-auto">
+                <Table
+                  containerClassName="overflow-visible"
+                  className={cn(density === 'compact' ? 'text-sm' : 'text-base')}
+                >
+                  <TableHeader className="border-b border-[hsl(var(--border))]">
                     {table.getHeaderGroups().map((headerGroup) => (
                       <TableRow key={headerGroup.id} className="hover:bg-transparent">
                         {headerGroup.headers.map((header) => (
-                          <TableHead key={header.id} className="font-semibold text-[hsl(var(--text))]">
+                          <TableHead
+                            key={header.id}
+                            className="sticky top-0 z-10 bg-[hsl(var(--surface-1))] font-semibold text-[hsl(var(--text))]"
+                          >
                           {header.isPlaceholder
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
                         </TableHead>
                       ))}
+                        <TableHead className="sticky top-0 z-10 w-[120px] bg-[hsl(var(--surface-1))] text-right font-semibold text-[hsl(var(--text))]">
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
                     </TableRow>
                   ))}
                 </TableHeader>
@@ -700,36 +619,11 @@ export const TradingBoard = () => {
                   )}
                 </TableBody>
               </Table>
-              </div>
             </div>
-            {/* Pagination */}
-            <div className="flex items-center justify-between px-4 py-4 border-t border-[hsl(var(--border))]">
-              <div className="text-sm text-muted-foreground">
-                Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-                {Math.min(
-                  (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                  table.getFilteredRowModel().rows.length
-                )}{' '}
-                of {table.getFilteredRowModel().rows.length} results
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                </Button>
-              </div>
+            <div className="px-4 py-3 border-t border-[hsl(var(--border))] text-sm text-muted-foreground">
+              {table.getFilteredRowModel().rows.length}{' '}
+              {table.getFilteredRowModel().rows.length === 1 ? 'symbol' : 'symbols'}
+              <span className="text-[hsl(var(--muted))]"> · scroll the table to view all rows</span>
             </div>
           </Card>
         </motion.div>

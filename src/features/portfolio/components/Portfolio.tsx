@@ -23,7 +23,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ArrowUpDown, RefreshCw, Plus, Search, X } from 'lucide-react'
+import { ArrowUpDown, RefreshCw, Plus, Search, X, Pencil, Trash2 } from 'lucide-react'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { cn } from '@/lib/utils'
 import { portfolioService, type Holding, type PortfolioSummary } from '../services/portfolioService'
@@ -58,6 +58,15 @@ export const Portfolio = () => {
     avgPrice: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null)
+  const [editHolding, setEditHolding] = useState({
+    shares: '',
+    avgPrice: '',
+  })
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [symbolSearchQuery, setSymbolSearchQuery] = useState('')
   const [isSymbolDropdownOpen, setIsSymbolDropdownOpen] = useState(false)
   const [highlightedSymbolIndex, setHighlightedSymbolIndex] = useState(0)
@@ -88,30 +97,21 @@ export const Portfolio = () => {
         portfolioService.getSummary().catch(() => null), // Fallback to null if summary fails
       ])
       
-      // Transform holdings data to ensure all fields are present
-      // Calculate value if not provided: value = shares * currentPrice
-      const transformedHoldings = holdingsData.map((holding) => ({
-        ...holding,
-        value: holding.value ?? (holding.shares * holding.currentPrice),
-      }))
-      
-      setHoldings(transformedHoldings)
-      
-      // Use API summary if available, otherwise calculate from holdings
+      setHoldings(holdingsData)
+
+      // Trust API summary as source of truth for normalized unit calculations
       if (summaryData) {
         setSummaryStats(summaryData)
       } else {
-        // Calculate summary from holdings as fallback
-        const totalValue = transformedHoldings.reduce((sum, h) => sum + h.value, 0)
-        const totalCost = transformedHoldings.reduce((sum, h) => sum + (h.shares * h.avgPrice), 0)
-        const totalGainLoss = totalValue - totalCost
-        const totalGainLossPercent = totalCost > 0 ? (totalGainLoss / totalCost) * 100 : 0
+        const fallbackTotalValue = holdingsData.reduce((sum, h) => sum + h.value, 0)
+        const fallbackTotalGainLoss = holdingsData.reduce((sum, h) => sum + h.gainLoss, 0)
+        const fallbackTotalCost = fallbackTotalValue - fallbackTotalGainLoss
         setSummaryStats({
-          totalValue,
-          totalCost,
-          totalGainLoss,
-          totalGainLossPercentage: totalGainLossPercent,
-          holdingsCount: transformedHoldings.length,
+          totalValue: fallbackTotalValue,
+          totalCost: fallbackTotalCost,
+          totalGainLoss: fallbackTotalGainLoss,
+          totalGainLossPercentage: fallbackTotalCost > 0 ? (fallbackTotalGainLoss / fallbackTotalCost) * 100 : 0,
+          holdingsCount: holdingsData.length,
         })
       }
     } catch (err: unknown) {
@@ -165,6 +165,69 @@ export const Portfolio = () => {
       notify.error(msg === 'Unknown error' ? 'Không thể thêm mã cổ phiếu. Vui lòng thử lại.' : msg)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const openEditDialog = (holding: Holding) => {
+    setSelectedHolding(holding)
+    setEditHolding({
+      shares: String(holding.shares),
+      avgPrice: String(holding.avgPrice),
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateHolding = async () => {
+    if (!selectedHolding) return
+
+    try {
+      setIsUpdating(true)
+      const shares = parseFloat(editHolding.shares)
+      const avgPrice = parseFloat(editHolding.avgPrice)
+
+      if (!shares || !avgPrice || shares <= 0 || avgPrice <= 0) {
+        notify.error('Vui lòng nhập đầy đủ thông tin hợp lệ')
+        return
+      }
+
+      await portfolioService.updateHolding(selectedHolding.id, { shares, avgPrice })
+      notify.success(`Đã cập nhật ${selectedHolding.symbol} thành công`)
+
+      setIsEditDialogOpen(false)
+      setSelectedHolding(null)
+      setEditHolding({ shares: '', avgPrice: '' })
+      await loadData()
+    } catch (err: unknown) {
+      console.error('Error updating holding:', err)
+      const msg = getAxiosErrorMessage(err)
+      notify.error(msg === 'Unknown error' ? 'Không thể cập nhật mã cổ phiếu. Vui lòng thử lại.' : msg)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const openDeleteDialog = (holding: Holding) => {
+    setSelectedHolding(holding)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteHolding = async () => {
+    if (!selectedHolding) return
+
+    try {
+      setIsDeleting(true)
+      await portfolioService.deleteHolding(selectedHolding.id)
+      notify.success(`Đã xóa ${selectedHolding.symbol} khỏi portfolio`)
+
+      setIsDeleteDialogOpen(false)
+      setSelectedHolding(null)
+      await loadData()
+    } catch (err: unknown) {
+      console.error('Error deleting holding:', err)
+      const msg = getAxiosErrorMessage(err)
+      notify.error(msg === 'Unknown error' ? 'Không thể xóa mã cổ phiếu. Vui lòng thử lại.' : msg)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -411,8 +474,7 @@ export const Portfolio = () => {
         },
         cell: ({ row }) => {
           const holding = row.original
-          // Use pre-calculated gainLoss from API response
-          const gainLoss = holding.gainLoss ?? (holding.shares * holding.currentPrice - holding.shares * holding.avgPrice)
+          const gainLoss = holding.gainLoss
           const isPositive = gainLoss >= 0
           return (
             <div className={cn(
@@ -426,9 +488,8 @@ export const Portfolio = () => {
         sortingFn: (rowA, rowB) => {
           const a = rowA.original
           const b = rowB.original
-          // Use pre-calculated gainLoss from API response
-          const gainLossA = a.gainLoss ?? (a.shares * a.currentPrice - a.shares * a.avgPrice)
-          const gainLossB = b.gainLoss ?? (b.shares * b.currentPrice - b.shares * b.avgPrice)
+          const gainLossA = a.gainLoss
+          const gainLossB = b.gainLoss
           return gainLossA - gainLossB
         },
       },
@@ -450,11 +511,7 @@ export const Portfolio = () => {
         },
         cell: ({ row }) => {
           const holding = row.original
-          // Use pre-calculated gainLossPercentage from API response
-          const percentage = holding.gainLossPercentage ?? 
-            (holding.shares * holding.avgPrice > 0 
-              ? ((holding.shares * holding.currentPrice - holding.shares * holding.avgPrice) / (holding.shares * holding.avgPrice)) * 100 
-              : 0)
+          const percentage = holding.gainLossPercentage
           const isPositive = percentage >= 0
           return (
             <div className="text-right">
@@ -473,20 +530,43 @@ export const Portfolio = () => {
         sortingFn: (rowA, rowB) => {
           const a = rowA.original
           const b = rowB.original
-          // Use pre-calculated gainLossPercentage from API response
-          const percentA = a.gainLossPercentage ?? 
-            (a.shares * a.avgPrice > 0 
-              ? ((a.shares * a.currentPrice - a.shares * a.avgPrice) / (a.shares * a.avgPrice)) * 100 
-              : 0)
-          const percentB = b.gainLossPercentage ?? 
-            (b.shares * b.avgPrice > 0 
-              ? ((b.shares * b.currentPrice - b.shares * b.avgPrice) / (b.shares * b.avgPrice)) * 100 
-              : 0)
+          const percentA = a.gainLossPercentage
+          const percentB = b.gainLossPercentage
           return percentA - percentB
         },
       },
+      {
+        id: 'actions',
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => {
+          const holding = row.original
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openEditDialog(holding)}
+                disabled={isUpdating || isDeleting}
+              >
+                <Pencil className="h-3.5 w-3.5 mr-1" />
+                Sửa
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openDeleteDialog(holding)}
+                disabled={isUpdating || isDeleting}
+                className="text-rose-600 hover:text-rose-700"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" />
+                Xóa
+              </Button>
+            </div>
+          )
+        },
+      },
     ],
-    []
+    [isUpdating, isDeleting]
   )
 
   const table = useReactTable({
@@ -964,6 +1044,107 @@ export const Portfolio = () => {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Đang thêm...' : 'Thêm'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Holding Dialog */}
+        <Dialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open)
+            if (!open) {
+              setSelectedHolding(null)
+              setEditHolding({ shares: '', avgPrice: '' })
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chỉnh sửa mã cổ phiếu</DialogTitle>
+              <DialogDescription>
+                {selectedHolding
+                  ? `Cập nhật thông tin cho mã ${selectedHolding.symbol}.`
+                  : 'Cập nhật thông tin mã cổ phiếu trong portfolio.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="editShares">Số lượng cổ phiếu *</Label>
+                <Input
+                  id="editShares"
+                  type="number"
+                  placeholder="VD: 100"
+                  value={editHolding.shares}
+                  onChange={(e) => setEditHolding({ ...editHolding, shares: e.target.value })}
+                  min="0"
+                  step="1"
+                  disabled={isUpdating}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="editAvgPrice">Giá mua trung bình (VND) *</Label>
+                <Input
+                  id="editAvgPrice"
+                  type="number"
+                  placeholder="VD: 50000"
+                  value={editHolding.avgPrice}
+                  onChange={(e) => setEditHolding({ ...editHolding, avgPrice: e.target.value })}
+                  min="0"
+                  step="1000"
+                  disabled={isUpdating}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isUpdating}
+              >
+                Hủy
+              </Button>
+              <Button onClick={handleUpdateHolding} disabled={isUpdating}>
+                {isUpdating ? 'Đang cập nhật...' : 'Lưu thay đổi'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Holding Dialog */}
+        <Dialog
+          open={isDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open)
+            if (!open) {
+              setSelectedHolding(null)
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Xóa mã cổ phiếu</DialogTitle>
+              <DialogDescription>
+                {selectedHolding
+                  ? `Bạn có chắc muốn xóa ${selectedHolding.symbol} khỏi portfolio không?`
+                  : 'Bạn có chắc muốn xóa mã cổ phiếu này khỏi portfolio không?'}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                disabled={isDeleting}
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={handleDeleteHolding}
+                disabled={isDeleting}
+                className="bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                {isDeleting ? 'Đang xóa...' : 'Xóa'}
               </Button>
             </DialogFooter>
           </DialogContent>

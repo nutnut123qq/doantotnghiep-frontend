@@ -26,6 +26,7 @@ interface TopMoversProps {
   gainers?: Mover[]
   losers?: Mover[]
   maxItems?: number
+  autoLoadFromTradingBoard?: boolean
 }
 
 const MiniSparkline = ({ data }: { data: number[] }) => {
@@ -85,13 +86,15 @@ export const TopMovers = ({
   gainers,
   losers,
   maxItems = 5,
+  autoLoadFromTradingBoard = false,
 }: TopMoversProps) => {
   // Fetch tickers if not provided
   const { data: tickers = [], isLoading, error, refetch } = useQuery({
     queryKey: ['trading-board', 'top-movers'],
     queryFn: () => tradingBoardService.getTickers(),
     staleTime: 60000, // 1 minute
-    enabled: !gainers && !losers, // Only fetch if not provided
+    // Default false to avoid heavy TradingBoard preloads on dashboard.
+    enabled: autoLoadFromTradingBoard && !gainers && !losers,
   })
 
   // Calculate gainers and losers from tickers

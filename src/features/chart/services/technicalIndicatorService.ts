@@ -4,7 +4,7 @@ export interface TechnicalIndicator {
   id: string
   tickerId: string
   indicatorType: string // MA, RSI, MACD, EMA
-  value?: number
+  value?: number | null
   trendAssessment?: string // Bullish, Bearish, Neutral, Overbought, Oversold
   calculatedAt: string
 }

@@ -180,7 +180,7 @@ export const Watchlist = () => {
                               onClick={() => handleRemoveStockClick(watchlist.id, stock.symbol)}
                               disabled={isRemovingStock}
                               title="Xóa cổ phiếu"
-                              className="text-[hsl(var(--muted))] hover:text-[hsl(var(--negative))]"
+                              className="text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-[hsl(var(--negative))]"
                             >
                               <X className="w-5 h-5" />
                             </Button>

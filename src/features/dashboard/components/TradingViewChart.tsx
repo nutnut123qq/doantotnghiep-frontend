@@ -4,10 +4,12 @@ import { stockDataService, OHLCVData } from '../services/stockDataService'
 import { chartSettingsService } from '../services/chartSettingsService'
 import { ChartBarIcon, ArrowPathIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { SymbolSelector } from './SymbolSelector'
+import { logger } from '@/shared/utils/logger'
 
 interface TradingViewChartProps {
   symbol: string
   height?: number
+  onSymbolChange?: (symbol: string) => void
 }
 
 // Chart color constants - moved outside component to avoid recreation
@@ -26,7 +28,7 @@ const CHART_COLORS = {
   },
 } as const
 
-export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps) => {
+export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: TradingViewChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
@@ -299,7 +301,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
       // Fit content
       chartRef.current?.timeScale().fitContent()
     } catch (err) {
-      console.error('Error loading chart data:', err)
+      logger.error('Error loading chart data', { error: err, symbol: selectedSymbol, timeRange })
       setError('Lỗi khi tải dữ liệu biểu đồ')
     } finally {
       setLoading(false)
@@ -310,6 +312,11 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
     loadChartData()
   }, [loadChartData])
 
+  const handleSymbolChange = useCallback((nextSymbol: string) => {
+    setSelectedSymbol(nextSymbol)
+    onSymbolChange?.(nextSymbol)
+  }, [onSymbolChange])
+
   return (
     <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
       <div className="flex items-center justify-between mb-4">
@@ -319,7 +326,7 @@ export const TradingViewChart = ({ symbol, height = 500 }: TradingViewChartProps
             <span className="text-lg font-semibold text-card-foreground">Biểu đồ</span>
             <SymbolSelector
               value={selectedSymbol}
-              onChange={setSelectedSymbol}
+              onChange={handleSymbolChange}
               placeholder="Chọn mã CK..."
               className="w-48"
             />

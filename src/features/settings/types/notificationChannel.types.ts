@@ -30,5 +30,4 @@ export interface AlertNotification {
   threshold: number;
   currentValue: number;
   triggeredAt: string;
-  aiExplanation?: string;
 }

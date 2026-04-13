@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { alertService } from '../services/alertService'
 import { useToast } from '@/shared/hooks/useToast'
 import type { CreateAlertRequest } from '../types/alert.types'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 export const useAlerts = (isActive?: boolean) => {
   const queryClient = useQueryClient()
@@ -23,8 +24,8 @@ export const useAlerts = (isActive?: boolean) => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       toast.success('Alert created successfully!')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create alert')
+    onError: (error: unknown) => {
+      toast.error(getAxiosErrorMessage(error) || 'Failed to create alert')
     },
   })
 
@@ -35,8 +36,8 @@ export const useAlerts = (isActive?: boolean) => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       toast.success('Alert updated successfully!')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update alert')
+    onError: (error: unknown) => {
+      toast.error(getAxiosErrorMessage(error) || 'Failed to update alert')
     },
   })
 
@@ -46,8 +47,8 @@ export const useAlerts = (isActive?: boolean) => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       toast.success('Alert deleted successfully!')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete alert')
+    onError: (error: unknown) => {
+      toast.error(getAxiosErrorMessage(error) || 'Failed to delete alert')
     },
   })
 
@@ -57,8 +58,8 @@ export const useAlerts = (isActive?: boolean) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to toggle alert')
+    onError: (error: unknown) => {
+      toast.error(getAxiosErrorMessage(error) || 'Failed to toggle alert')
     },
   })
 

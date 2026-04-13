@@ -16,6 +16,7 @@ import { Users, RefreshCw, Plus, Pencil, KeyRound, Lock, Unlock } from 'lucide-r
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
+import { logger } from '@/shared/utils/logger'
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([])
@@ -52,7 +53,7 @@ export function UserManagement() {
       setTotalCount(data.totalCount)
     } catch (err) {
       setError('Failed to load users')
-      console.error('Error loading users:', err)
+      logger.error('Error loading users', { error: err })
     } finally {
       setLoading(false)
     }
@@ -109,7 +110,7 @@ export function UserManagement() {
       setIsCreateOpen(false)
       await loadUsers(currentPage)
     } catch (err) {
-      console.error('Error creating user:', err)
+      logger.error('Error creating user', { error: err })
       toast.error('Failed to create user')
     } finally {
       setActionLoading(null)
@@ -129,7 +130,7 @@ export function UserManagement() {
       setIsEditOpen(false)
       await loadUsers(currentPage)
     } catch (err) {
-      console.error('Error updating user:', err)
+      logger.error('Error updating user', { error: err, userId: selectedUser?.id })
       toast.error('Failed to update user')
     } finally {
       setActionLoading(null)
@@ -145,7 +146,7 @@ export function UserManagement() {
       setIsResetOpen(false)
       await loadUsers(currentPage)
     } catch (err) {
-      console.error('Error resetting password:', err)
+      logger.error('Error resetting password', { error: err, userId: selectedUser?.id })
       toast.error('Failed to reset password')
     } finally {
       setActionLoading(null)
@@ -166,7 +167,7 @@ export function UserManagement() {
       setIsLockConfirmOpen(false)
       await loadUsers(currentPage)
     } catch (err) {
-      console.error('Error toggling user lock:', err)
+      logger.error('Error toggling user lock', { error: err, userId: selectedUser?.id })
       toast.error('Failed to update user lock')
     } finally {
       setActionLoading(null)
@@ -180,7 +181,7 @@ export function UserManagement() {
       toast.success(`User ${!currentStatus ? 'activated' : 'deactivated'} successfully`)
       await loadUsers(currentPage)
     } catch (err) {
-      console.error('Error updating user status:', err)
+      logger.error('Error updating user status', { error: err, userId })
       toast.error('Failed to update user status')
     } finally {
       setActionLoading(null)

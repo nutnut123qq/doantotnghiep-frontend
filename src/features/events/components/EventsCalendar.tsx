@@ -1,14 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { Calendar as CalendarIcon, List, Loader2, RefreshCw } from 'lucide-react'
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
 import { enUS as enUSLocale } from 'date-fns/locale'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { eventService } from '../services/eventService'
-import type {
-  CorporateEvent,
-  CorporateEventType,
-} from '../../../shared/types/eventTypes'
+import type { CorporateEvent, CorporateEventType } from '@/shared/types/eventTypes'
 import {
   CorporateEventType as EventType,
   EVENT_TYPE_LABELS as TypeLabels,
@@ -18,9 +16,20 @@ import {
   isStockSplitEvent,
   isAGMEvent,
   isRightsIssueEvent,
-} from '../../../shared/types/eventTypes'
+} from '@/shared/types/eventTypes'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
-// Configure date-fns localizer
 const locales = {
   'en-US': enUSLocale,
 }
@@ -33,7 +42,6 @@ const localizer = dateFnsLocalizer({
   locales,
 })
 
-// Calendar event interface
 interface CalendarEvent {
   id: string
   title: string
@@ -50,77 +58,76 @@ export default function EventsCalendar() {
   const [view, setView] = useState<View>('month')
   const [date, setDate] = useState(new Date())
 
-  const getViewStartDate = useCallback((currentDate: Date, currentView: View): Date => {
-    const dateCopy = new Date(currentDate)
-    
-    if (currentView === 'month') {
-      // Start of month minus 7 days (to include previous month's visible dates)
-      dateCopy.setDate(1)
-      dateCopy.setDate(dateCopy.getDate() - 7)
-    } else if (currentView === 'week') {
-      // Start of week
-      const day = dateCopy.getDay()
-      dateCopy.setDate(dateCopy.getDate() - day)
-    } else if (currentView === 'day') {
-      // Current day
-      dateCopy.setHours(0, 0, 0, 0)
-    } else if (currentView === 'agenda') {
-      // Current date
-      dateCopy.setHours(0, 0, 0, 0)
-    }
-    
-    return dateCopy
-  }, [])
+  const getViewStartDate = useCallback(
+    (currentDate: Date, currentView: View): Date => {
+      const dateCopy = new Date(currentDate)
 
-  const getViewEndDate = useCallback((currentDate: Date, currentView: View): Date => {
-    const dateCopy = new Date(currentDate)
-    
-    if (currentView === 'month') {
-      // End of month plus 14 days (to include next month's visible dates)
-      dateCopy.setMonth(dateCopy.getMonth() + 1, 0)
-      dateCopy.setDate(dateCopy.getDate() + 14)
-    } else if (currentView === 'week') {
-      // End of week
-      const day = dateCopy.getDay()
-      dateCopy.setDate(dateCopy.getDate() + (6 - day))
-    } else if (currentView === 'day') {
-      // End of day
-      dateCopy.setHours(23, 59, 59, 999)
-    } else if (currentView === 'agenda') {
-      // 30 days from current date
-      dateCopy.setDate(dateCopy.getDate() + 30)
-    }
-    
-    return dateCopy
-  }, [])
+      if (currentView === 'month') {
+        dateCopy.setDate(1)
+        dateCopy.setDate(dateCopy.getDate() - 7)
+      } else if (currentView === 'week') {
+        const day = dateCopy.getDay()
+        dateCopy.setDate(dateCopy.getDate() - day)
+      } else if (currentView === 'day') {
+        dateCopy.setHours(0, 0, 0, 0)
+      } else if (currentView === 'agenda') {
+        dateCopy.setHours(0, 0, 0, 0)
+      }
 
-  const loadEvents = useCallback(async (currentDate: Date, currentView: View) => {
-    try {
-      setLoading(true)
-      setError(null)
+      return dateCopy
+    },
+    []
+  )
 
-      // Get events for current view range
-      const startDate = getViewStartDate(currentDate, currentView)
-      const endDate = getViewEndDate(currentDate, currentView)
+  const getViewEndDate = useCallback(
+    (currentDate: Date, currentView: View): Date => {
+      const dateCopy = new Date(currentDate)
 
-      const data = await eventService.getEventsByDateRange(
-        startDate.toISOString(),
-        endDate.toISOString()
-      )
-      setEvents(data)
-    } catch (err) {
-      console.error('Error loading events:', err)
-      setError('Failed to load events. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }, [getViewStartDate, getViewEndDate])
+      if (currentView === 'month') {
+        dateCopy.setMonth(dateCopy.getMonth() + 1, 0)
+        dateCopy.setDate(dateCopy.getDate() + 14)
+      } else if (currentView === 'week') {
+        const day = dateCopy.getDay()
+        dateCopy.setDate(dateCopy.getDate() + (6 - day))
+      } else if (currentView === 'day') {
+        dateCopy.setHours(23, 59, 59, 999)
+      } else if (currentView === 'agenda') {
+        dateCopy.setDate(dateCopy.getDate() + 30)
+      }
+
+      return dateCopy
+    },
+    []
+  )
+
+  const loadEvents = useCallback(
+    async (currentDate: Date, currentView: View) => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const startDate = getViewStartDate(currentDate, currentView)
+        const endDate = getViewEndDate(currentDate, currentView)
+
+        const data = await eventService.getEventsByDateRange(
+          startDate.toISOString(),
+          endDate.toISOString()
+        )
+        setEvents(data)
+      } catch (err) {
+        console.error('Error loading events:', err)
+        setError('Failed to load events. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [getViewStartDate, getViewEndDate]
+  )
 
   useEffect(() => {
     loadEvents(date, view)
   }, [date, view, loadEvents])
 
-  // Convert CorporateEvents to Calendar events
   const calendarEvents: CalendarEvent[] = useMemo(() => {
     return events.map((event) => ({
       id: event.id,
@@ -131,12 +138,9 @@ export default function EventsCalendar() {
     }))
   }, [events])
 
-  // Custom event style based on event type
   const eventStyleGetter = (event: CalendarEvent) => {
     const eventType = event.resource.eventType
     const colorClass = TypeColors[eventType] || 'bg-gray-500'
-    
-    // Extract Tailwind color to inline style
     const colorMap: Record<string, string> = {
       'bg-blue-500': '#3b82f6',
       'bg-green-500': '#22c55e',
@@ -160,8 +164,8 @@ export default function EventsCalendar() {
     }
   }
 
-  const handleSelectEvent = (event: CalendarEvent) => {
-    setSelectedEvent(event.resource)
+  const handleSelectEvent = (calEvent: CalendarEvent) => {
+    setSelectedEvent(calEvent.resource)
   }
 
   const handleNavigate = (newDate: Date) => {
@@ -181,251 +185,257 @@ export default function EventsCalendar() {
   }
 
   const renderEventDetails = (event: CorporateEvent) => {
+    const detailClass = 'mt-2 text-sm text-muted-foreground'
     if (isEarningsEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Period:</strong> {event.period || 'N/A'}</p>
-          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
-          {event.eps && <p><strong>EPS:</strong> {event.eps}</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Period:</strong>{' '}
+            {event.period || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Year:</strong>{' '}
+            {event.year || 'N/A'}
+          </p>
+          {event.eps && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">EPS:</strong>{' '}
+              {event.eps}
+            </p>
+          )}
         </div>
       )
     }
-    
+
     if (isDividendEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Dividend/Share:</strong> {event.dividendPerShare || 'N/A'}</p>
-          {event.exDividendDate && <p><strong>Ex-Date:</strong> {eventService.formatEventDate(event.exDividendDate)}</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Dividend/Share:</strong>{' '}
+            {event.dividendPerShare || 'N/A'}
+          </p>
+          {event.exDividendDate && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Ex-Date:</strong>{' '}
+              {eventService.formatEventDate(event.exDividendDate)}
+            </p>
+          )}
         </div>
       )
     }
-    
+
     if (isStockSplitEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Split Ratio:</strong> {event.splitRatio || 'N/A'}</p>
-          <p><strong>Type:</strong> {event.isReverseSplit ? 'Reverse Split' : 'Forward Split'}</p>
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Split Ratio:</strong>{' '}
+            {event.splitRatio || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Type:</strong>{' '}
+            {event.isReverseSplit ? 'Reverse Split' : 'Forward Split'}
+          </p>
         </div>
       )
     }
-    
+
     if (isAGMEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
-          {event.location && <p><strong>Location:</strong> {event.location}</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Year:</strong>{' '}
+            {event.year || 'N/A'}
+          </p>
+          {event.location && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Location:</strong>{' '}
+              {event.location}
+            </p>
+          )}
         </div>
       )
     }
-    
+
     if (isRightsIssueEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Issue Price:</strong> {event.issuePrice?.toLocaleString() || 'N/A'} VND</p>
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Issue Price:</strong>{' '}
+            {event.issuePrice?.toLocaleString() || 'N/A'} VND
+          </p>
         </div>
       )
     }
-    
+
     return null
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="p-8 animate-fade-in">
+        <div className="max-w-7xl mx-auto flex min-h-[40vh] items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={() => loadEvents(date, view)}
-          className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
-        >
-          Try again
-        </button>
+      <div className="p-8 animate-fade-in">
+        <div className="max-w-7xl mx-auto">
+          <ErrorState
+            message={error}
+            onRetry={() => loadEvents(date, view)}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Events Calendar</h2>
-        <div className="flex gap-2">
-          <Link
-            to="/events"
-            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            List View
-          </Link>
-          <button
-            onClick={() => loadEvents(date, view)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Event Types</h3>
-        <div className="flex flex-wrap gap-3">
-          {Object.values(EventType).filter(v => typeof v === 'number').map((type) => (
-            <div key={type} className="flex items-center gap-2">
-              <span className={`w-4 h-4 rounded ${getEventTypeColor(type as CorporateEventType)}`}></span>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {getEventTypeLabel(type as CorporateEventType)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Calendar */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 calendar-container">
-        <Calendar
-          localizer={localizer}
-          events={calendarEvents}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 700 }}
-          view={view}
-          onView={handleViewChange}
-          date={date}
-          onNavigate={handleNavigate}
-          onSelectEvent={handleSelectEvent}
-          eventPropGetter={eventStyleGetter}
-          views={['month', 'week', 'day', 'agenda']}
-          popup
-          selectable
+    <div className="p-8 animate-fade-in">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <PageHeader
+          title="Lịch sự kiện"
+          description="Xem sự kiện doanh nghiệp theo tháng, tuần hoặc ngày"
+          actions={
+            <>
+              <Button variant="outline" asChild>
+                <Link to="/events">
+                  <List className="mr-2 h-4 w-4" />
+                  Danh sách
+                </Link>
+              </Button>
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={() => loadEvents(date, view)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Làm mới
+              </Button>
+            </>
+          }
         />
-      </div>
 
-      {/* Event Detail Modal */}
-      {selectedEvent && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedEvent(null)}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {selectedEvent.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {selectedEvent.stockTicker?.symbol} - {selectedEvent.stockTicker?.name}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <span className={`px-3 py-1 text-sm font-semibold text-white rounded ${getEventTypeColor(selectedEvent.eventType)}`}>
-                    {getEventTypeLabel(selectedEvent.eventType)}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Date: {eventService.formatEventDate(selectedEvent.eventDate)}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {eventService.getRelativeTime(selectedEvent.eventDate)}
-                  </p>
-                </div>
-
-                {selectedEvent.description && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedEvent.description}</p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CalendarIcon className="h-5 w-5" />
+              Loại sự kiện
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {Object.values(EventType)
+                .filter((v) => typeof v === 'number')
+                .map((type) => (
+                  <div key={type} className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'h-3 w-3 shrink-0 rounded',
+                        getEventTypeColor(type as CorporateEventType)
+                      )}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {getEventTypeLabel(type as CorporateEventType)}
+                    </span>
                   </div>
-                )}
-
-                {renderEventDetails(selectedEvent)}
-
-                {selectedEvent.sourceUrl && (
-                  <div>
-                    <a
-                      href={selectedEvent.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline text-sm"
-                    >
-                      View Official Source →
-                    </a>
-                  </div>
-                )}
-              </div>
+                ))}
             </div>
-          </div>
-        </div>
-      )}
+          </CardContent>
+        </Card>
 
-      <style>{`
-        .calendar-container .rbc-calendar {
-          color: var(--text-color, #1f2937);
-          background: var(--bg-color, white);
-        }
-        
-        .calendar-container .rbc-header {
-          padding: 10px 3px;
-          font-weight: 600;
-          color: #4b5563;
-        }
-        
-        .calendar-container .rbc-today {
-          background-color: #dbeafe;
-        }
-        
-        .calendar-container .rbc-off-range-bg {
-          background-color: #f9fafb;
-        }
-        
-        .calendar-container .rbc-event {
-          cursor: pointer;
-        }
-        
-        .calendar-container .rbc-event:hover {
-          opacity: 1;
-        }
-        
-        .calendar-container .rbc-toolbar button {
-          color: #374151;
-          border: 1px solid #d1d5db;
-          background: white;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-weight: 500;
-        }
-        
-        .calendar-container .rbc-toolbar button:hover {
-          background-color: #f3f4f6;
-        }
-        
-        .calendar-container .rbc-toolbar button.rbc-active {
-          background-color: #3b82f6;
-          color: white;
-          border-color: #3b82f6;
-        }
-      `}</style>
+        <Card className="overflow-hidden">
+          <CardContent className="p-4 sm:p-6">
+            <div className="calendar-container">
+              <Calendar
+                localizer={localizer}
+                events={calendarEvents}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: 700 }}
+                view={view}
+                onView={handleViewChange}
+                date={date}
+                onNavigate={handleNavigate}
+                onSelectEvent={handleSelectEvent}
+                eventPropGetter={eventStyleGetter}
+                views={['month', 'week', 'day', 'agenda']}
+                popup
+                selectable
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Dialog
+          open={!!selectedEvent}
+          onOpenChange={(open) => {
+            if (!open) setSelectedEvent(null)
+          }}
+        >
+          <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
+            {selectedEvent && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="pr-8 text-left text-xl">
+                    {selectedEvent.title}
+                  </DialogTitle>
+                  <p className="text-left text-sm text-muted-foreground">
+                    {selectedEvent.stockTicker?.symbol} —{' '}
+                    {selectedEvent.stockTicker?.name}
+                  </p>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Badge variant="outline" className="gap-2">
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        getEventTypeColor(selectedEvent.eventType)
+                      )}
+                    />
+                    {getEventTypeLabel(selectedEvent.eventType)}
+                  </Badge>
+                  <div>
+                    <p className="text-sm font-semibold text-[hsl(var(--text))]">
+                      Ngày:{' '}
+                      {eventService.formatEventDate(selectedEvent.eventDate)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {eventService.getRelativeTime(selectedEvent.eventDate)}
+                    </p>
+                  </div>
+                  {selectedEvent.description && (
+                    <div>
+                      <h4 className="mb-1 text-sm font-semibold text-[hsl(var(--text))]">
+                        Mô tả
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedEvent.description}
+                      </p>
+                    </div>
+                  )}
+                  {renderEventDetails(selectedEvent)}
+                  {selectedEvent.sourceUrl && (
+                    <div>
+                      <a
+                        href={selectedEvent.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Xem nguồn chính thức →
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

@@ -63,7 +63,7 @@ export const DEFAULT_WIDGET_CONFIGS: Record<string, Partial<WidgetConfig>> = {
   news: {
     type: 'news',
     w: 4,
-    h: 4,
+    h: 5,
     minW: 3,
     minH: 3,
     visible: true,
@@ -137,7 +137,7 @@ export const DEFAULT_LAYOUT: LayoutConfig = {
   widgets: [
     { id: 'chart-1', type: 'chart', x: 0, y: 0, w: 8, h: 6, minW: 6, minH: 4, visible: true },
     { id: 'forecast-1', type: 'forecast', x: 8, y: 0, w: 4, h: 6, minW: 3, minH: 4, visible: true },
-    { id: 'news-1', type: 'news', x: 0, y: 6, w: 4, h: 4, minW: 3, minH: 3, visible: true },
+    { id: 'news-1', type: 'news', x: 0, y: 6, w: 4, h: 5, minW: 3, minH: 3, visible: true },
     { id: 'financialReports-1', type: 'financialReports', x: 4, y: 6, w: 8, h: 5, minW: 3, minH: 4, visible: true },
   ],
 }

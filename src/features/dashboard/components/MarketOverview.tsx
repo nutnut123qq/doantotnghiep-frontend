@@ -24,6 +24,7 @@ interface MarketOverviewProps {
   }
   volume?: number
   value?: number
+  autoLoadFromTradingBoard?: boolean
 }
 
 export const MarketOverview = ({
@@ -31,13 +32,15 @@ export const MarketOverview = ({
   breadth,
   volume,
   value,
+  autoLoadFromTradingBoard = false,
 }: MarketOverviewProps) => {
   // Fetch tickers to calculate market breadth if not provided
   const { data: tickers = [], isLoading, error, refetch } = useQuery({
     queryKey: ['trading-board', 'market-overview'],
     queryFn: () => tradingBoardService.getTickers(),
     staleTime: 60000, // 1 minute
-    enabled: !breadth && !volume && !value, // Only fetch if we need to calculate
+    // Default false to avoid heavy TradingBoard preloads on dashboard.
+    enabled: autoLoadFromTradingBoard && !breadth && !volume && !value,
   })
 
   // Calculate market breadth from tickers

@@ -1,24 +1,70 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type ComponentProps } from 'react'
 import { Link } from 'react-router-dom'
+import { Calendar, Loader2, RefreshCw } from 'lucide-react'
 import { eventService } from '../services/eventService'
 import type {
   CorporateEvent,
   CorporateEventType,
   EventStatus,
   EventFilterParams,
-} from '../../../shared/types/eventTypes'
+} from '@/shared/types/eventTypes'
 import {
   CorporateEventType as EventType,
   EventStatus as Status,
-  EVENT_TYPE_LABELS as TypeLabels,
-  EVENT_TYPE_COLORS as TypeColors,
   EVENT_STATUS_LABELS as StatusLabels,
+  parseEventStatus,
   isEarningsEvent,
   isDividendEvent,
   isStockSplitEvent,
   isAGMEvent,
   isRightsIssueEvent,
-} from '../../../shared/types/eventTypes'
+} from '@/shared/types/eventTypes'
+import { PageHeader } from '@/shared/components/PageHeader'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+
+function statusBadgeVariant(
+  status: EventStatus
+): ComponentProps<typeof Badge>['variant'] {
+  switch (status) {
+    case Status.Upcoming:
+      return 'success'
+    case Status.Today:
+      return 'info'
+    case Status.Past:
+      return 'secondary'
+    case Status.Cancelled:
+      return 'destructive'
+    default:
+      return 'outline'
+  }
+}
 
 export default function EventsFeed() {
   const [events, setEvents] = useState<CorporateEvent[]>([])
@@ -26,7 +72,6 @@ export default function EventsFeed() {
   const [error, setError] = useState<string | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CorporateEvent | null>(null)
 
-  // AI Analysis states
   const [analyzing, setAnalyzing] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<{
     eventId: string
@@ -34,17 +79,26 @@ export default function EventsFeed() {
     impact: string
   } | null>(null)
 
-  // Filter states
   const [symbolFilter, setSymbolFilter] = useState('')
-  const [eventTypeFilter, setEventTypeFilter] = useState<CorporateEventType | undefined>()
+  const [eventTypeFilter, setEventTypeFilter] = useState<
+    CorporateEventType | undefined
+  >()
   const [statusFilter, setStatusFilter] = useState<EventStatus | undefined>()
   const [dateRangeFilter, setDateRangeFilter] = useState<{
     startDate?: string
     endDate?: string
   }>({})
 
-  // Applied filter state - tracks the filters that were actually applied
   const [appliedFilters, setAppliedFilters] = useState<EventFilterParams>({})
+
+  const [qaSymbol, setQaSymbol] = useState('')
+  const [qaQuestion, setQaQuestion] = useState('')
+  const [qaLoading, setQaLoading] = useState(false)
+  const [qaError, setQaError] = useState<string | null>(null)
+  const [qaResult, setQaResult] = useState<{
+    answer: string
+    sources: Array<{ title: string; url?: string | null; sourceType: string }>
+  } | null>(null)
 
   const loadEvents = useCallback(async (filters: EventFilterParams) => {
     try {
@@ -83,16 +137,33 @@ export default function EventsFeed() {
     setAppliedFilters({})
   }, [])
 
-  const getEventTypeColor = (type: CorporateEventType): string => {
-    return TypeColors[type] || 'bg-gray-500'
-  }
-
-  const getEventTypeLabel = (type: CorporateEventType): string => {
-    return TypeLabels[type] || 'Unknown'
-  }
-
-  const getEventStatusLabel = (status: EventStatus): string => {
-    return StatusLabels[status] || 'Unknown'
+  const handleEventsQa = async () => {
+    const sym = qaSymbol.trim().toUpperCase()
+    const q = qaQuestion.trim()
+    if (!sym || !q) {
+      setQaError('Nhập mã cổ phiếu và câu hỏi.')
+      return
+    }
+    setQaLoading(true)
+    setQaError(null)
+    setQaResult(null)
+    try {
+      const data = await eventService.askEventsQuestion({
+        symbol: sym,
+        question: q,
+        days: 90,
+        topK: 6,
+      })
+      setQaResult({
+        answer: data.answer,
+        sources: data.sources ?? [],
+      })
+    } catch (e) {
+      console.error('Events Q&A failed:', e)
+      setQaError('Không thể trả lời (kiểm tra AI service và đăng nhập).')
+    } finally {
+      setQaLoading(false)
+    }
   }
 
   const handleAnalyzeEvent = async (eventId: string) => {
@@ -100,353 +171,547 @@ export default function EventsFeed() {
       setAnalyzing(eventId)
       const result = await eventService.analyzeEvent(eventId)
       setAnalysisResult({ eventId, ...result })
-    } catch (error) {
-      console.error('Error analyzing event:', error)
+    } catch (err) {
+      console.error('Error analyzing event:', err)
     } finally {
       setAnalyzing(null)
     }
   }
 
   const renderEventDetails = (event: CorporateEvent) => {
+    const detailClass = 'mt-2 text-sm text-muted-foreground'
     if (isEarningsEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Period:</strong> {event.period || 'N/A'}</p>
-          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
-          {event.eps && <p><strong>EPS:</strong> {event.eps}</p>}
-          {event.revenue && <p><strong>Revenue:</strong> {event.revenue.toLocaleString()} VND</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Period:</strong>{' '}
+            {event.period || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Year:</strong>{' '}
+            {event.year || 'N/A'}
+          </p>
+          {event.eps && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">EPS:</strong>{' '}
+              {event.eps}
+            </p>
+          )}
+          {event.revenue && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Revenue:</strong>{' '}
+              {event.revenue.toLocaleString()} VND
+            </p>
+          )}
         </div>
       )
     }
-    
+
     if (isDividendEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Dividend/Share:</strong> {event.dividendPerShare || 'N/A'}</p>
-          {event.cashDividend && <p><strong>Cash:</strong> {event.cashDividend.toLocaleString()} VND</p>}
-          {event.exDividendDate && <p><strong>Ex-Date:</strong> {eventService.formatEventDate(event.exDividendDate)}</p>}
-          {event.paymentDate && <p><strong>Payment:</strong> {eventService.formatEventDate(event.paymentDate)}</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Dividend/Share:</strong>{' '}
+            {event.dividendPerShare || 'N/A'}
+          </p>
+          {event.cashDividend && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Cash:</strong>{' '}
+              {event.cashDividend.toLocaleString()} VND
+            </p>
+          )}
+          {event.exDividendDate && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Ex-Date:</strong>{' '}
+              {eventService.formatEventDate(event.exDividendDate)}
+            </p>
+          )}
+          {event.paymentDate && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Payment:</strong>{' '}
+              {eventService.formatEventDate(event.paymentDate)}
+            </p>
+          )}
         </div>
       )
     }
-    
+
     if (isStockSplitEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Split Ratio:</strong> {event.splitRatio || 'N/A'}</p>
-          <p><strong>Type:</strong> {event.isReverseSplit ? 'Reverse Split' : 'Forward Split'}</p>
-          <p><strong>Effective:</strong> {eventService.formatEventDate(event.effectiveDate)}</p>
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Split Ratio:</strong>{' '}
+            {event.splitRatio || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Type:</strong>{' '}
+            {event.isReverseSplit ? 'Reverse Split' : 'Forward Split'}
+          </p>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Effective:</strong>{' '}
+            {eventService.formatEventDate(event.effectiveDate)}
+          </p>
         </div>
       )
     }
-    
+
     if (isAGMEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Year:</strong> {event.year || 'N/A'}</p>
-          {event.location && <p><strong>Location:</strong> {event.location}</p>}
-          {event.meetingTime && <p><strong>Time:</strong> {event.meetingTime}</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Year:</strong>{' '}
+            {event.year || 'N/A'}
+          </p>
+          {event.location && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Location:</strong>{' '}
+              {event.location}
+            </p>
+          )}
+          {event.meetingTime && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Time:</strong>{' '}
+              {event.meetingTime}
+            </p>
+          )}
         </div>
       )
     }
-    
+
     if (isRightsIssueEvent(event)) {
       return (
-        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <p><strong>Shares:</strong> {event.numberOfShares?.toLocaleString() || 'N/A'}</p>
-          <p><strong>Price:</strong> {event.issuePrice?.toLocaleString() || 'N/A'} VND</p>
-          {event.rightsRatio && <p><strong>Ratio:</strong> {event.rightsRatio}</p>}
+        <div className={detailClass}>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Shares:</strong>{' '}
+            {event.numberOfShares?.toLocaleString() || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-[hsl(var(--text))]">Price:</strong>{' '}
+            {event.issuePrice?.toLocaleString() || 'N/A'} VND
+          </p>
+          {event.rightsRatio && (
+            <p>
+              <strong className="text-[hsl(var(--text))]">Ratio:</strong>{' '}
+              {event.rightsRatio}
+            </p>
+          )}
         </div>
       )
     }
-    
+
     return null
+  }
+
+  const renderStatusBadge = (event: CorporateEvent) => {
+    const parsed = parseEventStatus(event.status)
+    if (parsed === undefined) return null
+    return (
+      <Badge variant={statusBadgeVariant(parsed)} className="mt-2">
+        {StatusLabels[parsed]}
+      </Badge>
+    )
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="p-8 animate-fade-in">
+        <div className="max-w-7xl mx-auto flex min-h-[40vh] items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-        <button
-          onClick={() => loadEvents(appliedFilters)}
-          className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline"
-        >
-          Try again
-        </button>
+      <div className="p-8 animate-fade-in">
+        <div className="max-w-7xl mx-auto">
+          <ErrorState
+            message={error}
+            onRetry={() => loadEvents(appliedFilters)}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Corporate Events</h2>
-        <div className="flex gap-2">
-          <Link
-            to="/events/calendar"
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            Calendar View
-          </Link>
-          <button
-            onClick={() => loadEvents(appliedFilters)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+    <div className="p-8 animate-fade-in">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <PageHeader
+          title="Sự kiện doanh nghiệp"
+          description="Theo dõi lịch công bố, cổ tức, ĐHĐCĐ và các sự kiện quan trọng"
+          actions={
+            <>
+              <Button variant="outline" asChild>
+                <Link to="/events/calendar">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Lịch
+                </Link>
+              </Button>
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={() => loadEvents(appliedFilters)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Làm mới
+              </Button>
+            </>
+          }
+        />
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Symbol Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Symbol
-            </label>
-            <input
-              type="text"
-              value={symbolFilter}
-              onChange={(e) => setSymbolFilter(e.target.value.toUpperCase())}
-              placeholder="e.g., VNM"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-
-          {/* Event Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Event Type
-            </label>
-            <select
-              value={eventTypeFilter ?? ''}
-              onChange={(e) => setEventTypeFilter(e.target.value ? Number(e.target.value) as CorporateEventType : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">All Types</option>
-              <option value={EventType.Earnings}>Earnings</option>
-              <option value={EventType.Dividend}>Dividend</option>
-              <option value={EventType.StockSplit}>Stock Split</option>
-              <option value={EventType.AGM}>AGM</option>
-              <option value={EventType.RightsIssue}>Rights Issue</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Status
-            </label>
-            <select
-              value={statusFilter ?? ''}
-              onChange={(e) => setStatusFilter(e.target.value ? Number(e.target.value) as EventStatus : undefined)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">All Status</option>
-              <option value={Status.Upcoming}>Upcoming</option>
-              <option value={Status.Today}>Today</option>
-              <option value={Status.Past}>Past</option>
-            </select>
-          </div>
-
-          {/* Apply/Clear Filters */}
-          <div className="flex items-end gap-2">
-            <button
-              onClick={applyFilters}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              Apply
-            </button>
-            <button
-              onClick={clearFilters}
-              className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Events List */}
-      <div className="space-y-3">
-        {events.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400">No events found</p>
-          </div>
-        ) : (
-          events.map((event) => (
-            <div
-              key={event.id}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => setSelectedEvent(event)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-1 text-xs font-semibold text-white rounded ${getEventTypeColor(event.eventType)}`}>
-                      {getEventTypeLabel(event.eventType)}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {event.stockTicker?.symbol || 'N/A'}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {event.stockTicker?.name}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                    {event.title}
-                  </h3>
-                  
-                  {event.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      {event.description}
-                    </p>
-                  )}
-
-                  {renderEventDetails(event)}
-                </div>
-
-                <div className="text-right ml-4">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {eventService.formatEventDate(event.eventDate)}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {eventService.getRelativeTime(event.eventDate)}
-                  </p>
-                  <span className={`inline-block mt-2 px-2 py-1 text-xs rounded ${
-                    event.status === Status.Upcoming ? 'bg-green-100 text-green-800' :
-                    event.status === Status.Today ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {getEventStatusLabel(event.status)}
-                  </span>
-                </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Bộ lọc</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="symbol-filter">Mã CK</Label>
+                <Input
+                  id="symbol-filter"
+                  value={symbolFilter}
+                  onChange={(e) =>
+                    setSymbolFilter(e.target.value.toUpperCase())
+                  }
+                  placeholder="VD: VNM"
+                />
               </div>
-
-              {event.sourceUrl && (
-                <a
-                  href={event.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:underline mt-2 inline-block"
-                  onClick={(e) => e.stopPropagation()}
+              <div className="space-y-2">
+                <Label>Loại sự kiện</Label>
+                <Select
+                  value={
+                    eventTypeFilter === undefined
+                      ? 'all'
+                      : String(eventTypeFilter)
+                  }
+                  onValueChange={(v) =>
+                    setEventTypeFilter(
+                      v === 'all'
+                        ? undefined
+                        : (Number(v) as CorporateEventType)
+                    )
+                  }
                 >
-                  View Source →
-                </a>
-              )}
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value={String(EventType.Earnings)}>
+                      Earnings
+                    </SelectItem>
+                    <SelectItem value={String(EventType.Dividend)}>
+                      Dividend
+                    </SelectItem>
+                    <SelectItem value={String(EventType.StockSplit)}>
+                      Stock Split
+                    </SelectItem>
+                    <SelectItem value={String(EventType.AGM)}>AGM</SelectItem>
+                    <SelectItem value={String(EventType.RightsIssue)}>
+                      Rights Issue
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Trạng thái</Label>
+                <Select
+                  value={
+                    statusFilter === undefined ? 'all' : String(statusFilter)
+                  }
+                  onValueChange={(v) =>
+                    setStatusFilter(
+                      v === 'all' ? undefined : (Number(v) as EventStatus)
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value={String(Status.Upcoming)}>
+                      Upcoming
+                    </SelectItem>
+                    <SelectItem value={String(Status.Today)}>Today</SelectItem>
+                    <SelectItem value={String(Status.Past)}>Past</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end gap-2">
+                <Button className="flex-1" onClick={applyFilters}>
+                  Áp dụng
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={clearFilters}
+                >
+                  Xóa lọc
+                </Button>
+              </div>
             </div>
-          ))
-        )}
-      </div>
+          </CardContent>
+        </Card>
 
-      {/* Event Detail Modal */}
-      {selectedEvent && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedEvent(null)}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {selectedEvent.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {selectedEvent.stockTicker?.symbol} - {selectedEvent.stockTicker?.name}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Hỏi AI về sự kiện (RAG)
+            </CardTitle>
+            <CardDescription>
+              Dựa trên sự kiện đã lưu (crawl + RSS). Nhập mã và câu hỏi tiếng
+              Việt hoặc Anh.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="qa-symbol">Mã CK</Label>
+                <Input
+                  id="qa-symbol"
+                  value={qaSymbol}
+                  onChange={(e) => setQaSymbol(e.target.value.toUpperCase())}
+                  placeholder="VD: FPT"
+                />
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <span className={`px-3 py-1 text-sm font-semibold text-white rounded ${getEventTypeColor(selectedEvent.eventType)}`}>
-                    {getEventTypeLabel(selectedEvent.eventType)}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Date: {eventService.formatEventDate(selectedEvent.eventDate)}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {eventService.getRelativeTime(selectedEvent.eventDate)}
-                  </p>
-                </div>
-
-                {selectedEvent.description && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedEvent.description}</p>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={handleEventsQa}
+                  disabled={qaLoading}
+                >
+                  {qaLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Đang trả lời…
+                    </>
+                  ) : (
+                    'Gửi câu hỏi'
+                  )}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="qa-question">Câu hỏi</Label>
+              <Textarea
+                id="qa-question"
+                value={qaQuestion}
+                onChange={(e) => setQaQuestion(e.target.value)}
+                rows={3}
+                placeholder="Ví dụ: Gần đây có sự kiện cổ tức nào không?"
+              />
+            </div>
+            {qaError && (
+              <p className="text-sm text-destructive">{qaError}</p>
+            )}
+            {qaResult && (
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <p className="text-sm text-[hsl(var(--text))] whitespace-pre-wrap">
+                  {qaResult.answer}
+                </p>
+                {qaResult.sources.length > 0 && (
+                  <div className="text-xs text-muted-foreground border-t pt-2">
+                    <p className="font-medium text-[hsl(var(--text))] mb-1">
+                      Nguồn tham chiếu
+                    </p>
+                    <ul className="list-disc pl-4 space-y-1">
+                      {qaResult.sources.map((s, i) => (
+                        <li key={i}>
+                          {s.url ? (
+                            <a
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {s.title}
+                            </a>
+                          ) : (
+                            s.title
+                          )}
+                          <span className="text-muted-foreground">
+                            {' '}
+                            ({s.sourceType})
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                {renderEventDetails(selectedEvent)}
-
-                {selectedEvent.sourceUrl && (
-                  <div>
-                    <a
-                      href={selectedEvent.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline text-sm"
-                    >
-                      View Official Source →
-                    </a>
-                  </div>
+        <div className="space-y-3">
+          {events.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <EmptyState
+                  title="Chưa có sự kiện"
+                  description="Thử đổi bộ lọc hoặc làm mới sau khi backend đã thu thập dữ liệu."
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            events.map((event) => (
+              <Card
+                key={event.id}
+                className={cn(
+                  'cursor-pointer transition-shadow hover:shadow-md'
                 )}
-
-                {/* AI Analysis Section */}
-                <div className="border-t pt-4">
-                  <button
-                    onClick={() => handleAnalyzeEvent(selectedEvent.id)}
-                    disabled={analyzing === selectedEvent.id}
-                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {analyzing === selectedEvent.id ? 'Analyzing...' : 'Analyze with AI'}
-                  </button>
-                  
-                  {analysisResult?.eventId === selectedEvent.id && (
-                    <div className="mt-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <h5 className="font-semibold text-purple-700 dark:text-purple-300 mb-2">
-                        AI Analysis
-                      </h5>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 whitespace-pre-wrap">
-                        {analysisResult.analysis}
-                      </p>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 border-t border-purple-200 dark:border-purple-800 pt-2">
-                        <strong className="text-purple-700 dark:text-purple-300">Impact:</strong>{' '}
-                        <span className="whitespace-pre-wrap">{analysisResult.impact}</span>
+                onClick={() => setSelectedEvent(event)}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-[hsl(var(--text))]">
+                          {event.stockTicker?.symbol || 'N/A'}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {event.stockTicker?.name}
+                        </span>
                       </div>
+                      <h3 className="mb-1 text-lg font-semibold text-[hsl(var(--text))]">
+                        {event.title}
+                      </h3>
+                      {event.description && (
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          {event.description}
+                        </p>
+                      )}
+                      {renderEventDetails(event)}
+                      {event.sourceUrl && (
+                        <a
+                          href={event.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-xs text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Xem nguồn →
+                        </a>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-semibold text-[hsl(var(--text))]">
+                        {eventService.formatEventDate(event.eventDate)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {eventService.getRelativeTime(event.eventDate)}
+                      </p>
+                      {renderStatusBadge(event)}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        <Dialog
+          open={!!selectedEvent}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedEvent(null)
+              setAnalysisResult(null)
+            }
+          }}
+        >
+          <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
+            {selectedEvent && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="pr-8 text-left text-xl">
+                    {selectedEvent.title}
+                  </DialogTitle>
+                  <p className="text-left text-sm text-muted-foreground">
+                    {selectedEvent.stockTicker?.symbol} —{' '}
+                    {selectedEvent.stockTicker?.name}
+                  </p>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-[hsl(var(--text))]">
+                      Ngày:{' '}
+                      {eventService.formatEventDate(selectedEvent.eventDate)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {eventService.getRelativeTime(selectedEvent.eventDate)}
+                    </p>
+                    {renderStatusBadge(selectedEvent)}
+                  </div>
+                  {selectedEvent.description && (
+                    <div>
+                      <h4 className="mb-1 text-sm font-semibold text-[hsl(var(--text))]">
+                        Mô tả
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedEvent.description}
+                      </p>
                     </div>
                   )}
+                  {renderEventDetails(selectedEvent)}
+                  {selectedEvent.sourceUrl && (
+                    <div>
+                      <a
+                        href={selectedEvent.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Xem nguồn chính thức →
+                      </a>
+                    </div>
+                  )}
+                  <div className="border-t pt-4">
+                    <Button
+                      onClick={() => handleAnalyzeEvent(selectedEvent.id)}
+                      disabled={analyzing === selectedEvent.id}
+                    >
+                      {analyzing === selectedEvent.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Đang phân tích…
+                        </>
+                      ) : (
+                        'Phân tích bằng AI'
+                      )}
+                    </Button>
+                    {analysisResult?.eventId === selectedEvent.id && (
+                      <Card className="mt-3 border bg-muted/30">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            Kết quả AI
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                          <p className="whitespace-pre-wrap text-[hsl(var(--text))]">
+                            {analysisResult.analysis}
+                          </p>
+                          <div className="border-t pt-2 text-muted-foreground">
+                            <strong className="text-[hsl(var(--text))]">
+                              Tác động:
+                            </strong>{' '}
+                            <span className="whitespace-pre-wrap">
+                              {analysisResult.impact}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

@@ -47,10 +47,8 @@ export const DEFAULT_VISIBLE_COLUMNS: ColumnId[] = [
   'value',
 ]
 
-/** Customizable columns (ColumnId). Indicators rsi, ma20, ma50 are fixed and always visible. */
+/** All column ids that appear on the trading board (customizable). */
 export const ALL_CUSTOMIZABLE_COLUMN_IDS: ColumnId[] = Object.keys(
   COLUMN_DEFINITIONS
 ) as ColumnId[]
-
-export const INDICATOR_COLUMN_IDS = ['rsi', 'ma20', 'ma50'] as const
 

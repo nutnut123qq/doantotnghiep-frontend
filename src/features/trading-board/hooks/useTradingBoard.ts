@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { tradingBoardService, type TradingBoardFilters } from '../services/tradingBoardService'
 import { useSignalR } from '@/shared/hooks/useSignalR'
 import type { StockTicker } from '@/domain/entities/StockTicker'
+import { normalizeStockTicker } from '@/lib/stockTickerNormalize'
 
 /**
  * Stable key: only changes when the set of symbols changes (e.g. filters/refetch),
@@ -22,13 +23,15 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['trading-board', filters],
     queryFn: () => tradingBoardService.getTickers(filters),
+    staleTime: 120000,
+    gcTime: 300000,
   })
 
   const { on, invoke, isConnected } = useSignalR('stock-price')
   const symbolsKey = useSymbolsKey(data)
 
   useEffect(() => {
-    if (data) setTickers(data)
+    if (data) setTickers(data.map((row) => normalizeStockTicker(row)))
   }, [data])
 
   const handlePriceUpdate = useCallback((updatedTicker: Partial<StockTicker> & { symbol?: string }) => {
@@ -36,14 +39,13 @@ export const useTradingBoard = (filters?: TradingBoardFilters) => {
       prev.map((t) => {
         const symbolMatch = t.symbol.toLowerCase() === (updatedTicker.symbol ?? '').toLowerCase()
         if (!symbolMatch) return t
-        
-        // Merge partial update with existing ticker data to preserve all fields
-        return {
+
+        const merged = {
           ...t,
           ...updatedTicker,
-          // Ensure symbol is preserved
           symbol: updatedTicker.symbol || t.symbol,
         }
+        return normalizeStockTicker(merged)
       })
     )
   }, [])

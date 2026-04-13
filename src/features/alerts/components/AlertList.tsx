@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Trash2, Bell } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { AlertTypeLabels } from '../types/alert.types'
 import type { Alert, CreateAlertRequest } from '../types/alert.types'
 import { format } from 'date-fns'
@@ -21,12 +22,14 @@ import { EmptyState } from '@/shared/components/EmptyState'
 import { ErrorState } from '@/shared/components/ErrorState'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { toast } from 'sonner'
+import { useAlertTriggeredFeed } from '@/shared/contexts/AlertTriggeredFeedContext'
 
 export const AlertList = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [alertToDelete, setAlertToDelete] = useState<string | null>(null)
+  const { items: recentNotifications, dismiss, clearAll } = useAlertTriggeredFeed()
 
   const isActiveFilter = filter === 'all' ? undefined : filter === 'active'
   const {
@@ -135,6 +138,56 @@ export const AlertList = () => {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base">Trigger notifications</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Lưu trong phiên trình duyệt
+                </p>
+              </div>
+              {recentNotifications.length > 0 && (
+                <Button variant="outline" size="sm" onClick={clearAll}>
+                  Clear all
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentNotifications.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                Chưa có thông báo trigger trong phiên này. Kích hoạt alert sẽ hiện tại đây dù bạn đang ở trang khác.
+              </p>
+            ) : (
+              recentNotifications.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-md border p-3 flex items-start justify-between gap-3"
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">
+                      {item.symbol} {item.type} alert triggered
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Threshold: {Number(item.threshold).toLocaleString()} | Current:{' '}
+                      {Number(item.currentValue).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.triggeredAt
+                        ? format(new Date(item.triggeredAt), 'MMM dd, yyyy HH:mm:ss')
+                        : format(new Date(item.receivedAt), 'MMM dd, yyyy HH:mm:ss')}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => dismiss(item.id)}>
+                    Dismiss
+                  </Button>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
         {/* Alerts Table */}
         <Card>
           <CardHeader>
@@ -212,13 +265,8 @@ export const AlertList = () => {
                           : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleToggle(alert)}
-                            title={alert.isActive ? 'Deactivate' : 'Activate'}
-                          >
+                        <div className="flex items-center justify-end space-x-3">
+                          <div className="flex items-center gap-2">
                             <Bell
                               className={`h-4 w-4 ${
                                 alert.isActive
@@ -226,7 +274,15 @@ export const AlertList = () => {
                                   : 'text-[hsl(var(--muted))]'
                               }`}
                             />
-                          </Button>
+                            <Switch
+                              checked={alert.isActive}
+                              onCheckedChange={() => void handleToggle(alert)}
+                              aria-label={`Toggle alert ${alert.symbol || alert.id}`}
+                            />
+                            <span className="text-xs text-muted-foreground min-w-8 text-left">
+                              {alert.isActive ? 'On' : 'Off'}
+                            </span>
+                          </div>
                           <Button
                             variant="ghost"
                             size="icon"

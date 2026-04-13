@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Layout, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminSharedLayoutInfo } from '@/shared/types/layoutTypes'
+import { logger } from '@/shared/utils/logger'
 
 type LayoutStatus = 'all' | 'active' | 'expired'
 
@@ -47,7 +48,7 @@ export function SharedLayoutModeration() {
       setLayouts(data.items)
       setTotalCount(data.totalCount)
     } catch (err) {
-      console.error('Error loading shared layouts:', err)
+      logger.error('Error loading shared layouts', { error: err })
       setError('Failed to load shared layouts')
     } finally {
       setLoading(false)
@@ -79,7 +80,7 @@ export function SharedLayoutModeration() {
       setConfirmOpen(false)
       await loadLayouts(currentPage, appliedFilters.ownerId, appliedFilters.status)
     } catch (err) {
-      console.error('Error deleting shared layout:', err)
+      logger.error('Error deleting shared layout', { error: err, layoutId: selectedLayout.id })
       toast.error('Failed to delete shared layout')
     }
   }, [selectedLayout, currentPage, appliedFilters.ownerId, appliedFilters.status, loadLayouts])

@@ -99,11 +99,12 @@ export const Dashboard = () => {
         )}
 
         {/* Alert Feed & News Digest */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
+            className="min-h-0 flex flex-col"
           >
             <AlertFeed />
           </motion.div>
@@ -112,15 +113,9 @@ export const Dashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
+            className="min-h-[28rem] lg:min-h-0 flex flex-col"
           >
-            <Card className="bg-[hsl(var(--surface-1))]">
-              <CardContent className="pt-6">
-                <h3 className="text-base font-semibold text-[hsl(var(--text))] mb-4">
-                  News Digest
-                </h3>
-                <NewsFeed />
-              </CardContent>
-            </Card>
+            <NewsFeed />
           </motion.div>
         </div>
       </div>

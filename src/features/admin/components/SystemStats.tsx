@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminService } from '../services/adminService';
 import type { SystemStats as SystemStatsType } from '../../../shared/types/adminTypes';
+import { logger } from '@/shared/utils/logger';
 
 export function SystemStats() {
   const [stats, setStats] = useState<SystemStatsType | null>(null);
@@ -19,7 +20,7 @@ export function SystemStats() {
       setStats(data);
     } catch (err) {
       setError('Failed to load system statistics');
-      console.error('Error loading stats:', err);
+      logger.error('Error loading stats', { error: err });
     } finally {
       setLoading(false);
     }

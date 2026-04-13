@@ -13,6 +13,10 @@ export interface AIInsight {
   reasoning: string[]
   targetPrice?: number
   stopLoss?: number
+  qualityStatus?: 'approved' | 'needs_review' | 'rejected'
+  qualityScore?: number
+  evidence?: string[]
+  qualityMetadata?: Record<string, string>
 }
 
 export interface MarketSentiment {
@@ -29,6 +33,15 @@ export interface MarketSentiment {
     value: number
     signal: 'positive' | 'negative' | 'neutral'
   }[]
+}
+
+export interface AccuracyMetrics {
+  evaluatedAt: string
+  totalInsightsConsidered: number
+  confidenceCalibrationError: number
+  tPlus1: { eligibleInsights: number; correctPredictions: number; falseSignals: number; hitRate: number }
+  tPlus5: { eligibleInsights: number; correctPredictions: number; falseSignals: number; hitRate: number }
+  tPlus20: { eligibleInsights: number; correctPredictions: number; falseSignals: number; hitRate: number }
 }
 
 export const aiInsightsService = {
@@ -51,12 +64,8 @@ export const aiInsightsService = {
     return response.data
   },
 
-  async dismissInsight(id: string): Promise<void> {
-    await apiClient.post(`/AIInsights/${id}/dismiss`)
-  },
-
-  async generateInsight(symbol: string): Promise<AIInsight> {
-    const response = await apiClient.post<AIInsight>(`/AIInsights/generate`, { symbol })
+  async getAccuracyMetrics(maxInsights = 500): Promise<AccuracyMetrics> {
+    const response = await apiClient.get<AccuracyMetrics>(`/AIInsights/metrics/accuracy?maxInsights=${maxInsights}`)
     return response.data
   },
 }

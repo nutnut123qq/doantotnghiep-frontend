@@ -29,7 +29,14 @@ export interface FinancialMetrics {
 export interface AskQuestionResponse {
   question: string
   answer: string
-  sources: string[]  // Sources from AI with citations
+  sources: QASource[]  // Sources from AI with citations
+}
+
+export interface QASource {
+  title: string
+  url?: string
+  sourceType: string
+  publishedAt?: string
 }
 
 export const financialReportService = {
@@ -53,7 +60,8 @@ export const financialReportService = {
   async askQuestion(reportId: string, question: string): Promise<AskQuestionResponse> {
     const response = await apiClient.post<AskQuestionResponse>(
       `/FinancialReport/${reportId}/ask`,
-      { question }
+      { question },
+      { silent: true }
     )
     return response.data
   },
@@ -66,19 +74,31 @@ export const financialReportService = {
     }
   },
 
-  formatCurrency(value: number): string {
-    if (value >= 1000000000) {
-      return `${(value / 1000000000).toFixed(2)} tỷ`
-    } else if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(2)} triệu`
-    } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(2)} nghìn`
-    }
-    return value.toFixed(2)
+  formatNumber(value: number | null | undefined, decimals = 2): string {
+    const n = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(n) ? n.toFixed(decimals) : '—'
   },
 
-  formatPercent(value: number): string {
-    return `${value.toFixed(2)}%`
+  formatCurrency(value: number | null | undefined): string {
+    const n = typeof value === 'number' ? value : Number(value)
+    if (!Number.isFinite(n)) {
+      return '—'
+    }
+    if (n >= 1000000000) {
+      return `${(n / 1000000000).toFixed(2)} tỷ`
+    }
+    if (n >= 1000000) {
+      return `${(n / 1000000).toFixed(2)} triệu`
+    }
+    if (n >= 1000) {
+      return `${(n / 1000).toFixed(2)} nghìn`
+    }
+    return n.toFixed(2)
+  },
+
+  formatPercent(value: number | null | undefined): string {
+    const n = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(n) ? `${n.toFixed(2)}%` : '—'
   },
 }
 

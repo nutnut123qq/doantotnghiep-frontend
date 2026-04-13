@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useSignalR } from '@/shared/hooks/useSignalR'
+import { logger } from '@/shared/utils/logger'
 
 export interface WorkspaceMessage {
   id: string
@@ -38,7 +39,9 @@ export const useWorkspaceRealtime = (
 
     if (hasJoinedRef.current && lastWorkspaceIdRef.current === workspaceId) return
     if (hasJoinedRef.current && lastWorkspaceIdRef.current !== workspaceId) {
-      invoke('LeaveWorkspace', lastWorkspaceIdRef.current!).catch(console.error)
+      invoke('LeaveWorkspace', lastWorkspaceIdRef.current!).catch((error) => {
+        logger.warn('Failed to leave previous workspace', { error, workspaceId: lastWorkspaceIdRef.current })
+      })
       hasJoinedRef.current = false
     }
 
@@ -48,13 +51,18 @@ export const useWorkspaceRealtime = (
         hasJoinedRef.current = true
       })
       .catch((err) => {
-        console.error('Error joining workspace:', err)
+        logger.error('Error joining workspace', { error: err, workspaceId })
         lastWorkspaceIdRef.current = null
       })
 
     return () => {
       if (hasJoinedRef.current && lastWorkspaceIdRef.current) {
-        invoke('LeaveWorkspace', lastWorkspaceIdRef.current).catch(console.error)
+        invoke('LeaveWorkspace', lastWorkspaceIdRef.current).catch((error) => {
+          logger.warn('Failed to leave workspace on cleanup', {
+            error,
+            workspaceId: lastWorkspaceIdRef.current,
+          })
+        })
         hasJoinedRef.current = false
         lastWorkspaceIdRef.current = null
       }

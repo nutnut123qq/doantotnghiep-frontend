@@ -11,6 +11,7 @@ import { format } from 'date-fns'
 import { workspaceService, type WorkspaceMessage } from '../services/workspaceService'
 import { useWorkspaceRealtime, type WorkspaceMessage as RealtimeMessage } from '../hooks/useWorkspaceRealtime'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
+import { logger } from '@/shared/utils/logger'
 
 interface ChatMessage {
   id: string
@@ -90,7 +91,7 @@ export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
       // Try SignalR first
       await sendRealtimeMessage(content)
     } catch (err) {
-      console.error('Error sending via SignalR, falling back to API:', err)
+      logger.warn('Error sending via SignalR, falling back to API', { error: err, workspaceId })
       // Fallback: send via API
       try {
         const savedMessage = await workspaceService.sendMessage(workspaceId, content)
@@ -103,7 +104,7 @@ export const WorkspaceChat = ({ workspaceId }: WorkspaceChatProps) => {
         }
         setMessages((prev) => [...prev, chatMessage])
       } catch (apiErr) {
-        console.error('Error sending via API:', apiErr)
+        logger.error('Error sending workspace message via API', { error: apiErr, workspaceId })
         // Restore input on error
         setInput(content)
       }

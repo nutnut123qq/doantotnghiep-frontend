@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useSymbols } from '../hooks/useSymbols'
 import { StockSymbol } from '../services/stockDataService'
+import { logger } from '@/shared/utils/logger'
 
 interface SymbolSelectorProps {
   value: string
@@ -24,15 +25,14 @@ export const SymbolSelector = ({
 
   const { symbols, isLoading, error } = useSymbols()
 
-  // Debug: Log symbols to console
   useEffect(() => {
     if (symbols.length > 0) {
-      console.log('Symbols loaded:', symbols.length, 'symbols')
+      logger.info('Symbols loaded', { count: symbols.length })
     } else if (!isLoading && !error) {
-      console.log('No symbols found - API may have returned empty array')
+      logger.warn('No symbols found from API')
     }
     if (error) {
-      console.error('Error loading symbols:', error)
+      logger.error('Error loading symbols', { error })
     }
   }, [symbols, isLoading, error])
 

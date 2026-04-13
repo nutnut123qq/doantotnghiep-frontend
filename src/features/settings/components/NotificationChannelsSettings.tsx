@@ -138,10 +138,10 @@ export const NotificationChannelsSettings = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-      <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
-        <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-          <ChatBubbleLeftRightIcon className="h-5 w-5 text-slate-700" />
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+          <ChatBubbleLeftRightIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <span>Notification Channels</span>
         </h3>
       </div>
@@ -151,8 +151,8 @@ export const NotificationChannelsSettings = () => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-slate-900">Slack</p>
-              <p className="text-sm text-slate-600">Get alerts in your Slack workspace</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">Slack</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Get alerts in your Slack workspace</p>
             </div>
             <Switch
               checked={config.enabledSlack}
@@ -170,7 +170,7 @@ export const NotificationChannelsSettings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Webhook URL
               {config.hasSlackWebhook && (
                 <span className="ml-2 text-xs text-green-600">✓ Configured</span>
@@ -181,13 +181,13 @@ export const NotificationChannelsSettings = () => {
                 type={showSlackWebhook ? 'text' : 'password'}
                 value={slackWebhookInput}
                 onChange={(e) => setSlackWebhookInput(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 pr-10 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 pr-10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500"
                 placeholder={config.hasSlackWebhook ? 'Enter new webhook to update' : 'https://hooks.slack.com/services/...'}
               />
               <button
                 type="button"
                 onClick={() => setShowSlackWebhook(!showSlackWebhook)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 {showSlackWebhook ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
@@ -205,7 +205,7 @@ export const NotificationChannelsSettings = () => {
                 type="button"
                 onClick={handleTestSlack}
                 disabled={testingSlack || !config.hasSlackWebhook}
-                className="text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50"
+                className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-50"
               >
                 {testingSlack ? 'Testing...' : 'Test'}
               </button>
@@ -214,11 +214,11 @@ export const NotificationChannelsSettings = () => {
         </div>
 
         {/* Telegram Settings */}
-        <div className="space-y-3 pt-4 border-t border-slate-200">
+        <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-slate-900">Telegram</p>
-              <p className="text-sm text-slate-600">Receive alerts via Telegram bot</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">Telegram</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Receive alerts via Telegram bot</p>
             </div>
             <Switch
               checked={config.enabledTelegram}
@@ -236,14 +236,14 @@ export const NotificationChannelsSettings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Chat ID
             </label>
             <input
               type="text"
               value={telegramChatIdInput}
               onChange={(e) => setTelegramChatIdInput(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500"
               placeholder="123456789 or -100123456789"
             />
             <div className="mt-1 flex items-center justify-between">
@@ -258,7 +258,7 @@ export const NotificationChannelsSettings = () => {
                 type="button"
                 onClick={handleTestTelegram}
                 disabled={testingTelegram || !config.telegramChatId}
-                className="text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50"
+                className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 disabled:opacity-50"
               >
                 {testingTelegram ? 'Testing...' : 'Test'}
               </button>

@@ -9,6 +9,12 @@ import {
   ShareLayoutResponse,
   SharedLayoutInfo,
 } from '@/shared/types/layoutTypes'
+import {
+  DASHBOARD_LAYOUT_SCHEMA_VERSION,
+  deserializeLayoutPayload,
+  isLayoutConfig,
+} from '../utils/layoutPersistence'
+import { logger } from '@/shared/utils/logger'
 
 const LAYOUT_PREFERENCE_KEY = 'dashboard_layout'
 const LOCALSTORAGE_LAYOUT_KEY = 'dashboard_layout_config'
@@ -24,10 +30,18 @@ export const layoutService = {
       )
       
       if (response.data && response.data.preferenceValue) {
-        return JSON.parse(response.data.preferenceValue)
+        const payload = deserializeLayoutPayload(response.data.preferenceValue)
+        if (payload && payload.version === DASHBOARD_LAYOUT_SCHEMA_VERSION) {
+          return payload.layout
+        }
+        if (payload && payload.version < DASHBOARD_LAYOUT_SCHEMA_VERSION) {
+          logger.warn('Layout schema version mismatch from backend, falling back to default', {
+            version: payload.version,
+          })
+        }
       }
-    } catch {
-      console.log('No saved layout found, using default')
+    } catch (error) {
+      logger.warn('No valid saved layout found in backend, using fallback', { error })
     }
     
     // Fallback to localStorage
@@ -46,13 +60,16 @@ export const layoutService = {
     try {
       await apiClient.post('/UserPreference', {
         preferenceKey: LAYOUT_PREFERENCE_KEY,
-        preferenceValue: JSON.stringify(layout),
+        preferenceValue: JSON.stringify({
+          version: DASHBOARD_LAYOUT_SCHEMA_VERSION,
+          layout,
+        }),
       })
       
       // Also save to localStorage as backup
       this.saveLayoutToLocalStorage(layout)
     } catch (error) {
-      console.error('Error saving layout:', error)
+      logger.error('Error saving layout to backend', { error })
       // Save to localStorage if backend fails
       this.saveLayoutToLocalStorage(layout)
       throw error
@@ -67,7 +84,7 @@ export const layoutService = {
       await apiClient.delete(`/UserPreference/${LAYOUT_PREFERENCE_KEY}`)
       localStorage.removeItem(LOCALSTORAGE_LAYOUT_KEY)
     } catch (error) {
-      console.error('Error deleting layout:', error)
+      logger.error('Error deleting layout', { error })
       throw error
     }
   },
@@ -79,10 +96,18 @@ export const layoutService = {
     try {
       const saved = localStorage.getItem(LOCALSTORAGE_LAYOUT_KEY)
       if (saved) {
-        return JSON.parse(saved)
+        const payload = deserializeLayoutPayload(saved)
+        if (payload && payload.version === DASHBOARD_LAYOUT_SCHEMA_VERSION) {
+          return payload.layout
+        }
+        if (payload && payload.version < DASHBOARD_LAYOUT_SCHEMA_VERSION) {
+          logger.warn('Local layout schema is outdated, ignoring cached layout', {
+            version: payload.version,
+          })
+        }
       }
     } catch (error) {
-      console.error('Error loading layout from localStorage:', error)
+      logger.error('Error loading layout from localStorage', { error })
     }
     return null
   },
@@ -92,9 +117,15 @@ export const layoutService = {
    */
   saveLayoutToLocalStorage(layout: LayoutConfig): void {
     try {
-      localStorage.setItem(LOCALSTORAGE_LAYOUT_KEY, JSON.stringify(layout))
+      localStorage.setItem(
+        LOCALSTORAGE_LAYOUT_KEY,
+        JSON.stringify({
+          version: DASHBOARD_LAYOUT_SCHEMA_VERSION,
+          layout,
+        })
+      )
     } catch (error) {
-      console.error('Error saving layout to localStorage:', error)
+      logger.error('Error saving layout to localStorage', { error })
     }
   },
 
@@ -211,19 +242,6 @@ export const layoutService = {
    * Validate layout configuration
    */
   validateLayout(layout: LayoutConfig): boolean {
-    if (!layout || typeof layout !== 'object') return false
-    if (!layout.widgets || !Array.isArray(layout.widgets)) return false
-    if (typeof layout.cols !== 'number' || layout.cols <= 0) return false
-    if (typeof layout.rowHeight !== 'number' || layout.rowHeight <= 0) return false
-    
-    // Validate each widget
-    for (const widget of layout.widgets) {
-      if (!widget.id || !widget.type) return false
-      if (typeof widget.x !== 'number' || typeof widget.y !== 'number') return false
-      if (typeof widget.w !== 'number' || typeof widget.h !== 'number') return false
-      if (widget.w <= 0 || widget.h <= 0) return false
-    }
-    
-    return true
+    return isLayoutConfig(layout)
   },
 }

@@ -13,6 +13,8 @@ import { EmptyState } from '@/shared/components/EmptyState'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
 import { toast } from 'sonner'
 import { Cpu } from 'lucide-react'
+import { logger } from '@/shared/utils/logger'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 export function AIModelConfiguration() {
   const [config, setConfig] = useState<AIModelConfig | null>(null)
@@ -46,8 +48,9 @@ export function AIModelConfiguration() {
           isActive: loadedConfig.isActive,
         })
       }
-    } catch (error) {
-      console.error('Error loading config:', error)
+    } catch (error: unknown) {
+      logger.error('Error loading AI model config', { error })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to load model configuration')
     } finally {
       setIsLoading(false)
     }
@@ -59,8 +62,8 @@ export function AIModelConfiguration() {
       startDate.setDate(startDate.getDate() - 7) // Last 7 days
       const perf = await aiModelConfigService.getPerformance(startDate.toISOString())
       setPerformance(perf)
-    } catch (error) {
-      console.error('Error loading performance:', error)
+    } catch (error: unknown) {
+      logger.error('Error loading AI performance metrics', { error })
     }
   }
 
@@ -74,9 +77,9 @@ export function AIModelConfiguration() {
       })
       setConfig(updated)
       toast.success('Configuration saved successfully')
-    } catch (error) {
-      console.error('Error saving config:', error)
-      toast.error('Failed to save configuration')
+    } catch (error: unknown) {
+      logger.error('Error saving AI model config', { error })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to save configuration')
     } finally {
       setIsSaving(false)
     }

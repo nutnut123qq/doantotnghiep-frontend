@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { watchlistService } from '../services/watchlistService'
 import { notify } from '@/shared/utils/notify'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 export const useWatchlists = () => {
   const queryClient = useQueryClient()
@@ -21,8 +22,8 @@ export const useWatchlists = () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
       notify.success('Đã tạo watchlist thành công!')
     },
-    onError: (error: any) => {
-      notify.error(error.response?.data?.message || error.message || 'Không thể tạo watchlist')
+    onError: (error: unknown) => {
+      notify.error(getAxiosErrorMessage(error) || 'Không thể tạo watchlist')
     },
   })
 
@@ -33,8 +34,8 @@ export const useWatchlists = () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
       notify.success('Đã cập nhật watchlist thành công!')
     },
-    onError: (error: any) => {
-      notify.error(error.response?.data?.message || error.message || 'Không thể cập nhật watchlist')
+    onError: (error: unknown) => {
+      notify.error(getAxiosErrorMessage(error) || 'Không thể cập nhật watchlist')
     },
   })
 
@@ -44,8 +45,8 @@ export const useWatchlists = () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
       notify.success('Đã xóa watchlist thành công!')
     },
-    onError: (error: any) => {
-      notify.error(error.response?.data?.message || error.message || 'Không thể xóa watchlist')
+    onError: (error: unknown) => {
+      notify.error(getAxiosErrorMessage(error) || 'Không thể xóa watchlist')
     },
   })
 
@@ -56,8 +57,8 @@ export const useWatchlists = () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
       notify.success('Đã thêm cổ phiếu vào watchlist!')
     },
-    onError: (error: any) => {
-      notify.error(error.response?.data?.message || error.message || 'Không thể thêm cổ phiếu')
+    onError: (error: unknown) => {
+      notify.error(getAxiosErrorMessage(error) || 'Không thể thêm cổ phiếu')
     },
   })
 
@@ -68,8 +69,8 @@ export const useWatchlists = () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
       notify.success('Đã xóa cổ phiếu khỏi watchlist!')
     },
-    onError: (error: any) => {
-      notify.error(error.response?.data?.message || error.message || 'Không thể xóa cổ phiếu')
+    onError: (error: unknown) => {
+      notify.error(getAxiosErrorMessage(error) || 'Không thể xóa cổ phiếu')
     },
   })
 

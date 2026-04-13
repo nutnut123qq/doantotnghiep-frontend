@@ -151,3 +151,25 @@ export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
   [EventStatus.Past]: 'Past',
   [EventStatus.Cancelled]: 'Cancelled',
 }
+
+const EVENT_STATUS_BY_NAME: Record<string, EventStatus> = {
+  Upcoming: EventStatus.Upcoming,
+  Today: EventStatus.Today,
+  Past: EventStatus.Past,
+  Cancelled: EventStatus.Cancelled,
+}
+
+/** API may return enum as number or string (JsonStringEnumConverter). */
+export function parseEventStatus(value: unknown): EventStatus | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value === 'number') {
+    if (value >= 1 && value <= 4) return value as EventStatus
+    return undefined
+  }
+  if (typeof value === 'string') {
+    const n = Number(value)
+    if (!Number.isNaN(n) && n >= 1 && n <= 4) return n as EventStatus
+    return EVENT_STATUS_BY_NAME[value]
+  }
+  return undefined
+}

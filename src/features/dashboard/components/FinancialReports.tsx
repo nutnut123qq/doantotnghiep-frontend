@@ -1,8 +1,33 @@
 import { useState, useEffect, useCallback } from 'react'
-import { financialReportService, FinancialReport, FinancialMetrics } from '../services/financialReportService'
+import axios from 'axios'
+import { financialReportService, FinancialReport, FinancialMetrics, QASource } from '../services/financialReportService'
 import { DocumentTextIcon, ChatBubbleLeftRightIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 import { ErrorState } from '@/shared/components/ErrorState'
 import { notify } from '@/shared/utils/notify'
+
+function financialAskErrorMessage(error: unknown): string {
+  const fallback = 'Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại.'
+  if (!axios.isAxiosError(error) || !error.response?.data) return fallback
+  const d = error.response.data as Record<string, unknown>
+  const msg = typeof d.message === 'string' ? d.message.trim() : ''
+  const det = typeof d.detail === 'string' ? d.detail.trim() : ''
+  const maxDetail = 480
+  const shortDet = det.length > maxDetail ? `${det.slice(0, maxDetail)}…` : det
+  if (msg && shortDet && shortDet !== msg) {
+    return `${msg} Chi tiết: ${shortDet}`
+  }
+  if (msg) return msg
+  if (shortDet) return shortDet
+  if (Array.isArray(d.detail) && d.detail.length > 0) {
+    const first = d.detail[0]
+    if (first && typeof first === 'object' && 'msg' in first) {
+      const fieldMsg = (first as { msg?: string }).msg
+      if (typeof fieldMsg === 'string' && fieldMsg.trim()) return fieldMsg
+    }
+  }
+  if (typeof d.title === 'string' && d.title.trim()) return d.title
+  return fallback
+}
 
 // Helper to check if a string is a valid URL
 const isValidUrl = (str: string): boolean => {
@@ -26,7 +51,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
   const [error, setError] = useState<string | null>(null)
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
-  const [sources, setSources] = useState<string[]>([])
+  const [sources, setSources] = useState<QASource[]>([])
   const [asking, setAsking] = useState(false)
 
   const selectReport = useCallback((report: FinancialReport) => {
@@ -41,7 +66,14 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
     try {
       setLoading(true)
       setError(null)
-      const data = await financialReportService.getReportsBySymbol(symbol)
+      let data = await financialReportService.getReportsBySymbol(symbol)
+
+      // Fallback: if there is no report yet, trigger crawl then fetch again.
+      if (data.length === 0) {
+        await financialReportService.crawlReports(symbol, 10)
+        data = await financialReportService.getReportsBySymbol(symbol)
+      }
+
       setReports(data)
       if (data.length > 0) {
         selectReport(data[0])
@@ -69,8 +101,9 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
       setSources(response.sources || [])
       setQuestion('') // Clear input for next question
     } catch (error) {
-      notify.error('Failed to process question. Please try again.')
-      setAnswer('Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại.')
+      const msg = financialAskErrorMessage(error)
+      notify.error(msg)
+      setAnswer(msg)
       setSources([])
     } finally {
       setAsking(false)
@@ -79,14 +112,16 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
-        <div className="flex items-center space-x-3 mb-6">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
+        <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính</h3>
         </div>
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-muted rounded w-3/4"></div>
-          <div className="h-4 bg-muted rounded w-1/2"></div>
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+          </div>
         </div>
       </div>
     )
@@ -94,22 +129,24 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
 
   if (error) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
-        <div className="flex items-center space-x-3 mb-6">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
+        <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính - {symbol}</h3>
         </div>
-        <ErrorState
-          message={error}
-          onRetry={loadReports}
-        />
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <ErrorState
+            message={error}
+            onRetry={loadReports}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính - {symbol}</h3>
@@ -122,17 +159,18 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
         </button>
       </div>
 
-      {reports.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
-          <p>Chưa có báo cáo tài chính</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        {reports.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
+            <p>Chưa có báo cáo tài chính</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Report List */}
           <div className="lg:col-span-1">
             <h4 className="text-sm font-semibold text-card-foreground mb-3">Danh sách báo cáo</h4>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2">
               {reports.map((report) => (
                 <button
                   key={report.id}
@@ -171,7 +209,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                       <MetricCard label="Lợi nhuận gộp" value={financialReportService.formatCurrency(metrics.GrossProfit)} />
                       <MetricCard label="Lợi nhuận hoạt động" value={financialReportService.formatCurrency(metrics.OperatingProfit)} />
                       <MetricCard label="Lợi nhuận sau thuế" value={financialReportService.formatCurrency(metrics.NetProfit)} />
-                      <MetricCard label="EPS" value={metrics.EPS.toFixed(2)} />
+                      <MetricCard label="EPS" value={financialReportService.formatNumber(metrics.EPS)} />
                       <MetricCard label="ROE" value={financialReportService.formatPercent(metrics.ROE)} />
                       <MetricCard label="ROA" value={financialReportService.formatPercent(metrics.ROA)} />
                       <MetricCard label="Vốn chủ sở hữu" value={financialReportService.formatCurrency(metrics.Equity)} />
@@ -197,8 +235,9 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && !asking && handleAskQuestion()}
+                        disabled={asking}
                         placeholder="Đặt câu hỏi về báo cáo tài chính..."
-                        className="flex-1 px-4 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-4 py-2 border border-input rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
                       />
                       <button
                         onClick={handleAskQuestion}
@@ -220,15 +259,40 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                       ].map((suggestion) => (
                         <button
                           key={suggestion}
+                          type="button"
+                          disabled={asking}
                           onClick={() => setQuestion(suggestion)}
-                          className="text-xs px-3 py-1 bg-muted text-foreground rounded-full hover:bg-accent"
+                          className="text-xs px-3 py-1 bg-muted text-foreground rounded-full hover:bg-accent disabled:opacity-50 disabled:pointer-events-none"
                         >
                           {suggestion}
                         </button>
                       ))}
                     </div>
 
-                    {answer && (
+                    {asking && (
+                      <div
+                        className="space-y-3 animate-pulse"
+                        aria-busy="true"
+                        aria-live="polite"
+                        aria-label="Đang tạo câu trả lời AI"
+                      >
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                          <div className="h-3.5 bg-blue-200/80 dark:bg-blue-800/60 rounded w-28 mb-3" />
+                          <div className="space-y-2">
+                            <div className="h-3 bg-blue-200/60 dark:bg-blue-800/50 rounded w-full" />
+                            <div className="h-3 bg-blue-200/60 dark:bg-blue-800/50 rounded w-[94%]" />
+                            <div className="h-3 bg-blue-200/60 dark:bg-blue-800/50 rounded w-4/5" />
+                          </div>
+                        </div>
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800/20 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <div className="h-3 bg-gray-200/80 dark:bg-gray-700/50 rounded w-36 mb-2" />
+                          <div className="h-2.5 bg-gray-200/70 dark:bg-gray-700/40 rounded w-full mb-1.5" />
+                          <div className="h-2.5 bg-gray-200/70 dark:bg-gray-700/40 rounded w-[88%]" />
+                        </div>
+                      </div>
+                    )}
+
+                    {!asking && answer && (
                       <div className="space-y-3">
                         {/* Answer box with inline citation badges */}
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
@@ -268,7 +332,8 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                             </p>
                             <ul className="space-y-2">
                               {sources.map((source, index) => {
-                                const isUrl = isValidUrl(source)
+                                const isUrl = Boolean(source.url && isValidUrl(source.url))
+                                const displayText = source.title || source.url || `Nguồn ${index + 1}`
                                 
                                 return (
                                   <li 
@@ -282,12 +347,12 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                                     
                                     {isUrl ? (
                                       <a
-                                        href={source}
+                                        href={source.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex-1 text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-700 dark:hover:text-blue-300 break-all"
                                       >
-                                        {source}
+                                        {displayText}
                                         <svg 
                                           className="inline-block w-3 h-3 ml-1" 
                                           fill="none" 
@@ -303,7 +368,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                                         </svg>
                                       </a>
                                     ) : (
-                                      <span className="flex-1 break-words">{source}</span>
+                                      <span className="flex-1 break-words">{displayText}</span>
                                     )}
                                   </li>
                                 )
@@ -324,7 +389,8 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
             )}
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

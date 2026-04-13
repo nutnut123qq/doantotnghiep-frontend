@@ -1,6 +1,7 @@
 import * as signalR from '@microsoft/signalr'
 import { config } from '@/infrastructure/config/env'
 import { storage } from '@/infrastructure/storage/localStorage'
+import { logger } from '@/shared/utils/logger'
 
 /**
  * Singleton SignalR connection manager
@@ -16,16 +17,18 @@ class SignalRManager {
   }
 
   async getOrCreateConnection(hubName: string): Promise<signalR.HubConnection> {
+    const token = storage.get<string>('token')
+    if (!token) {
+      throw new Error(`SignalR token missing for hub ${hubName}`)
+    }
+
     let connection = this.connections.get(hubName)
 
     if (!connection || connection.state === signalR.HubConnectionState.Disconnected) {
       connection = new signalR.HubConnectionBuilder()
         .withUrl(`${config.signalRUrl}/${hubName}`, {
           withCredentials: false,
-          accessTokenFactory: () => {
-            const token = storage.get<string>('token')
-            return token ?? ''
-          }
+          accessTokenFactory: () => storage.get<string>('token') ?? ''
         })
         .withAutomaticReconnect()
         .configureLogging(
@@ -52,7 +55,7 @@ class SignalRManager {
           err.name !== 'AbortError' &&
           !err.message?.includes('stopped during negotiation')
         ) {
-          console.error(`Error connecting to ${hubName}:`, err)
+          logger.error('Error connecting to SignalR hub', { hubName, error: err })
         }
         this.notifyStateListeners(hubName, false)
       }

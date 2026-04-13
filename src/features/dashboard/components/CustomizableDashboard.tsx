@@ -268,13 +268,23 @@ interface CustomizableDashboardProps {
 }
 
 export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDashboardProps) => {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const symbolFromUrl = searchParams.get('symbol') || defaultSymbol
   const [layout, setLayout] = useState<LayoutConfig | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showLayoutManager, setShowLayoutManager] = useState(false)
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
+
+  const updateSymbolInUrl = useCallback((symbol: string) => {
+    const normalizedSymbol = (symbol || '').trim().toUpperCase()
+    if (!normalizedSymbol) return
+    if (normalizedSymbol === symbolFromUrl) return
+
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.set('symbol', normalizedSymbol)
+    setSearchParams(nextSearchParams, { replace: true })
+  }, [searchParams, setSearchParams, symbolFromUrl])
 
   const loadLayout = useCallback(async () => {
     try {
@@ -425,7 +435,13 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
         return <FinancialReports symbol={symbolFromUrl} />
       
       case 'chart':
-        return <TradingViewChart symbol={symbolFromUrl} height={widget.h * layout!.rowHeight - 40} />
+        return (
+          <TradingViewChart
+            symbol={symbolFromUrl}
+            height={widget.h * layout!.rowHeight - 40}
+            onSymbolChange={updateSymbolInUrl}
+          />
+        )
       
       case 'forecast':
         return <AIForecast symbol={symbolFromUrl} />
@@ -565,12 +581,12 @@ export const CustomizableDashboard = ({ defaultSymbol = 'VIC' }: CustomizableDas
           margin={[24, 24]}
         >
           {layout.widgets.filter(w => w.visible).map((widget, index) => (
-            <div key={widget.id} className="relative h-full w-full">
+            <div key={widget.id} className="relative h-full w-full min-h-0">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="h-full w-full"
+                className="h-full w-full min-h-0"
               >
                 {isEditMode && (
                   <motion.div

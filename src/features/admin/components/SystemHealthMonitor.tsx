@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminService } from '../services/adminService';
 import type { SystemHealthStatus } from '../../../shared/types/adminTypes';
+import { logger } from '@/shared/utils/logger';
 
 export function SystemHealthMonitor() {
   const [health, setHealth] = useState<SystemHealthStatus | null>(null);
@@ -21,7 +22,7 @@ export function SystemHealthMonitor() {
       setHealth(data);
     } catch (err) {
       setError('Failed to load system health');
-      console.error('Error loading health:', err);
+      logger.error('Error loading health', { error: err });
     } finally {
       setLoading(false);
     }

@@ -7,24 +7,35 @@ import type { AlertNotification } from '@/features/settings/types/notificationCh
  * Subscribes to real-time alert notifications via SignalR Trading hub.
  * Uses shared useSignalR (token key "token", config.signalRUrl + hub "trading").
  */
-export const useAlertNotifications = () => {
-  const { on } = useSignalR('trading')
+interface UseAlertNotificationsOptions {
+  onAlertTriggered?: (notification: AlertNotification) => void
+  showToast?: boolean
+}
+
+export const useAlertNotifications = (options?: UseAlertNotificationsOptions) => {
+  const { on, isConnected } = useSignalR('trading')
+  const showToast = options?.showToast ?? true
+  const onAlertTriggered = options?.onAlertTriggered
 
   const handleAlertTriggered = useCallback((notification: AlertNotification) => {
-    const msg = [
-      `🔔 Alert: ${notification.symbol} ${notification.type}`,
-      `Threshold: ${Number(notification.threshold).toLocaleString()}`,
-      `Current: ${Number(notification.currentValue).toLocaleString()}`,
-      notification.aiExplanation ? `💡 ${notification.aiExplanation}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n')
+    onAlertTriggered?.(notification)
 
-    notify.success(msg, { duration: 8000 })
-  }, [])
+    if (showToast) {
+      const msg = [
+        `🔔 Alert: ${notification.symbol} ${notification.type}`,
+        `Threshold: ${Number(notification.threshold).toLocaleString()}`,
+        `Current: ${Number(notification.currentValue).toLocaleString()}`,
+      ].join('\n')
 
+      notify.success(msg, { duration: 8000 })
+    }
+  }, [onAlertTriggered, showToast])
+
+  // useSignalR sets connectionRef asynchronously; calling on() before connect yields a no-op.
+  // Subscribe only after the hub is connected so AlertTriggered handlers actually attach.
   useEffect(() => {
+    if (!isConnected) return
     const unsub = on('AlertTriggered', handleAlertTriggered as (...args: unknown[]) => void)
     return unsub
-  }, [on, handleAlertTriggered])
+  }, [isConnected, on, handleAlertTriggered])
 }

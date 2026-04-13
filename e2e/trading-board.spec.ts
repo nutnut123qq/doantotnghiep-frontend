@@ -36,21 +36,6 @@ test.describe('Trading Board', () => {
     await expect(page.locator('table')).toBeVisible()
   })
 
-  test('should filter by index', async ({ page }) => {
-    // Wait for filters to load
-    await page.waitForSelector('button[role="combobox"]', { timeout: 10000 })
-
-    // Click the index select button (find by placeholder text)
-    const indexSelect = page.locator('button').filter({ hasText: /All Indexes/i }).first()
-    await indexSelect.click()
-
-    // Wait for options to appear and click VN30
-    await page.getByRole('option', { name: 'VN30' }).click()
-
-    // Should show filtered results
-    await expect(page.locator('table')).toBeVisible()
-  })
-
   test('should open column customization modal', async ({ page }) => {
     // Wait for page to load
     await page.waitForSelector('h1', { timeout: 10000 })

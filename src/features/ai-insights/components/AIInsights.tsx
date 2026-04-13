@@ -11,9 +11,8 @@ import {
   RefreshCw,
   X
 } from 'lucide-react'
-import { aiInsightsService, type AIInsight, type MarketSentiment } from '../services/aiInsightsService'
+import { aiInsightsService, type AIInsight, type MarketSentiment, type AccuracyMetrics } from '../services/aiInsightsService'
 import { motion } from 'framer-motion'
-import { notify } from '@/shared/utils/notify'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
 function classNames(...classes: string[]) {
@@ -47,8 +46,7 @@ export const AIInsights = () => {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('All Insights')
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null)
-  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set())
-  const [generating, setGenerating] = useState(false)
+  const [accuracyMetrics, setAccuracyMetrics] = useState<AccuracyMetrics | null>(null)
 
   useEffect(() => {
     loadData()
@@ -77,6 +75,9 @@ export const AIInsights = () => {
 
       setInsights(insightsData)
       setMarketSentiment(sentimentData)
+
+      const metrics = await aiInsightsService.getAccuracyMetrics(300)
+      setAccuracyMetrics(metrics)
     } catch (err: unknown) {
       console.error('Error loading AI insights:', err)
       const msg = getAxiosErrorMessage(err)
@@ -87,30 +88,6 @@ export const AIInsights = () => {
     }
   }
 
-  const handleDismiss = async (insightId: string) => {
-    try {
-      setDismissingIds(prev => new Set(prev).add(insightId))
-      await aiInsightsService.dismissInsight(insightId)
-      
-      // Remove from local state
-      setInsights(prev => prev.filter(i => i.id !== insightId))
-      
-      // Reload market sentiment as counts may have changed
-      const sentiment = await aiInsightsService.getMarketSentiment()
-      setMarketSentiment(sentiment)
-    } catch (err: unknown) {
-      console.error('Error dismissing insight:', err)
-      const msg = getAxiosErrorMessage(err)
-      notify.error(msg === 'Unknown error' ? 'Không thể bỏ qua insight. Vui lòng thử lại.' : msg)
-    } finally {
-      setDismissingIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(insightId)
-        return newSet
-      })
-    }
-  }
-
   const handleViewDetails = async (insightId: string) => {
     try {
       const detail = await aiInsightsService.getInsightById(insightId)
@@ -118,35 +95,7 @@ export const AIInsights = () => {
     } catch (err: unknown) {
       console.error('Error loading insight details:', err)
       const msg = getAxiosErrorMessage(err)
-      notify.error(msg === 'Unknown error' ? 'Không thể tải chi tiết insight' : msg)
-    }
-  }
-
-  const handleGenerateSample = async () => {
-    try {
-      setGenerating(true)
-      setError(null)
-      
-      // Generate insights for some common symbols
-      const commonSymbols = ['VIC', 'VHM', 'VNM', 'VCB', 'VRE']
-      
-      for (const symbol of commonSymbols) {
-        try {
-          await aiInsightsService.generateInsight(symbol)
-        } catch (err: unknown) {
-          console.warn(`Failed to generate insight for ${symbol}:`, err)
-        }
-      }
-      
-      // Reload data after generation
-      await loadData()
-      notify.success('Đã tạo insights cho một số mã cổ phiếu phổ biến. Vui lòng đợi vài giây để xem kết quả.')
-    } catch (err: unknown) {
-      console.error('Error generating insights:', err)
-      const msg = getAxiosErrorMessage(err)
-      setError(msg === 'Unknown error' ? 'Không thể tạo insights. Vui lòng kiểm tra AI service.' : msg)
-    } finally {
-      setGenerating(false)
+      setError(msg === 'Unknown error' ? 'Không thể tải chi tiết insight' : msg)
     }
   }
 
@@ -193,10 +142,21 @@ export const AIInsights = () => {
   }
 
   const categories = {
-    'All Insights': insights,
+    'All Insights': [...insights].sort((a, b) => (b.qualityScore ?? 0) - (a.qualityScore ?? 0)),
     'Buy Signals': insights.filter(i => i.type.toLowerCase() === 'buy'),
     'Sell Signals': insights.filter(i => i.type.toLowerCase() === 'sell'),
     'Hold Recommendations': insights.filter(i => i.type.toLowerCase() === 'hold'),
+  }
+
+  const getQualityColor = (status?: string) => {
+    switch ((status ?? '').toLowerCase()) {
+      case 'approved':
+        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+      case 'rejected':
+        return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+      default:
+        return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    }
   }
 
   // Note: Insights are filtered by category in Tab.Panels below
@@ -278,6 +238,30 @@ export const AIInsights = () => {
           </div>
         </div>
 
+        {accuracyMetrics && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Accuracy Snapshot</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Insights evaluated</p>
+                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{accuracyMetrics.totalInsightsConsidered}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">T+1 Hit rate</p>
+                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{accuracyMetrics.tPlus1.hitRate}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">T+5 Hit rate</p>
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{accuracyMetrics.tPlus5.hitRate}%</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">T+20 Hit rate</p>
+                <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{accuracyMetrics.tPlus20.hitRate}%</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Insights with Tabs */}
         <Tab.Group selectedIndex={Object.keys(categories).indexOf(selectedCategory)} onChange={(index) => setSelectedCategory(Object.keys(categories)[index])}>
           <Tab.List className="flex space-x-2 rounded-xl bg-white dark:bg-slate-800 p-2 shadow-lg border border-slate-200 dark:border-slate-700 mb-6">
@@ -310,27 +294,16 @@ export const AIInsights = () => {
                         : 'Chưa có insights trong danh mục này'}
                     </p>
                     {insights.length === 0 && (
-                      <>
-                        <p className="text-slate-500 dark:text-slate-400 mb-6">
-                          Nhấn nút bên dưới để tạo AI insights cho các mã cổ phiếu phổ biến.
-                          <br />
-                          <span className="text-sm text-slate-400 dark:text-slate-500">Insights được tạo on-demand để tiết kiệm token.</span>
-                        </p>
-                        <button
-                          onClick={handleGenerateSample}
-                          disabled={generating}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 mx-auto"
-                        >
-                          <RefreshCw className={`w-5 h-5 ${generating ? 'animate-spin' : ''}`} />
-                          <span>{generating ? 'Đang tạo insights...' : 'Tạo Insights Ngay'}</span>
-                        </button>
-                      </>
+                      <p className="text-slate-500 dark:text-slate-400 mb-6">
+                        Dữ liệu insight được hệ thống backend tạo định kỳ cho toàn bộ người dùng.
+                        <br />
+                        <span className="text-sm text-slate-400 dark:text-slate-500">Vui lòng quay lại sau hoặc bấm làm mới để đồng bộ cache mới nhất.</span>
+                      </p>
                     )}
                   </div>
                 ) : (
                   categoryInsights.map((insight) => {
                     const colors = getTypeColor(insight.type)
-                    const isDismissing = dismissingIds.has(insight.id)
                     return (
                       <motion.div
                         key={insight.id}
@@ -353,6 +326,18 @@ export const AIInsights = () => {
                                 </div>
                                 <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{insight.title}</h3>
                                 <p className="text-slate-600 dark:text-slate-300">{insight.description}</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getQualityColor(insight.qualityStatus)}`}>
+                                    {insight.qualityStatus === 'approved'
+                                      ? 'Quality: Approved'
+                                      : insight.qualityStatus === 'rejected'
+                                        ? 'Quality: Rejected'
+                                        : 'Quality: Needs Review'}
+                                  </span>
+                                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                                    Score: {insight.qualityScore ?? 0}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                             <div className="text-right">
@@ -363,6 +348,17 @@ export const AIInsights = () => {
                               </div>
                             </div>
                           </div>
+
+                          {insight.evidence && insight.evidence.length > 0 && (
+                            <div className="mb-4 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                              <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">Evidence</p>
+                              <ul className="space-y-1">
+                                {insight.evidence.slice(0, 3).map((ev, idx) => (
+                                  <li key={idx} className="text-xs text-slate-600 dark:text-slate-300">- {ev}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
 
                           {/* Confidence Bar */}
                           <div className="mb-4">
@@ -381,13 +377,6 @@ export const AIInsights = () => {
                               className={`px-4 py-2 ${colors.bg.replace('100', '600')} text-white rounded-lg font-medium hover:shadow-lg transition-all`}
                             >
                               View Details
-                            </button>
-                            <button
-                              onClick={() => handleDismiss(insight.id)}
-                              disabled={isDismissing}
-                              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-                            >
-                              {isDismissing ? 'Đang xử lý...' : 'Dismiss'}
                             </button>
                           </div>
                         </div>
@@ -466,7 +455,7 @@ export const AIInsights = () => {
                   </div>
                   <button
                     onClick={() => setSelectedInsight(null)}
-                    className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                    className="rounded-md p-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -513,6 +502,20 @@ export const AIInsights = () => {
                           <p className="text-lg font-bold text-rose-600">{selectedInsight.stopLoss.toLocaleString('vi-VN')} VND</p>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {selectedInsight.evidence && selectedInsight.evidence.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Evidence</h4>
+                      <ul className="space-y-2">
+                        {selectedInsight.evidence.map((ev, index) => (
+                          <li key={index} className="flex items-start space-x-2 text-sm text-slate-600 dark:text-slate-300">
+                            <span className="text-blue-600 mt-1">•</span>
+                            <span>{ev}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>

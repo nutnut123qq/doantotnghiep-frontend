@@ -38,22 +38,6 @@ export const TradingBoardFilters = ({
         </Select>
       </div>
       <div className="flex-1 min-w-[150px]">
-        <Select
-          value={filters.index || 'all'}
-          onValueChange={(value) => onFilterChange('index', value === 'all' ? undefined : value as string)}
-        >
-          <SelectTrigger className="h-9">
-            <SelectValue placeholder="Index" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Indexes</SelectItem>
-            <SelectItem value="VN30">VN30</SelectItem>
-            <SelectItem value="VN100">VN100</SelectItem>
-            <SelectItem value="HNX30">HNX30</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex-1 min-w-[150px]">
         <Input
           type="text"
           placeholder="Industry"

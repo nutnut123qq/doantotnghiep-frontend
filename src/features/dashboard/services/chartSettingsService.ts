@@ -1,5 +1,6 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
 import { isAxiosError } from 'axios'
+import { logger } from '@/shared/utils/logger'
 
 export interface ChartSettings {
   id?: string
@@ -101,11 +102,11 @@ export const chartSettingsService = {
       }
       saveDebounceTimer = setTimeout(() => {
         this.saveToBackend(symbol, settings).catch((err) => {
-          console.error('Error saving to backend:', err)
+          logger.error('Error saving chart settings to backend (debounced)', { error: err, symbol })
         })
       }, 2000) // 2 second debounce
     } catch (error) {
-      console.error('Error saving chart settings:', error)
+      logger.error('Error saving chart settings', { error, symbol })
     }
   },
 
@@ -128,7 +129,7 @@ export const chartSettingsService = {
       
       return converted
     } catch (error) {
-      console.error('Error saving to backend:', error)
+      logger.error('Error saving chart settings to backend', { error, symbol })
       return null
     }
   },
@@ -154,13 +155,13 @@ export const chartSettingsService = {
           return backendSettings
         }
       } catch (error) {
-        console.warn('Failed to load from backend, using cache:', error)
+        logger.warn('Failed to load chart settings from backend, using cache', { error, symbol })
       }
 
       // Fallback to cache if backend fails
       return cached
     } catch (error) {
-      console.error('Error loading chart settings:', error)
+      logger.error('Error loading chart settings', { error, symbol })
       return null
     }
   },
@@ -173,7 +174,7 @@ export const chartSettingsService = {
       const allSettings = this.getAllSettings()
       return allSettings[symbol] || null
     } catch (error) {
-      console.error('Error loading chart settings from cache:', error)
+      logger.error('Error loading chart settings from cache', { error, symbol })
       return null
     }
   },
@@ -209,7 +210,7 @@ export const chartSettingsService = {
       const data = localStorage.getItem(STORAGE_KEY)
       return data ? JSON.parse(data) : {}
     } catch (error) {
-      console.error('Error getting all chart settings:', error)
+      logger.error('Error reading all chart settings from localStorage', { error })
       return {}
     }
   },
@@ -230,11 +231,11 @@ export const chartSettingsService = {
       } catch (error: unknown) {
         if (!isAxiosError(error) || error.response?.status !== 404) {
           // Ignore 404 (already deleted), but log other errors
-          console.error('Error deleting from backend:', error)
+          logger.error('Error deleting chart settings from backend', { error, symbol })
         }
       }
     } catch (error) {
-      console.error('Error deleting chart settings:', error)
+      logger.error('Error deleting chart settings', { error, symbol })
     }
   },
 
@@ -245,7 +246,7 @@ export const chartSettingsService = {
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch (error) {
-      console.error('Error clearing chart settings:', error)
+      logger.error('Error clearing chart settings', { error })
     }
   },
 
@@ -257,7 +258,7 @@ export const chartSettingsService = {
       // Try to load from backend first, fallback to cache
       const settings = await this.loadSettings(symbol) || this.loadSettingsFromCache(symbol)
       if (!settings) {
-        console.warn('No settings found for symbol:', symbol)
+        logger.warn('No chart settings found for symbol', { symbol })
         return
       }
 
@@ -272,7 +273,7 @@ export const chartSettingsService = {
       
       URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Error exporting chart settings:', error)
+      logger.error('Error exporting chart settings', { error, symbol })
     }
   },
 
@@ -291,7 +292,7 @@ export const chartSettingsService = {
       
       return null
     } catch (error) {
-      console.error('Error importing chart settings:', error)
+      logger.error('Error importing chart settings', { error, fileName: file.name })
       return null
     }
   },

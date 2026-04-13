@@ -133,6 +133,33 @@ class EventService {
   }
 
   /**
+   * RAG Q&A over recent corporate events for a symbol
+   */
+  async askEventsQuestion(payload: {
+    symbol: string
+    question: string
+    days?: number
+    topK?: number
+  }): Promise<{
+    question: string
+    answer: string
+    sources: Array<{
+      title: string
+      url?: string | null
+      sourceType: string
+      publishedAt?: string | null
+    }>
+  }> {
+    const response = await apiClient.post(`${this.BASE_URL}/qa`, {
+      symbol: payload.symbol,
+      question: payload.question,
+      days: payload.days ?? 90,
+      topK: payload.topK ?? 6,
+    })
+    return response.data
+  }
+
+  /**
    * Analyze event with AI
    */
   async analyzeEvent(id: string): Promise<{ analysis: string; impact: string }> {

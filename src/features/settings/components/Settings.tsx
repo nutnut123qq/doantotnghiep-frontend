@@ -24,41 +24,41 @@ export const Settings = () => {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
             Settings
           </h1>
-          <p className="text-slate-600">Manage your account and application preferences</p>
+          <p className="text-slate-600 dark:text-slate-400">Manage your account and application preferences</p>
         </div>
 
         {/* Settings Sections */}
         <div className="space-y-6">
           {/* Profile Settings */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <UserIcon className="h-5 w-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                <UserIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                 <span>Profile Settings</span>
               </h3>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
                 <input
                   type="text"
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="John Doe"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email</label>
                 <input
                   type="email"
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="john@example.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Phone</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone</label>
                 <input
                   type="tel"
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="+84 123 456 789"
                 />
               </div>
@@ -66,10 +66,10 @@ export const Settings = () => {
           </div>
 
           {/* Notification Settings */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <BellIcon className="h-5 w-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                <BellIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                 <span>Notifications</span>
               </h3>
             </div>
@@ -96,10 +96,10 @@ export const Settings = () => {
                   description: 'Breaking news and market updates'
                 },
               ].map((item) => (
-                <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                   <div>
-                    <p className="font-medium text-slate-900">{item.label}</p>
-                    <p className="text-sm text-slate-600">{item.description}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{item.label}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">{item.description}</p>
                   </div>
                   <Switch
                     checked={notifications[item.key]}
@@ -123,33 +123,33 @@ export const Settings = () => {
           <NotificationChannelsSettings />
 
           {/* Trading Preferences */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <ChartBarIcon className="h-5 w-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                <ChartBarIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                 <span>Trading Preferences</span>
               </h3>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Default Exchange</label>
-                <select className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Default Exchange</label>
+                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   <option>HOSE</option>
                   <option>HNX</option>
                   <option>UPCOM</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Risk Tolerance</label>
-                <select className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Risk Tolerance</label>
+                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   <option>Conservative</option>
                   <option>Moderate</option>
                   <option>Aggressive</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Investment Horizon</label>
-                <select className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Investment Horizon</label>
+                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                   <option>Short-term (0-1 year)</option>
                   <option>Medium-term (1-5 years)</option>
                   <option>Long-term (5+ years)</option>
@@ -159,21 +159,21 @@ export const Settings = () => {
           </div>
 
           {/* Security */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center space-x-2">
-                <LockClosedIcon className="h-5 w-5 text-slate-700" />
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
+                <LockClosedIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                 <span>Security</span>
               </h3>
             </div>
             <div className="p-6 space-y-4">
-              <button className="w-full px-4 py-3 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors text-left">
+              <button className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
                 Change Password
               </button>
-              <button className="w-full px-4 py-3 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors text-left">
+              <button className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
                 Enable Two-Factor Authentication
               </button>
-              <button className="w-full px-4 py-3 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors text-left">
+              <button className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left">
                 Manage Connected Devices
               </button>
             </div>
@@ -181,7 +181,7 @@ export const Settings = () => {
 
           {/* Save Button */}
           <div className="flex justify-end space-x-4">
-            <button className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+            <button className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
               Cancel
             </button>
             <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg transition-all duration-200">

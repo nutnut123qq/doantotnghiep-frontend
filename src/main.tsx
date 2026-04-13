@@ -6,7 +6,6 @@ import { AuthProvider } from '@/shared/contexts/AuthContext'
 import { ThemeProvider } from '@/shared/contexts/ThemeContext'
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import App from './app/App'
-import { useAlertNotifications } from '@/hooks/useAlertNotifications'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -20,18 +19,13 @@ const queryClient = new QueryClient({
   },
 })
 
-const AppWithAlertNotifications = () => {
-  useAlertNotifications();
-  return <App />;
-};
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <AppWithAlertNotifications />
+            <App />
             <Toaster position="top-right" richColors />
           </AuthProvider>
         </QueryClientProvider>

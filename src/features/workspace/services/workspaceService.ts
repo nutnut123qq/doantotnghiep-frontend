@@ -43,6 +43,28 @@ export interface WorkspaceMember {
   }
 }
 
+export interface SharedWatchlistItem {
+  id: string
+  watchlistId: string
+  workspaceId?: string
+  watchlist?: {
+    id: string
+    name: string
+    tickers: Array<{ symbol: string; name: string }>
+  }
+}
+
+export interface SharedLayoutItem {
+  id: string
+  layoutId: string
+  workspaceId?: string
+  layout?: {
+    id: string
+    name: string
+    configuration: string
+  }
+}
+
 export interface WorkspaceMessage {
   id: string
   workspaceId: string
@@ -146,8 +168,8 @@ export const workspaceService = {
   /**
    * Get shared watchlists in workspace
    */
-  async getSharedWatchlists(workspaceId: string): Promise<any[]> {
-    const response = await apiClient.get<any[]>(`/Workspace/${workspaceId}/watchlists`)
+  async getSharedWatchlists(workspaceId: string): Promise<SharedWatchlistItem[]> {
+    const response = await apiClient.get<SharedWatchlistItem[]>(`/Workspace/${workspaceId}/watchlists`)
     return response.data
   },
 
@@ -168,8 +190,8 @@ export const workspaceService = {
   /**
    * Get shared layouts in workspace
    */
-  async getSharedLayouts(workspaceId: string): Promise<any[]> {
-    const response = await apiClient.get<any[]>(`/Workspace/${workspaceId}/layouts`)
+  async getSharedLayouts(workspaceId: string): Promise<SharedLayoutItem[]> {
+    const response = await apiClient.get<SharedLayoutItem[]>(`/Workspace/${workspaceId}/layouts`)
     return response.data
   },
 

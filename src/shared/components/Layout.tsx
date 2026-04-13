@@ -36,7 +36,8 @@ import { useTheme } from '@/shared/contexts/useTheme'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { CommandPalette } from './CommandPalette'
-import { TickerSearch } from './TickerSearch'
+import { GlobalAlertNotifications } from './GlobalAlertNotifications'
+import { AlertTriggeredFeedProvider } from '@/shared/contexts/AlertTriggeredFeedContext'
 
 export const Layout = () => {
   const location = useLocation()
@@ -53,7 +54,6 @@ export const Layout = () => {
     { name: 'AI Insights', href: '/ai-insights', icon: Cpu },
     { name: 'Events', href: '/events', icon: Calendar },
     ...(user?.role === 'Admin' ? [{ name: 'Admin', href: '/admin', icon: Settings }] : []),
-    { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
   const isActive = (path: string) => {
@@ -65,6 +65,8 @@ export const Layout = () => {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bg))]">
+      <AlertTriggeredFeedProvider>
+        <GlobalAlertNotifications />
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -121,9 +123,6 @@ export const Layout = () => {
 
             {/* User Menu */}
             <div className="hidden md:flex items-center space-x-4">
-              {/* Ticker Search */}
-              <TickerSearch />
-
               {/* Dark Mode Toggle */}
               <div className="flex items-center space-x-2">
                 <Sun className="h-4 w-4 text-[hsl(var(--muted))]" />
@@ -133,12 +132,6 @@ export const Layout = () => {
                 />
                 <Moon className="h-4 w-4 text-[hsl(var(--muted))]" />
               </div>
-
-              {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[hsl(var(--negative))] rounded-full"></span>
-              </Button>
 
               {/* User Menu */}
               <DropdownMenu>
@@ -249,6 +242,7 @@ export const Layout = () => {
 
       {/* Command Palette */}
       <CommandPalette />
+      </AlertTriggeredFeedProvider>
     </div>
   )
 }

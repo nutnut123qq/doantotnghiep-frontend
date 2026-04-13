@@ -1,11 +1,31 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
-import type {
-  Alert,
-  CreateAlertRequest,
-  CreateAlertResponse,
-  GetAlertsResponse,
-  ParsedAlert,
+import {
+  AlertType,
+  type Alert,
+  type CreateAlertRequest,
+  type CreateAlertResponse,
+  type GetAlertsResponse,
+  type ParsedAlert,
 } from '../types/alert.types'
+
+function normalizeAlertType(type: unknown): AlertType {
+  if (typeof type === 'number' && type >= 1 && type <= 5) {
+    return type as AlertType
+  }
+  if (typeof type === 'string') {
+    const byName: Record<string, AlertType> = {
+      Price: AlertType.Price,
+      Volume: AlertType.Volume,
+      TechnicalIndicator: AlertType.TechnicalIndicator,
+      Sentiment: AlertType.Sentiment,
+      Volatility: AlertType.Volatility,
+    }
+    if (byName[type] !== undefined) return byName[type]
+    const n = parseInt(type, 10)
+    if (!Number.isNaN(n) && n >= 1 && n <= 5) return n as AlertType
+  }
+  return AlertType.Price
+}
 
 export const alertService = {
   /**
@@ -20,7 +40,11 @@ export const alertService = {
     const response = await apiClient.get<GetAlertsResponse>(
       `/Alert?${params.toString()}`
     )
-    return response.data.alerts || []
+    const list = response.data.alerts || []
+    return list.map((a) => ({
+      ...a,
+      type: normalizeAlertType(a.type),
+    }))
   },
 
   /**

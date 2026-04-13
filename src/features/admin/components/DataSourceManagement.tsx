@@ -15,12 +15,14 @@ import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { dataSourceService } from '../services/dataSourceService'
+import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import type { DataSource, DataSourceType } from '@/shared/types/dataSourceTypes'
 import {
   DATA_SOURCE_TYPE_LABELS,
   CONNECTION_STATUS_LABELS,
   ConnectionStatus,
 } from '@/shared/types/dataSourceTypes'
+import { logger } from '@/shared/utils/logger'
 
 export function DataSourceManagement() {
   const [dataSources, setDataSources] = useState<DataSource[]>([])
@@ -38,8 +40,9 @@ export function DataSourceManagement() {
       setIsLoading(true)
       const sources = await dataSourceService.getAll()
       setDataSources(sources)
-    } catch (error) {
-      console.error('Error loading data sources:', error)
+    } catch (error: unknown) {
+      logger.error('Error loading data sources', { error })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to load data sources')
     } finally {
       setIsLoading(false)
     }
@@ -54,9 +57,9 @@ export function DataSourceManagement() {
       await dataSourceService.testConnection(id)
       toast.success('Connection test successful')
       await loadDataSources() // Reload to get updated status
-    } catch (error) {
-      console.error('Error testing connection:', error)
-      toast.error('Failed to test connection')
+    } catch (error: unknown) {
+      logger.error('Error testing data source connection', { error, dataSourceId: id })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to test connection')
     } finally {
       setTestingId(null)
     }
@@ -73,9 +76,9 @@ export function DataSourceManagement() {
       await dataSourceService.delete(sourceToDelete)
       toast.success('Data source deleted successfully')
       await loadDataSources()
-    } catch (error) {
-      console.error('Error deleting data source:', error)
-      toast.error('Failed to delete data source')
+    } catch (error: unknown) {
+      logger.error('Error deleting data source', { error, dataSourceId: sourceToDelete })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to delete data source')
     } finally {
       setDeleteConfirmOpen(false)
       setSourceToDelete(null)
@@ -87,9 +90,9 @@ export function DataSourceManagement() {
       await dataSourceService.update(source.id, { isActive: !source.isActive })
       toast.success(`Data source ${!source.isActive ? 'activated' : 'deactivated'}`)
       await loadDataSources()
-    } catch (error) {
-      console.error('Error updating data source:', error)
-      toast.error('Failed to update data source')
+    } catch (error: unknown) {
+      logger.error('Error updating data source', { error, dataSourceId: source.id })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to update data source')
     }
   }
 
@@ -272,9 +275,9 @@ function DataSourceModal({ source, onSave, onClose }: DataSourceModalProps) {
       }
       toast.success('Data source saved successfully')
       onSave()
-    } catch (error) {
-      console.error('Error saving data source:', error)
-      toast.error('Failed to save data source')
+    } catch (error: unknown) {
+      logger.error('Error saving data source', { error })
+      toast.error(getAxiosErrorMessage(error) || 'Failed to save data source')
     } finally {
       setIsSaving(false)
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminService } from '../services/adminService';
 import type { ApiAnalytics, PopularStock, EndpointMetrics } from '../../../shared/types/analyticsTypes';
+import { logger } from '@/shared/utils/logger';
 
 export function AnalyticsDashboard() {
   const [analytics, setAnalytics] = useState<ApiAnalytics | null>(null);
@@ -29,7 +30,7 @@ export function AnalyticsDashboard() {
       setEndpointMetrics(metrics);
     } catch (err) {
       setError('Failed to load analytics data');
-      console.error('Error loading analytics:', err);
+      logger.error('Error loading analytics', { error: err });
     } finally {
       setLoading(false);
     }
