@@ -39,6 +39,23 @@ describe('authService', () => {
       })
       expect(result).toEqual(mockResponse.data)
     })
+
+    it('should not store token when login response has no token', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({
+        data: {
+          token: '',
+          email: 'test@example.com',
+          role: 'Investor',
+        },
+      } as any)
+
+      await authService.login({
+        email: 'test@example.com',
+        password: 'password123',
+      })
+
+      expect(storage.set).not.toHaveBeenCalled()
+    })
   })
 
   describe('register', () => {
@@ -95,6 +112,18 @@ describe('authService', () => {
       )
       expect(result).toEqual(mockResponse.data)
     })
+
+    it('should encode special characters in token', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({
+        data: { success: true, message: 'ok' },
+      } as any)
+
+      await authService.verifyEmail('token+/=')
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/auth/verify-email?token=token%2B%2F%3D'
+      )
+    })
   })
 
   describe('resendVerification', () => {
@@ -115,6 +144,21 @@ describe('authService', () => {
         { email: 'test@example.com' }
       )
       expect(result).toEqual(mockResponse.data)
+    })
+  })
+
+  describe('auth state helpers', () => {
+    it('should return token from storage', () => {
+      vi.mocked(storage.get).mockReturnValue('saved-token' as never)
+      expect(authService.getToken()).toBe('saved-token')
+    })
+
+    it('should return authentication state from token presence', () => {
+      vi.mocked(storage.get).mockReturnValueOnce('saved-token' as never)
+      expect(authService.isAuthenticated()).toBe(true)
+
+      vi.mocked(storage.get).mockReturnValueOnce(null as never)
+      expect(authService.isAuthenticated()).toBe(false)
     })
   })
 })

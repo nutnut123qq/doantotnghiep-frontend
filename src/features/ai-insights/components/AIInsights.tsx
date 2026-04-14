@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Tab } from '@headlessui/react'
+import { useQuery } from '@tanstack/react-query'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -11,7 +12,7 @@ import {
   RefreshCw,
   X
 } from 'lucide-react'
-import { aiInsightsService, type AIInsight, type MarketSentiment, type AccuracyMetrics } from '../services/aiInsightsService'
+import { aiInsightsService, shouldRetryAIInsightsRequest, type AIInsight } from '../services/aiInsightsService'
 import { motion } from 'framer-motion'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 
@@ -39,52 +40,55 @@ const formatTimestamp = (timestamp: string) => {
 }
 
 export const AIInsights = () => {
-  const [insights, setInsights] = useState<AIInsight[]>([])
-  const [marketSentiment, setMarketSentiment] = useState<MarketSentiment | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('All Insights')
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null)
-  const [accuracyMetrics, setAccuracyMetrics] = useState<AccuracyMetrics | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadData()
-    
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(() => {
-      loadData(true)
-    }, 5 * 60 * 1000)
+  const insightsQuery = useQuery({
+    queryKey: ['ai-insights', 'list'],
+    queryFn: () => aiInsightsService.getInsights(),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryAIInsightsRequest,
+  })
 
-    return () => clearInterval(interval)
-  }, [])
+  const sentimentQuery = useQuery({
+    queryKey: ['ai-insights', 'sentiment'],
+    queryFn: () => aiInsightsService.getMarketSentiment(),
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: false,
+    retry: shouldRetryAIInsightsRequest,
+  })
 
-  const loadData = async (silent = false) => {
-    try {
-      if (!silent) {
-        setLoading(true)
-      } else {
-        setRefreshing(true)
-      }
-      setError(null)
+  const accuracyQuery = useQuery({
+    queryKey: ['ai-insights', 'accuracy', 300],
+    queryFn: () => aiInsightsService.getAccuracyMetrics(300),
+    staleTime: 10 * 60 * 1000,
+    retry: shouldRetryAIInsightsRequest,
+  })
 
-      const [insightsData, sentimentData] = await Promise.all([
-        aiInsightsService.getInsights(),
-        aiInsightsService.getMarketSentiment()
-      ])
+  const insights = insightsQuery.data ?? []
+  const marketSentiment = sentimentQuery.data ?? null
+  const accuracyMetrics = accuracyQuery.data ?? null
+  const loading = insightsQuery.isLoading || sentimentQuery.isLoading || accuracyQuery.isLoading
+  const refreshing = insightsQuery.isRefetching || sentimentQuery.isRefetching || accuracyQuery.isRefetching
 
-      setInsights(insightsData)
-      setMarketSentiment(sentimentData)
+  const queryError = insightsQuery.error ?? sentimentQuery.error ?? accuracyQuery.error
 
-      const metrics = await aiInsightsService.getAccuracyMetrics(300)
-      setAccuracyMetrics(metrics)
-    } catch (err: unknown) {
-      console.error('Error loading AI insights:', err)
-      const msg = getAxiosErrorMessage(err)
+  const loadData = async () => {
+    setError(null)
+    const results = await Promise.all([
+      insightsQuery.refetch(),
+      sentimentQuery.refetch(),
+      accuracyQuery.refetch(),
+    ])
+
+    const failed = results.find((result) => result.isError)
+    if (failed?.error) {
+      const msg = getAxiosErrorMessage(failed.error)
       setError(msg === 'Unknown error' ? 'Không thể tải dữ liệu AI Insights' : msg)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
     }
   }
 
@@ -176,14 +180,19 @@ export const AIInsights = () => {
     )
   }
 
-  if (error) {
+  if (error || queryError) {
+    const displayError = error ?? (() => {
+      const msg = getAxiosErrorMessage(queryError)
+      return msg === 'Unknown error' ? 'Không thể tải dữ liệu AI Insights' : msg
+    })()
+
     return (
       <div className="p-8 animate-fade-in">
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-            <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
+            <p className="text-red-600 dark:text-red-400 mb-4">{displayError}</p>
             <button
-              onClick={() => loadData()}
+              onClick={() => void loadData()}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               Thử lại
@@ -206,7 +215,7 @@ export const AIInsights = () => {
             <p className="text-slate-600 dark:text-slate-400">AI-powered market analysis and trading recommendations</p>
           </div>
           <button
-            onClick={() => loadData(true)}
+            onClick={() => void loadData()}
             disabled={refreshing}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >

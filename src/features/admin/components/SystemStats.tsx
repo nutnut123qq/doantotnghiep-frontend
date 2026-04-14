@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import { adminService } from '../services/adminService';
 import type { SystemStats as SystemStatsType } from '../../../shared/types/adminTypes';
 import { logger } from '@/shared/utils/logger';
+import {
+  Users,
+  UserCheck,
+  Shield,
+  TrendingUp,
+  Star,
+  Bell,
+  CalendarDays,
+  Newspaper,
+  RefreshCw,
+} from 'lucide-react';
 
 export function SystemStats() {
   const [stats, setStats] = useState<SystemStatsType | null>(null);
@@ -51,14 +62,14 @@ export function SystemStats() {
   }
 
   const statCards = [
-    { label: 'Total Users', value: stats.totalUsers, icon: '👥', color: 'blue' },
-    { label: 'Active Users', value: stats.activeUsers, icon: '✅', color: 'green' },
-    { label: 'Admin Users', value: stats.adminUsers, icon: '👑', color: 'purple' },
-    { label: 'Total Stocks', value: stats.totalStocks, icon: '📈', color: 'indigo' },
-    { label: 'Watchlists', value: stats.totalWatchlists, icon: '⭐', color: 'yellow' },
-    { label: 'Active Alerts', value: stats.totalAlerts, icon: '🔔', color: 'red' },
-    { label: 'Corporate Events', value: stats.totalEvents, icon: '📅', color: 'pink' },
-    { label: 'News Articles', value: stats.totalNews, icon: '📰', color: 'cyan' },
+    { label: 'Total Users', value: stats.totalUsers, icon: Users },
+    { label: 'Active Users', value: stats.activeUsers, icon: UserCheck },
+    { label: 'Admin Users', value: stats.adminUsers, icon: Shield },
+    { label: 'Total Stocks', value: stats.totalStocks, icon: TrendingUp },
+    { label: 'Watchlists', value: stats.totalWatchlists, icon: Star },
+    { label: 'Active Alerts', value: stats.totalAlerts, icon: Bell },
+    { label: 'Corporate Events', value: stats.totalEvents, icon: CalendarDays },
+    { label: 'News Articles', value: stats.totalNews, icon: Newspaper },
   ];
 
   return (
@@ -79,7 +90,9 @@ export function SystemStats() {
                   {stat.value.toLocaleString()}
                 </p>
               </div>
-              <div className="text-4xl">{stat.icon}</div>
+              <div className="text-blue-600 dark:text-blue-400">
+                <stat.icon className="h-9 w-9" />
+              </div>
             </div>
           </div>
         ))}
@@ -93,9 +106,10 @@ export function SystemStats() {
           </span>
           <button
             onClick={loadStats}
-            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors inline-flex items-center gap-2"
           >
-            🔄 Refresh
+            <RefreshCw className="h-4 w-4" />
+            Refresh
           </button>
         </div>
       </div>

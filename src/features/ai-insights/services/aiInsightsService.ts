@@ -1,4 +1,5 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
+import { isAxiosError } from 'axios'
 
 export interface AIInsight {
   id: string
@@ -10,6 +11,7 @@ export interface AIInsight {
   confidence: number
   timestamp: string
   generatedAt?: string
+  isDeleted?: boolean
   reasoning: string[]
   targetPrice?: number
   stopLoss?: number
@@ -42,6 +44,20 @@ export interface AccuracyMetrics {
   tPlus1: { eligibleInsights: number; correctPredictions: number; falseSignals: number; hitRate: number }
   tPlus5: { eligibleInsights: number; correctPredictions: number; falseSignals: number; hitRate: number }
   tPlus20: { eligibleInsights: number; correctPredictions: number; falseSignals: number; hitRate: number }
+}
+
+export const shouldRetryAIInsightsRequest = (failureCount: number, error: unknown): boolean => {
+  if (isAxiosError(error)) {
+    const status = error.response?.status
+
+    // Avoid retry storms when backend is already rate-limiting.
+    if (status === 429) return false
+
+    // 4xx requests are usually not transient for these endpoints.
+    if (typeof status === 'number' && status >= 400 && status < 500) return false
+  }
+
+  return failureCount < 1
 }
 
 export const aiInsightsService = {

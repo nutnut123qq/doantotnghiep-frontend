@@ -17,7 +17,13 @@ const Watchlist = lazy(() => import('@/features/watchlist/components/Watchlist')
 const AIInsights = lazy(() => import('@/features/ai-insights/components/AIInsights').then(m => ({ default: m.AIInsights })))
 const EventsFeed = lazy(() => import('@/features/events/components/EventsFeed'))
 const EventsCalendar = lazy(() => import('@/features/events/components/EventsCalendar'))
+const AdminLayout = lazy(() => import('@/features/admin/components/AdminLayout').then(m => ({ default: m.AdminLayout })))
 const AdminDashboard = lazy(() => import('@/features/admin/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
+const UserManagement = lazy(() => import('@/features/admin/components/UserManagement').then(m => ({ default: m.UserManagement })))
+const NewsManagement = lazy(() => import('@/features/admin/components/NewsManagement').then(m => ({ default: m.NewsManagement })))
+const FinanceManagement = lazy(() => import('@/features/admin/components/FinanceManagement').then(m => ({ default: m.FinanceManagement })))
+const EventsManagement = lazy(() => import('@/features/admin/components/EventsManagement').then(m => ({ default: m.EventsManagement })))
+const AIInsightsManagement = lazy(() => import('@/features/admin/components/AIInsightsManagement').then(m => ({ default: m.AIInsightsManagement })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
 const ChartPage = lazy(() => import('@/features/chart/components/ChartPage').then(m => ({ default: m.ChartPage })))
@@ -108,10 +114,60 @@ export const router = createBrowserRouter(
           element: (
             <RoleProtectedRoute allowedRoles={['Admin']}>
               <Suspense fallback={<LoadingFallback />}>
-                <AdminDashboard />
+                <AdminLayout />
               </Suspense>
             </RoleProtectedRoute>
           ),
+          children: [
+            {
+              index: true,
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <AdminDashboard />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'users',
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <UserManagement />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'news',
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <NewsManagement />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'finance',
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <FinanceManagement />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'events',
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <EventsManagement />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'ai-insights',
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <AIInsightsManagement />
+                </Suspense>
+              ),
+            },
+          ],
         },
         {
           path: 'settings',

@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
 import { ErrorState } from '@/shared/components/ErrorState'
-import { aiInsightsService, type AIInsight } from '@/features/ai-insights/services/aiInsightsService'
+import { aiInsightsService, shouldRetryAIInsightsRequest, type AIInsight } from '@/features/ai-insights/services/aiInsightsService'
 import { watchlistService } from '@/features/watchlist/services/watchlistService'
 import { notify } from '@/shared/utils/notify'
 
@@ -47,6 +47,7 @@ export const AIInsightsPanel = ({ symbol }: AIInsightsPanelProps) => {
     queryFn: () => aiInsightsService.getInsights({ symbol }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!symbol,
+    retry: shouldRetryAIInsightsRequest,
   })
 
   const { data: watchlists = [] } = useQuery({

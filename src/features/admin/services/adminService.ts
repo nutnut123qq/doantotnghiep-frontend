@@ -14,8 +14,47 @@ import type {
   PopularStock,
   EndpointMetrics
 } from '../../../shared/types/analyticsTypes';
-import type { QueryParams } from '../../../shared/types/common.types';
+import type { PaginatedResponse, QueryParams } from '../../../shared/types/common.types';
 import type { News } from '../../dashboard/services/newsService';
+
+export interface AdminAIInsight {
+  id: string;
+  symbol: string;
+  name?: string;
+  type: string;
+  title: string;
+  description: string;
+  confidence: number;
+  generatedAt: string;
+  isDeleted: boolean;
+}
+
+export interface AdminFinancialReport {
+  id: string;
+  tickerId: string;
+  symbol?: string;
+  reportType: string;
+  year: number;
+  quarter?: number;
+  reportDate: string;
+  createdAt: string;
+  isDeleted: boolean;
+}
+
+export interface AdminCorporateEvent {
+  id: string;
+  stockTickerId: string;
+  symbol?: string;
+  eventType: number;
+  eventDate: string;
+  title: string;
+  description?: string;
+  sourceUrl?: string;
+  status: number;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted: boolean;
+}
 
 class AdminService {
   private baseUrl = '/Admin';
@@ -134,10 +173,10 @@ class AdminService {
   /**
    * List all news including hidden (admin only)
    */
-  async getAdminNews(page: number = 1, pageSize: number = 20, tickerId?: string): Promise<News[]> {
+  async getAdminNews(page: number = 1, pageSize: number = 10, tickerId?: string): Promise<PaginatedResponse<News>> {
     const params: Record<string, string | number> = { page, pageSize };
     if (tickerId) params.tickerId = tickerId;
-    const response = await apiClient.get<News[]>(`${this.baseUrl}/news`, { params });
+    const response = await apiClient.get<PaginatedResponse<News>>(`${this.baseUrl}/news`, { params });
     return response.data;
   }
 
@@ -146,6 +185,59 @@ class AdminService {
    */
   async setNewsDeleted(id: string, isDeleted: boolean): Promise<void> {
     await apiClient.patch(`${this.baseUrl}/news/${id}`, { isDeleted });
+  }
+
+  async getAdminFinancialReports(page: number = 1, pageSize: number = 10, symbol?: string): Promise<PaginatedResponse<AdminFinancialReport>> {
+    const params: Record<string, string | number> = { page, pageSize };
+    if (symbol) params.symbol = symbol;
+    const response = await apiClient.get<PaginatedResponse<AdminFinancialReport>>(`${this.baseUrl}/financial-reports`, { params });
+    return response.data;
+  }
+
+  async setFinancialReportDeleted(id: string, isDeleted: boolean): Promise<void> {
+    await apiClient.patch(`${this.baseUrl}/financial-reports/${id}`, { isDeleted });
+  }
+
+  async getAdminCorporateEvents(
+    page: number = 1,
+    pageSize: number = 10,
+    filters?: { symbol?: string; eventType?: number; status?: number }
+  ): Promise<PaginatedResponse<AdminCorporateEvent>> {
+    const params: Record<string, string | number> = { page, pageSize };
+    if (filters?.symbol) params.symbol = filters.symbol;
+    if (filters?.eventType !== undefined) params.eventType = filters.eventType;
+    if (filters?.status !== undefined) params.status = filters.status;
+    const response = await apiClient.get<PaginatedResponse<AdminCorporateEvent>>(`${this.baseUrl}/corporate-events`, { params });
+    return response.data;
+  }
+
+  async setCorporateEventDeleted(id: string, isDeleted: boolean): Promise<void> {
+    await apiClient.patch(`${this.baseUrl}/corporate-events/${id}`, { isDeleted });
+  }
+
+  async getAIInsightsAdmin(filters?: {
+    type?: string;
+    symbol?: string;
+    includeDismissed?: boolean;
+    includeDeleted?: boolean;
+  }): Promise<AdminAIInsight[]> {
+    const params: Record<string, string | boolean> = {};
+    if (filters?.type) params.type = filters.type;
+    if (filters?.symbol) params.symbol = filters.symbol;
+    if (filters?.includeDismissed !== undefined) params.includeDismissed = filters.includeDismissed;
+    params.includeDeleted = filters?.includeDeleted ?? true;
+
+    const response = await apiClient.get<AdminAIInsight[]>('/AIInsights', { params });
+    return response.data;
+  }
+
+  async toggleAIInsightDeleted(id: string, isDeleted: boolean): Promise<void> {
+    await apiClient.patch(`/AIInsights/${id}/deleted`, { isDeleted });
+  }
+
+  async generateAIInsight(symbol: string): Promise<AdminAIInsight> {
+    const response = await apiClient.post<AdminAIInsight>('/AIInsights/generate', { symbol });
+    return response.data;
   }
 }
 

@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/shared/contexts/AuthContext'
 import { ThemeProvider } from '@/shared/contexts/ThemeContext'
@@ -13,8 +14,17 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: 3,
+      retry: (failureCount, error) => {
+        if (isAxiosError(error)) {
+          const status = error.response?.status
+          if (status === 429) return false
+          if (typeof status === 'number' && status >= 400 && status < 500) return false
+        }
+
+        return failureCount < 2
+      },
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     },
   },
 })
