@@ -1,6 +1,20 @@
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '')
+
+const viteApiUrl = import.meta.env.VITE_API_URL
+const viteSignalRUrl = import.meta.env.VITE_SIGNALR_URL
+const nextPublicApiBaseUrl = import.meta.env.NEXT_PUBLIC_API_BASE_URL
+
+const apiBaseUrlFromNextPublic = nextPublicApiBaseUrl
+  ? `${trimTrailingSlash(nextPublicApiBaseUrl)}/api`
+  : undefined
+
+const signalRUrlFromNextPublic = nextPublicApiBaseUrl
+  ? `${trimTrailingSlash(nextPublicApiBaseUrl)}/hubs`
+  : undefined
+
 export const config = {
-  apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  signalRUrl: import.meta.env.VITE_SIGNALR_URL || 'http://localhost:5000/hubs',
+  apiUrl: viteApiUrl || apiBaseUrlFromNextPublic || 'http://localhost:5000/api',
+  signalRUrl: viteSignalRUrl || signalRUrlFromNextPublic || 'http://localhost:5000/hubs',
 }
 
 // Dev-only: Warn if apiUrl looks incorrect
