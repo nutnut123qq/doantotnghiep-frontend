@@ -7,6 +7,11 @@ import type {
   RegisterResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  VerifyEmailResponse,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from '../types/auth.types'
 
 export const authService = {
@@ -37,11 +42,16 @@ export const authService = {
     return !!this.getToken()
   },
 
-  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiClient.post<{ success: boolean; message: string }>(
+  async verifyEmail(token: string): Promise<VerifyEmailResponse> {
+    const response = await apiClient.post<VerifyEmailResponse>(
       `/auth/verify-email?token=${encodeURIComponent(token)}`
     )
-    return response.data
+    const data = response.data
+    if (data.success && data.token && data.email && data.role) {
+      storage.set('token', data.token)
+      storage.set('user', { email: data.email, role: data.role })
+    }
+    return data
   },
 
   async resendVerification(email: string): Promise<{ success: boolean; message: string }> {
@@ -54,6 +64,16 @@ export const authService = {
 
   async changePassword(payload: ChangePasswordRequest): Promise<ChangePasswordResponse> {
     const response = await apiClient.post<ChangePasswordResponse>('/auth/change-password', payload)
+    return response.data
+  },
+
+  async forgotPassword(payload: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+    const response = await apiClient.post<ForgotPasswordResponse>('/auth/forgot-password', payload)
+    return response.data
+  },
+
+  async resetPassword(payload: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+    const response = await apiClient.post<ResetPasswordResponse>('/auth/reset-password', payload)
     return response.data
   },
 }

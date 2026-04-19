@@ -4,9 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { WorkspaceChat } from './WorkspaceChat'
 import { SharedWatchlists } from './SharedWatchlists'
-import { SharedLayouts } from './SharedLayouts'
 import { MemberManagement } from './MemberManagement'
-import { Users, MessageSquare, Star, Layout } from 'lucide-react'
+import { Users, MessageSquare, Star } from 'lucide-react'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useWorkspaces, useWorkspace } from '../hooks/useWorkspace'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
@@ -73,7 +72,7 @@ export const WorkspacePage = () => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="chat" className="flex items-center space-x-2">
               <MessageSquare className="h-4 w-4" />
               <span>Chat</span>
@@ -81,10 +80,6 @@ export const WorkspacePage = () => {
             <TabsTrigger value="watchlists" className="flex items-center space-x-2">
               <Star className="h-4 w-4" />
               <span>Watchlists</span>
-            </TabsTrigger>
-            <TabsTrigger value="layouts" className="flex items-center space-x-2">
-              <Layout className="h-4 w-4" />
-              <span>Layouts</span>
             </TabsTrigger>
             <TabsTrigger value="members" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
@@ -98,10 +93,6 @@ export const WorkspacePage = () => {
 
           <TabsContent value="watchlists" className="mt-6">
             <SharedWatchlists workspaceId={workspace.id} canEdit={isAdmin} />
-          </TabsContent>
-
-          <TabsContent value="layouts" className="mt-6">
-            <SharedLayouts workspaceId={workspace.id} canEdit={isAdmin} />
           </TabsContent>
 
           <TabsContent value="members" className="mt-6">

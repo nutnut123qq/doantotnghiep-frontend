@@ -53,7 +53,7 @@ export const TickerSearch = ({ className, onSelect }: TickerSearchProps) => {
     if (onSelect) {
       onSelect(symbol)
     } else {
-      // Default: navigate to chart page
+      // Default: open dashboard with selected symbol
       navigate(`/?symbol=${symbol}`)
     }
     setOpen(false)

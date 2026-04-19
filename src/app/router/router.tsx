@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate, useSearchParams } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { ProtectedRoute } from '@/shared/components/ProtectedRoute'
 import { RoleProtectedRoute } from '@/shared/components/RoleProtectedRoute'
@@ -6,17 +6,18 @@ import { Layout } from '@/shared/components/Layout'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { VerifyEmailPage } from '@/features/auth/components/VerifyEmailPage'
+import { CheckEmailPage } from '@/features/auth/components/CheckEmailPage'
+import { ForgotPasswordForm } from '@/features/auth/components/ForgotPasswordForm'
+import { ResetPasswordForm } from '@/features/auth/components/ResetPasswordForm'
 import { LoadingFallback } from '@/shared/components/LoadingFallback'
 
 // Lazy load heavy components for code splitting
 const Dashboard = lazy(() => import('@/features/dashboard/components/Dashboard').then(m => ({ default: m.Dashboard })))
-const CustomizableDashboard = lazy(() => import('@/features/dashboard/components/CustomizableDashboard').then(m => ({ default: m.CustomizableDashboard })))
 const TradingBoard = lazy(() => import('@/features/trading-board/components/TradingBoard').then(m => ({ default: m.TradingBoard })))
 const Portfolio = lazy(() => import('@/features/portfolio/components/Portfolio').then(m => ({ default: m.Portfolio })))
 const Watchlist = lazy(() => import('@/features/watchlist/components/Watchlist').then(m => ({ default: m.Watchlist })))
 const AIInsights = lazy(() => import('@/features/ai-insights/components/AIInsights').then(m => ({ default: m.AIInsights })))
 const EventsFeed = lazy(() => import('@/features/events/components/EventsFeed'))
-const EventsCalendar = lazy(() => import('@/features/events/components/EventsCalendar'))
 const AdminLayout = lazy(() => import('@/features/admin/components/AdminLayout').then(m => ({ default: m.AdminLayout })))
 const AdminDashboard = lazy(() => import('@/features/admin/components/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
 const UserManagement = lazy(() => import('@/features/admin/components/UserManagement').then(m => ({ default: m.UserManagement })))
@@ -26,7 +27,6 @@ const EventsManagement = lazy(() => import('@/features/admin/components/EventsMa
 const AIInsightsManagement = lazy(() => import('@/features/admin/components/AIInsightsManagement').then(m => ({ default: m.AIInsightsManagement })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
-const ChartPage = lazy(() => import('@/features/chart/components/ChartPage').then(m => ({ default: m.ChartPage })))
 const WorkspacePage = lazy(() => import('@/features/workspace/components/WorkspacePage').then(m => ({ default: m.WorkspacePage })))
 const AnalysisReportsPage = lazy(() =>
   import('@/features/analysis-reports/components/AnalysisReportsPage').then(m => ({ default: m.AnalysisReportsPage }))
@@ -34,6 +34,17 @@ const AnalysisReportsPage = lazy(() =>
 const AnalysisReportDetailPage = lazy(() =>
   import('@/features/analysis-reports/components/AnalysisReportDetailPage').then(m => ({ default: m.AnalysisReportDetailPage }))
 )
+
+/** Old `/chart?symbol=` URLs redirect to dashboard with the same symbol. */
+function ChartLegacyRedirect() {
+  const [searchParams] = useSearchParams()
+  const raw = searchParams.get('symbol')
+  const symbol = raw?.trim()
+  if (symbol) {
+    return <Navigate to={`/?symbol=${encodeURIComponent(symbol.toUpperCase())}`} replace />
+  }
+  return <Navigate to="/" replace />
+}
 
 export const router = createBrowserRouter(
   [
@@ -47,14 +58,6 @@ export const router = createBrowserRouter(
       children: [
         {
           index: true,
-          element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <CustomizableDashboard />
-            </Suspense>
-          ),
-        },
-        {
-          path: 'dashboard-classic',
           element: (
             <Suspense fallback={<LoadingFallback />}>
               <Dashboard />
@@ -103,11 +106,7 @@ export const router = createBrowserRouter(
         },
         {
           path: 'events/calendar',
-          element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <EventsCalendar />
-            </Suspense>
-          ),
+          element: <Navigate to="/events" replace />,
         },
         {
           path: 'admin',
@@ -187,11 +186,7 @@ export const router = createBrowserRouter(
         },
         {
           path: 'chart',
-          element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <ChartPage />
-            </Suspense>
-          ),
+          element: <ChartLegacyRedirect />,
         },
         {
           path: 'workspace',
@@ -230,6 +225,18 @@ export const router = createBrowserRouter(
     {
       path: '/verify-email',
       element: <VerifyEmailPage />,
+    },
+    {
+      path: '/check-email',
+      element: <CheckEmailPage />,
+    },
+    {
+      path: '/forgot-password',
+      element: <ForgotPasswordForm />,
+    },
+    {
+      path: '/reset-password',
+      element: <ResetPasswordForm />,
     },
   ]
 )

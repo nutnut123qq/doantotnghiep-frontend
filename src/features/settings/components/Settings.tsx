@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Switch } from '@headlessui/react'
-import {
-  UserIcon,
-  BellIcon,
-  LockClosedIcon,
-} from '@heroicons/react/24/outline'
+import { BellIcon, LockClosedIcon } from '@heroicons/react/24/outline'
 import { NotificationChannelsSettings } from './NotificationChannelsSettings'
 import { ChangePasswordForm } from './ChangePasswordForm'
 import { apiClient } from '@/infrastructure/api/apiClient'
@@ -69,42 +65,6 @@ export const Settings = () => {
 
         {/* Settings Sections */}
         <div className="space-y-6">
-          {/* Profile Settings */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center space-x-2">
-                <UserIcon className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-                <span>Profile Settings</span>
-              </h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                <input
-                  type="email"
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="john@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="+84 123 456 789"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Notification Settings */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-slate-200 dark:border-slate-700">

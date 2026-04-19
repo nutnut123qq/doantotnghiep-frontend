@@ -20,14 +20,6 @@ export interface Workspace {
       tickers: Array<{ symbol: string; name: string }>
     }
   }>
-  layouts?: Array<{
-    id: string
-    layout: {
-      id: string
-      name: string
-      configuration: string
-    }
-  }>
   messages?: WorkspaceMessage[]
 }
 
@@ -51,17 +43,6 @@ export interface SharedWatchlistItem {
     id: string
     name: string
     tickers: Array<{ symbol: string; name: string }>
-  }
-}
-
-export interface SharedLayoutItem {
-  id: string
-  layoutId: string
-  workspaceId?: string
-  layout?: {
-    id: string
-    name: string
-    configuration: string
   }
 }
 
@@ -185,28 +166,6 @@ export const workspaceService = {
    */
   async removeWatchlist(workspaceId: string, watchlistId: string): Promise<void> {
     await apiClient.delete(`/Workspace/${workspaceId}/watchlists/${watchlistId}`)
-  },
-
-  /**
-   * Get shared layouts in workspace
-   */
-  async getSharedLayouts(workspaceId: string): Promise<SharedLayoutItem[]> {
-    const response = await apiClient.get<SharedLayoutItem[]>(`/Workspace/${workspaceId}/layouts`)
-    return response.data
-  },
-
-  /**
-   * Add layout to workspace
-   */
-  async addLayout(workspaceId: string, layoutId: string): Promise<void> {
-    await apiClient.post(`/Workspace/${workspaceId}/layouts`, { layoutId })
-  },
-
-  /**
-   * Remove layout from workspace
-   */
-  async removeLayout(workspaceId: string, layoutId: string): Promise<void> {
-    await apiClient.delete(`/Workspace/${workspaceId}/layouts/${layoutId}`)
   },
 
   /**

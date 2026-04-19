@@ -36,14 +36,4 @@ test.describe('Trading Board', () => {
     await expect(page.locator('table')).toBeVisible()
   })
 
-  test('should open column customization modal', async ({ page }) => {
-    // Wait for page to load
-    await page.waitForSelector('h1', { timeout: 10000 })
-
-    // Click customize columns button (using icon or text)
-    await page.getByRole('button', { name: /Customize|Settings/i }).first().click()
-
-    // Modal should be visible
-    await expect(page.getByRole('dialog')).toBeVisible()
-  })
 })

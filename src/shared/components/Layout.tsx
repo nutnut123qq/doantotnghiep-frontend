@@ -127,12 +127,28 @@ export const Layout = () => {
                 <div className="hidden md:flex items-center space-x-4">
                   {/* Dark Mode Toggle */}
                   <div className="flex items-center space-x-2">
-                    <Sun className="h-4 w-4 text-[hsl(var(--muted))]" />
+                    <Sun
+                      className={cn(
+                        'h-4 w-4',
+                        theme === 'light'
+                          ? 'text-[hsl(var(--text))]'
+                          : 'text-[hsl(var(--text)/0.72)]',
+                      )}
+                      aria-hidden
+                    />
                     <Switch
                       checked={theme === 'dark'}
                       onCheckedChange={toggleTheme}
                     />
-                    <Moon className="h-4 w-4 text-[hsl(var(--muted))]" />
+                    <Moon
+                      className={cn(
+                        'h-4 w-4',
+                        theme === 'dark'
+                          ? 'text-[hsl(var(--text))]'
+                          : 'text-[hsl(var(--text)/0.72)]',
+                      )}
+                      aria-hidden
+                    />
                   </div>
 
                   {/* User Menu */}

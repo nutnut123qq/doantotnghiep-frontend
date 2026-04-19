@@ -20,7 +20,6 @@ export interface Alert {
 
 export interface CreateAlertRequest {
   symbol?: string
-  naturalLanguageInput?: string
   type?: AlertType
   condition?: string
   threshold?: number
@@ -39,14 +38,6 @@ export interface CreateAlertResponse {
 
 export interface GetAlertsResponse {
   alerts: Alert[]
-}
-
-export interface ParsedAlert {
-  symbol: string
-  type: string
-  operator: string
-  value: number
-  timeframe?: string
 }
 
 export const AlertTypeLabels: Record<AlertType, string> = {

@@ -8,7 +8,6 @@ import {
   type CreateAlertRequest,
   type CreateAlertResponse,
   type GetAlertsResponse,
-  type ParsedAlert,
 } from '../types/alert.types'
 
 function mapAlertFromApi(a: Alert): Alert {
@@ -39,17 +38,7 @@ export const alertService = {
   },
 
   /**
-   * Parse natural language alert input without creating the alert
-   */
-  async parseAlert(naturalLanguageInput: string): Promise<ParsedAlert> {
-    const response = await apiClient.post<ParsedAlert>('/Alert/parse', {
-      naturalLanguageInput,
-    })
-    return response.data
-  },
-
-  /**
-   * Create a new alert (with NLP support)
+   * Create a new alert
    */
   async createAlert(data: CreateAlertRequest): Promise<CreateAlertResponse> {
     const type = data.type ?? AlertType.Price
@@ -59,7 +48,6 @@ export const alertService = {
         : priceThresholdUserToApi(type, data.threshold)
     const response = await apiClient.post<CreateAlertResponse>('/Alert', {
       symbol: data.symbol,
-      naturalLanguageInput: data.naturalLanguageInput,
       type: data.type,
       condition: data.condition,
       threshold,

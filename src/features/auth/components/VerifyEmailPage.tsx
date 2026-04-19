@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { authService } from '../services/authService'
 import { useToast } from '@/shared/hooks/useToast'
+import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,11 +12,17 @@ export const VerifyEmailPage = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const toast = useToast()
+  const { setUser } = useAuthContext()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
+  const [autoLogin, setAutoLogin] = useState(false)
+  const hasRunRef = useRef(false)
 
   useEffect(() => {
+    if (hasRunRef.current) return
+    hasRunRef.current = true
+
     const token = searchParams.get('token')
     if (!token) {
       setStatus('error')
@@ -29,6 +36,13 @@ export const VerifyEmailPage = () => {
         if (result.success) {
           setStatus('success')
           setMessage(result.message || 'Email verified successfully!')
+
+          if (result.token && result.email && result.role) {
+            setAutoLogin(true)
+            setUser({ email: result.email, role: result.role })
+            const target = result.role === 'Admin' ? '/admin' : '/'
+            setTimeout(() => navigate(target, { replace: true }), 1200)
+          }
         } else {
           setStatus('error')
           setMessage(result.message || 'Failed to verify email.')
@@ -45,7 +59,7 @@ export const VerifyEmailPage = () => {
     }
 
     verifyEmail()
-  }, [searchParams])
+  }, [searchParams, navigate, setUser])
 
   const handleResend = async () => {
     if (!email) {
@@ -56,7 +70,7 @@ export const VerifyEmailPage = () => {
     try {
       const result = await authService.resendVerification(email)
       if (result.success) {
-        toast.success('Verification email sent! Please check your inbox.')
+        toast.success(result.message || 'If an account exists with this email, check your inbox.')
       } else {
         toast.error(result.message || 'Failed to resend verification email')
       }
@@ -82,7 +96,7 @@ export const VerifyEmailPage = () => {
           </CardTitle>
           <CardDescription>
             {status === 'loading' && 'Verifying your email address...'}
-            {status === 'success' && 'Your email has been verified!'}
+            {status === 'success' && (autoLogin ? 'Signing you in...' : 'Your email has been verified!')}
             {status === 'error' && 'Verification failed'}
           </CardDescription>
         </CardHeader>
@@ -98,9 +112,16 @@ export const VerifyEmailPage = () => {
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
               <CheckCircleIcon className="h-16 w-16 text-green-600" />
               <p className="text-sm text-center text-muted-foreground">{message}</p>
-              <Button onClick={() => navigate('/login')} className="w-full">
-                Go to Login
-              </Button>
+              {autoLogin ? (
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
+                  Redirecting to your workspace...
+                </div>
+              ) : (
+                <Button onClick={() => navigate('/login')} className="w-full">
+                  Go to Login
+                </Button>
+              )}
             </div>
           )}
 

@@ -4,6 +4,7 @@ import { financialReportService, FinancialReport, FinancialMetrics, QASource } f
 import { DocumentTextIcon, ChatBubbleLeftRightIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 import { ErrorState } from '@/shared/components/ErrorState'
 import { notify } from '@/shared/utils/notify'
+import { renderMarkdownAnalysis } from '../utils/markdownParser'
 
 function financialAskErrorMessage(error: unknown): string {
   const fallback = 'Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại.'
@@ -319,9 +320,13 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                               </span>
                             )}
                           </p>
-                          <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap">
-                            {answer}
-                          </p>
+                          <div className="text-sm text-blue-800 dark:text-blue-300">
+                            {renderMarkdownAnalysis(answer, {
+                              headingClassName:
+                                'mt-3 mb-1 font-semibold text-blue-900 dark:text-blue-200 first:mt-0',
+                              boldColorClass: 'text-blue-900 dark:text-blue-200',
+                            })}
+                          </div>
                         </div>
                         
                         {/* Sources section with clickable URLs */}

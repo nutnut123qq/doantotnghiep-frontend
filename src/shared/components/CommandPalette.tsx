@@ -77,7 +77,7 @@ export const CommandPalette = () => {
         navigate('/events')
         setOpen(false)
       },
-      keywords: ['events', 'calendar', 'corporate'],
+      keywords: ['events', 'corporate', 'sự kiện'],
       category: 'Navigation',
     },
     {

@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react'
-import { forecastService, ForecastResult } from '../services/forecastService'
+import { useState, useEffect, useRef } from 'react'
+import {
+  forecastService,
+  ForecastResult,
+  ForecastJobStatus,
+  ForecastPollAbortedError,
+  ForecastPollTimeoutError,
+} from '../services/forecastService'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
+import { forecastBusy } from '../utils/forecastBusy'
 import {
   SparklesIcon,
   ArrowTrendingUpIcon,
@@ -10,119 +17,108 @@ import {
   LightBulbIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline'
-import { parseMarkdownBold } from '../utils/markdownParser'
+import { parseMarkdownBold, renderMarkdownAnalysis } from '../utils/markdownParser'
 import { logger } from '@/shared/utils/logger'
 
 interface AIForecastProps {
   symbol: string
 }
 
-const renderAnalysisContent = (text: string) => {
-  const lines = text.split(/\r?\n/)
-  const elements: JSX.Element[] = []
-  let i = 0
-  let key = 0
-
-  while (i < lines.length) {
-    const line = lines[i].trim()
-
-    // Ignore markdown separators for cleaner UI.
-    if (!line || /^---+$/.test(line)) {
-      i++
-      continue
-    }
-
-    if (/^#{1,6}\s+/.test(line)) {
-      const headingText = line.replace(/^#{1,6}\s+/, '')
-      elements.push(
-        <h5 key={`h-${key++}`} className="mt-3 mb-1 font-semibold text-purple-900 dark:text-purple-200">
-          {parseMarkdownBold(headingText, 'text-purple-900 dark:text-purple-200')}
-        </h5>
-      )
-      i++
-      continue
-    }
-
-    if (/^[-*]\s+/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
-        items.push(lines[i].trim().replace(/^[-*]\s+/, ''))
-        i++
-      }
-      elements.push(
-        <ul key={`ul-${key++}`} className="list-disc ml-5 space-y-1">
-          {items.map((item, idx) => (
-            <li key={`uli-${idx}`}>
-              {parseMarkdownBold(item, 'text-purple-900 dark:text-purple-200')}
-            </li>
-          ))}
-        </ul>
-      )
-      continue
-    }
-
-    if (/^\d+\.\s+/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
-        items.push(lines[i].trim().replace(/^\d+\.\s+/, ''))
-        i++
-      }
-      elements.push(
-        <ol key={`ol-${key++}`} className="list-decimal ml-5 space-y-1">
-          {items.map((item, idx) => (
-            <li key={`oli-${idx}`}>
-              {parseMarkdownBold(item, 'text-purple-900 dark:text-purple-200')}
-            </li>
-          ))}
-        </ol>
-      )
-      continue
-    }
-
-    elements.push(
-      <p key={`p-${key++}`}>
-        {parseMarkdownBold(line, 'text-purple-900 dark:text-purple-200')}
-      </p>
-    )
-    i++
-  }
-
-  if (elements.length === 0) {
-    return <p>{text}</p>
-  }
-
-  return <div className="space-y-2">{elements}</div>
-}
+const renderAnalysisContent = (text: string) => renderMarkdownAnalysis(text)
 
 export const AIForecast = ({ symbol }: AIForecastProps) => {
   const [forecast, setForecast] = useState<ForecastResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasRequested, setHasRequested] = useState(false)
+  const [jobStatus, setJobStatus] = useState<ForecastJobStatus | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
+  const elapsedTimerRef = useRef<number | null>(null)
 
-  // Reset forecast when symbol changes (but don't auto-load)
+  const stopElapsedTimer = () => {
+    if (elapsedTimerRef.current !== null) {
+      window.clearInterval(elapsedTimerRef.current)
+      elapsedTimerRef.current = null
+    }
+  }
+
+  // Reset forecast when symbol changes (but don't auto-load). Also cancel any
+  // in-flight polling job so we don't keep hammering the API for the old symbol.
   useEffect(() => {
     setForecast(null)
     setError(null)
     setHasRequested(false)
+    setJobStatus(null)
+    setElapsedSeconds(0)
+    stopElapsedTimer()
+    abortRef.current?.abort()
+    abortRef.current = null
+  }, [symbol])
+
+  // Cleanup on unmount — prevent setState-on-unmounted warnings and release busy flag.
+  useEffect(() => {
+    return () => {
+      stopElapsedTimer()
+      abortRef.current?.abort()
+      forecastBusy.release(symbol)
+    }
   }, [symbol])
 
   const loadForecast = async () => {
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    setLoading(true)
+    setError(null)
+    setHasRequested(true)
+    setJobStatus('queued')
+    setElapsedSeconds(0)
+    stopElapsedTimer()
+    elapsedTimerRef.current = window.setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1)
+    }, 1000)
+    forecastBusy.acquire(symbol)
+
     try {
-      setLoading(true)
-      setError(null)
-      setHasRequested(true)
-      const data = await forecastService.getForecast(symbol, 'short')
+      const data = await forecastService.pollForecast(symbol, {
+        timeHorizon: 'short',
+        signal: controller.signal,
+        onStatus: (status) => {
+          setJobStatus(status)
+        },
+      })
+      if (controller.signal.aborted) return
       setForecast(data)
+      setJobStatus('completed')
     } catch (err: unknown) {
+      if (err instanceof ForecastPollAbortedError || controller.signal.aborted) {
+        return
+      }
       logger.error('Error loading AI forecast', { error: err, symbol })
-      const msg = getAxiosErrorMessage(err)
-      setError(msg === 'Unknown error' ? 'Không thể tải dự báo. Vui lòng kiểm tra kết nối AI service.' : msg)
-      setForecast(null) // Clear forecast data on error
+      if (err instanceof ForecastPollTimeoutError) {
+        setError('Dịch vụ phân tích LangGraph xử lý quá lâu. Vui lòng thử lại sau ít phút.')
+      } else {
+        const msg = getAxiosErrorMessage(err) || (err instanceof Error ? err.message : 'Unknown error')
+        setError(msg === 'Unknown error' ? 'Không thể tải dự báo. Vui lòng kiểm tra kết nối AI service.' : msg)
+      }
+      setForecast(null)
+      setJobStatus('failed')
     } finally {
+      if (abortRef.current === controller) {
+        abortRef.current = null
+      }
+      stopElapsedTimer()
       setLoading(false)
+      forecastBusy.release(symbol)
     }
   }
+
+  const statusMessage = (() => {
+    if (!loading) return ''
+    return `Đang phân tích... (${elapsedSeconds}s)`
+  })()
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -137,21 +133,26 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 w-full overflow-hidden flex flex-col">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-6 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="h-6 w-6 bg-muted rounded animate-pulse"></div>
-            <div className="h-6 w-32 bg-muted rounded animate-pulse"></div>
+            <SparklesIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <h3 className="text-lg font-semibold text-card-foreground">Dự báo AI - {symbol}</h3>
           </div>
           <div className="flex items-center space-x-2">
-            {/* Refresh Button Skeleton */}
-            <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
+            <ArrowPathIcon className="h-5 w-5 text-purple-500 animate-spin" />
           </div>
         </div>
 
+        {statusMessage && (
+          <div className="mb-4 px-3 py-2 rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 text-xs text-purple-800 dark:text-purple-200 flex-shrink-0">
+            {statusMessage}
+          </div>
+        )}
+
         {/* Scrollable Content Skeleton */}
-        <div className="overflow-y-auto overflow-x-hidden flex-1 pr-2 custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
           {/* Forecast Summary Skeleton - 3 cards grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {/* Trend Card Skeleton */}
@@ -241,12 +242,12 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
   if (!hasRequested) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 w-full overflow-hidden flex flex-col">
         <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <SparklesIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Dự báo AI - {symbol}</h3>
         </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <div className="text-center py-8">
           <SparklesIcon className="h-12 w-12 text-purple-300 dark:text-purple-600 mx-auto mb-4" />
           <p className="text-muted-foreground mb-6">Nhấn nút bên dưới để tạo dự báo AI cho {symbol}</p>
@@ -275,12 +276,12 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
   if (error || !forecast) {
     return (
-      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
+      <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 w-full overflow-hidden flex flex-col">
         <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <SparklesIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
           <h3 className="text-lg font-semibold text-card-foreground">Dự báo AI - {symbol}</h3>
         </div>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <div className="text-center py-8 text-muted-foreground">
             <p className="mb-4">{error || 'Không có dữ liệu'}</p>
             <button
@@ -307,7 +308,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
   }
 
   return (
-    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full overflow-hidden flex flex-col">
+    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 w-full overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center space-x-3">
@@ -329,7 +330,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
       </div>
 
       {/* Scrollable Content */}
-      <div className="overflow-y-auto overflow-x-hidden flex-1 pr-2 custom-scrollbar">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
         {/* Forecast Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Trend */}

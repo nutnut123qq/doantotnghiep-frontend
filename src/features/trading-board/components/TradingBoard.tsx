@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { watchlistService } from '@/features/watchlist/services/watchlistService'
 import {
@@ -11,18 +10,10 @@ import {
   flexRender,
   SortingState,
   ColumnFiltersState,
-  VisibilityState,
 } from '@tanstack/react-table'
 import { useTradingBoard } from '../hooks/useTradingBoard'
-import { ColumnCustomizationModal } from './ColumnCustomizationModal'
-import { columnPreferencesService } from '../services/columnPreferencesService'
 import type { TradingBoardFilters as TradingBoardFiltersType } from '../services/tradingBoardService'
-import type { TradingBoardColumnPreferences } from '../types/columnTypes'
-import {
-  DEFAULT_COLUMN_ORDER,
-  ALL_CUSTOMIZABLE_COLUMN_IDS,
-  type ColumnId,
-} from '../types/columnTypes'
+import { DEFAULT_COLUMN_ORDER } from '../types/columnTypes'
 import type { StockTicker } from '@/domain/entities/StockTicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,8 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Settings } from 'lucide-react'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { formatNumber, formatPercentage } from '@/lib/table-utils'
 import { effectivePrice, hasQuotablePrice } from '@/lib/stockTickerNormalize'
@@ -45,26 +35,15 @@ import { PageHeader } from '@/shared/components/PageHeader'
 import { TradingBoardFilters } from './TradingBoardFilters'
 import { DensityToggle } from './DensityToggle'
 import { EmptyState } from '@/shared/components/EmptyState'
-import { BarChart3, Bell, Star } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { notify } from '@/shared/utils/notify'
-
 export const TradingBoard = () => {
-  const navigate = useNavigate()
   const [filters, setFilters] = useState<TradingBoardFiltersType>({})
   const [debouncedFilters, setDebouncedFilters] = useState<TradingBoardFiltersType>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
-  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [columnOrder, setColumnOrder] = useState<string[]>([...DEFAULT_COLUMN_ORDER])
+  const columnOrder = useMemo<string[]>(() => [...DEFAULT_COLUMN_ORDER], [])
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
-  const [watchlistModalOpen, setWatchlistModalOpen] = useState(false)
-  const [selectedTickerForWatchlist, setSelectedTickerForWatchlist] = useState<string | null>(null)
-  const [selectedWatchlistId, setSelectedWatchlistId] = useState<string>('')
 
   const formatExchange = (exchange: unknown) => {
     if (exchange === 'HOSE' || exchange === 'HNX' || exchange === 'UPCOM') return exchange
@@ -104,50 +83,6 @@ export const TradingBoard = () => {
   // Ensure watchlists is always an array
   const watchlists = Array.isArray(watchlistsData) ? watchlistsData : []
 
-  useEffect(() => {
-    loadColumnPreferences()
-  }, [])
-
-  const buildVisibility = (visibleColumns: string[]) => {
-    const visibleSet = new Set(visibleColumns)
-    const visibility: VisibilityState = {}
-    for (const id of ALL_CUSTOMIZABLE_COLUMN_IDS) {
-      visibility[id] = visibleSet.has(id)
-    }
-    return visibility
-  }
-
-  const buildFullColumnOrder = (prefs: TradingBoardColumnPreferences) => {
-    const allowed = new Set<string>(ALL_CUSTOMIZABLE_COLUMN_IDS)
-    const order = (
-      prefs.columnOrder?.length ? [...prefs.columnOrder] : [...DEFAULT_COLUMN_ORDER]
-    ).filter((id) => allowed.has(id as ColumnId))
-    const seen = new Set(order)
-    for (const id of ALL_CUSTOMIZABLE_COLUMN_IDS) {
-      if (!seen.has(id)) {
-        order.push(id)
-        seen.add(id)
-      }
-    }
-    return order
-  }
-
-  const loadColumnPreferences = async () => {
-    try {
-      const prefs = await columnPreferencesService.getColumnPreferences()
-      setColumnVisibility(buildVisibility(prefs.visibleColumns ?? DEFAULT_COLUMN_ORDER))
-      setColumnOrder(buildFullColumnOrder(prefs))
-    } catch (error) {
-      // Silent error - column preferences are optional, fallback to defaults
-      // notify.error('Failed to load column preferences', { silent: true })
-    }
-  }
-
-  const handleSaveColumnPreferences = (prefs: TradingBoardColumnPreferences) => {
-    setColumnVisibility(buildVisibility(prefs.visibleColumns))
-    setColumnOrder(buildFullColumnOrder(prefs))
-  }
-
   const filteredBaseTickers = useMemo(() => {
     if (!debouncedSearchQuery) return baseTickers
     const query = debouncedSearchQuery.toLowerCase()
@@ -163,28 +98,6 @@ export const TradingBoard = () => {
       ...prev,
       [key]: value === 'all' ? undefined : value || undefined,
     }))
-  }
-
-  const handleAddToWatchlistClick = (symbol: string) => {
-    setSelectedTickerForWatchlist(symbol)
-    setWatchlistModalOpen(true)
-    if (watchlists.length > 0) {
-      setSelectedWatchlistId(watchlists[0].id)
-    }
-  }
-
-  const handleAddToWatchlist = async () => {
-    if (!selectedTickerForWatchlist || !selectedWatchlistId) return
-
-    try {
-      await watchlistService.addStock(selectedWatchlistId, selectedTickerForWatchlist)
-      notify.success(`Added ${selectedTickerForWatchlist} to watchlist`)
-      setWatchlistModalOpen(false)
-      setSelectedTickerForWatchlist(null)
-      setSelectedWatchlistId('')
-    } catch (error) {
-      notify.error('Failed to add stock to watchlist')
-    }
   }
 
   const columns = useMemo<ColumnDef<StockTicker>[]>(
@@ -410,17 +323,9 @@ export const TradingBoard = () => {
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onColumnOrderChange: (updater) => {
-      setColumnOrder((prev) => {
-        const next = typeof updater === 'function' ? updater(prev) : updater
-        return next ?? prev
-      })
-    },
     state: {
       sorting,
       columnFilters,
-      columnVisibility,
       columnOrder,
     },
   })
@@ -458,16 +363,6 @@ export const TradingBoard = () => {
         <PageHeader
           title="Trading Board"
           description="Real-time stock market data and analytics"
-          actions={
-            <Button
-              onClick={() => setIsColumnModalOpen(true)}
-              variant="outline"
-              className="flex items-center space-x-2"
-            >
-              <Settings className="h-5 w-5" />
-              <span className="hidden sm:inline">Customize Columns</span>
-            </Button>
-          }
         />
 
         {/* Search and Filters Section */}
@@ -526,9 +421,6 @@ export const TradingBoard = () => {
                             : flexRender(header.column.columnDef.header, header.getContext())}
                         </TableHead>
                       ))}
-                        <TableHead className="sticky top-0 z-10 w-[120px] bg-[hsl(var(--surface-1))] text-right font-semibold text-[hsl(var(--text))]">
-                          <span className="sr-only">Actions</span>
-                        </TableHead>
                     </TableRow>
                   ))}
                 </TableHeader>
@@ -562,53 +454,12 @@ export const TradingBoard = () => {
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </TableCell>
                           ))}
-                          {/* Quick Actions Column */}
-                          <TableCell className="w-[120px]">
-                            <div className="flex items-center space-x-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  navigate(`/chart?symbol=${ticker.symbol}`)
-                                }}
-                                title="Open Chart"
-                              >
-                                <BarChart3 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  navigate(`/alerts?symbol=${ticker.symbol}`)
-                                }}
-                                title="Create Alert"
-                              >
-                                <Bell className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleAddToWatchlistClick(ticker.symbol)
-                                }}
-                                title="Add to Watchlist"
-                              >
-                                <Star className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
                         </TableRow>
                       )
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={columns.length + 1} className="h-24 text-center">
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
                         <EmptyState
                           icon={BarChart3}
                           title="No tickers found"
@@ -628,55 +479,6 @@ export const TradingBoard = () => {
           </Card>
         </motion.div>
 
-        {/* Column Customization Modal */}
-        <ColumnCustomizationModal
-          isOpen={isColumnModalOpen}
-          onClose={() => setIsColumnModalOpen(false)}
-          onSave={handleSaveColumnPreferences}
-        />
-
-        {/* Add to Watchlist Modal */}
-        <Dialog open={watchlistModalOpen} onOpenChange={setWatchlistModalOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add to Watchlist</DialogTitle>
-              <DialogDescription>
-                Select a watchlist to add {selectedTickerForWatchlist} to
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              {watchlists.length === 0 ? (
-                <p className="text-sm text-[hsl(var(--muted))]">
-                  No watchlists available. Please create a watchlist first.
-                </p>
-              ) : (
-                <Select value={selectedWatchlistId} onValueChange={setSelectedWatchlistId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select watchlist" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {watchlists.map((watchlist) => (
-                      <SelectItem key={watchlist.id} value={watchlist.id}>
-                        {watchlist.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setWatchlistModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddToWatchlist}
-                  disabled={!selectedWatchlistId || watchlists.length === 0}
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   )

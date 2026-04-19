@@ -22,7 +22,7 @@ export default defineConfig({
         manualChunks: {
           // Split large libraries into separate chunks for better caching
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'chart-vendor': ['react-big-calendar', 'lightweight-charts'],
+          'chart-vendor': ['lightweight-charts'],
           'ui-vendor': ['@headlessui/react', '@heroicons/react'],
           'form-vendor': ['react-hook-form'],
         },

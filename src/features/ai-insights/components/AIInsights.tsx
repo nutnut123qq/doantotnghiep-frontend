@@ -9,7 +9,6 @@ import {
   Smile,
   AlertTriangle,
   Star,
-  RefreshCw,
   X
 } from 'lucide-react'
 import { aiInsightsService, shouldRetryAIInsightsRequest, type AIInsight } from '../services/aiInsightsService'
@@ -62,27 +61,17 @@ export const AIInsights = () => {
     retry: shouldRetryAIInsightsRequest,
   })
 
-  const accuracyQuery = useQuery({
-    queryKey: ['ai-insights', 'accuracy', 300],
-    queryFn: () => aiInsightsService.getAccuracyMetrics(300),
-    staleTime: 10 * 60 * 1000,
-    retry: shouldRetryAIInsightsRequest,
-  })
-
   const insights = insightsQuery.data ?? []
   const marketSentiment = sentimentQuery.data ?? null
-  const accuracyMetrics = accuracyQuery.data ?? null
-  const loading = insightsQuery.isLoading || sentimentQuery.isLoading || accuracyQuery.isLoading
-  const refreshing = insightsQuery.isRefetching || sentimentQuery.isRefetching || accuracyQuery.isRefetching
+  const loading = insightsQuery.isLoading || sentimentQuery.isLoading
 
-  const queryError = insightsQuery.error ?? sentimentQuery.error ?? accuracyQuery.error
+  const queryError = insightsQuery.error ?? sentimentQuery.error
 
   const loadData = async () => {
     setError(null)
     const results = await Promise.all([
       insightsQuery.refetch(),
       sentimentQuery.refetch(),
-      accuracyQuery.refetch(),
     ])
 
     const failed = results.find((result) => result.isError)
@@ -207,69 +196,12 @@ export const AIInsights = () => {
     <div className="p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              AI Insights
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">AI-powered market analysis and trading recommendations</p>
-          </div>
-          <button
-            onClick={() => void loadData()}
-            disabled={refreshing}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </button>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            AI Insights
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400">AI-powered market analysis and trading recommendations</p>
         </div>
-
-        {/* AI Status Card */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-6 mb-8 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                <Cpu className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold mb-1">AI Analysis Engine</h3>
-                <p className="text-blue-100">
-                  {insights.length > 0 
-                    ? `Cập nhật lần cuối: ${formatTimestamp(insights[0]?.timestamp || new Date().toISOString())}`
-                    : 'Chưa có dữ liệu'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">Active</span>
-            </div>
-          </div>
-        </div>
-
-        {accuracyMetrics && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-200 dark:border-slate-700 mb-8">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Accuracy Snapshot</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Insights evaluated</p>
-                <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{accuracyMetrics.totalInsightsConsidered}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">T+1 Hit rate</p>
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{accuracyMetrics.tPlus1.hitRate}%</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">T+5 Hit rate</p>
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{accuracyMetrics.tPlus5.hitRate}%</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">T+20 Hit rate</p>
-                <p className="text-xl font-bold text-purple-600 dark:text-purple-400">{accuracyMetrics.tPlus20.hitRate}%</p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Insights with Tabs */}
         <Tab.Group selectedIndex={Object.keys(categories).indexOf(selectedCategory)} onChange={(index) => setSelectedCategory(Object.keys(categories)[index])}>
@@ -306,7 +238,7 @@ export const AIInsights = () => {
                       <p className="text-slate-500 dark:text-slate-400 mb-6">
                         Dữ liệu insight được hệ thống backend tạo định kỳ cho toàn bộ người dùng.
                         <br />
-                        <span className="text-sm text-slate-400 dark:text-slate-500">Vui lòng quay lại sau hoặc bấm làm mới để đồng bộ cache mới nhất.</span>
+                        <span className="text-sm text-slate-400 dark:text-slate-500">Vui lòng quay lại sau.</span>
                       </p>
                     )}
                   </div>

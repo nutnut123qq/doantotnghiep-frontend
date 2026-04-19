@@ -1,7 +1,3 @@
-/* Import react-grid-layout styles */
-@import 'react-grid-layout/css/styles.css';
-@import 'react-resizable/css/styles.css';
-
 /* Import theme tokens */
 @import './styles/theme.css';
 
@@ -27,8 +23,6 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--text) / 0.3);
 }
-
-/* React Grid Layout custom styles - now handled by Tailwind plugin */
 
 @layer base {
   :root {
@@ -111,86 +105,4 @@
   .text-balance {
     text-wrap: balance;
   }
-}
-
-/* React Grid Layout fixes */
-.react-grid-layout {
-  position: relative;
-  width: 100% !important;
-}
-
-.react-grid-item {
-  position: absolute !important;
-  transition: all 200ms ease;
-  transition-property: left, top, width, height;
-}
-
-.react-grid-item > * {
-  width: 100%;
-  height: 100%;
-}
-
-/* Ensure layout container has proper width */
-.layout {
-  width: 100% !important;
-}
-
-/* react-big-calendar — align with app theme inside Cards */
-.calendar-container .rbc-calendar {
-  color: hsl(var(--foreground));
-  background: hsl(var(--card));
-}
-
-.calendar-container .rbc-header {
-  padding: 10px 3px;
-  font-weight: 600;
-  color: hsl(var(--muted-foreground));
-}
-
-.calendar-container .rbc-today {
-  background-color: hsl(var(--accent) / 0.45);
-}
-
-.calendar-container .rbc-off-range-bg {
-  background-color: hsl(var(--muted) / 0.35);
-}
-
-.calendar-container .rbc-day-bg + .rbc-day-bg,
-.calendar-container .rbc-month-row + .rbc-month-row {
-  border-color: hsl(var(--border));
-}
-
-.calendar-container .rbc-time-content,
-.calendar-container .rbc-day-slot .rbc-time-slot,
-.calendar-container .rbc-timeslot-group,
-.calendar-container .rbc-time-header-content,
-.calendar-container .rbc-agenda-view table {
-  border-color: hsl(var(--border));
-}
-
-.calendar-container .rbc-event {
-  cursor: pointer;
-}
-
-.calendar-container .rbc-event:hover {
-  opacity: 1;
-}
-
-.calendar-container .rbc-toolbar button {
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--background));
-  padding: 8px 16px;
-  border-radius: var(--radius);
-  font-weight: 500;
-}
-
-.calendar-container .rbc-toolbar button:hover {
-  background-color: hsl(var(--accent));
-}
-
-.calendar-container .rbc-toolbar button.rbc-active {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  border-color: hsl(var(--primary));
 }

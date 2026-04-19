@@ -1,13 +1,6 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  type ComponentProps,
-} from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import axios from 'axios'
-import { Link } from 'react-router-dom'
-import { Calendar, Loader2, RefreshCw } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { eventService } from '../services/eventService'
 import type {
   CorporateEvent,
@@ -18,8 +11,6 @@ import type {
 import {
   CorporateEventType as EventType,
   EventStatus as Status,
-  EVENT_STATUS_LABELS as StatusLabels,
-  parseEventStatus,
   isEarningsEvent,
   isDividendEvent,
   isStockSplitEvent,
@@ -33,7 +24,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
@@ -42,12 +32,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -55,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { useSymbols } from '@/features/dashboard/hooks/useSymbols'
 
 function getQaErrorMessage(error: unknown): string {
   const fallback = 'Không thể trả lời. Vui lòng thử lại sau.'
@@ -68,35 +53,10 @@ function getQaErrorMessage(error: unknown): string {
   return message || fallback
 }
 
-function statusBadgeVariant(
-  status: EventStatus
-): ComponentProps<typeof Badge>['variant'] {
-  switch (status) {
-    case Status.Upcoming:
-      return 'success'
-    case Status.Today:
-      return 'info'
-    case Status.Past:
-      return 'secondary'
-    case Status.Cancelled:
-      return 'destructive'
-    default:
-      return 'outline'
-  }
-}
-
 export default function EventsFeed() {
   const [events, setEvents] = useState<CorporateEvent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedEvent, setSelectedEvent] = useState<CorporateEvent | null>(null)
-
-  const [analyzing, setAnalyzing] = useState<string | null>(null)
-  const [analysisResult, setAnalysisResult] = useState<{
-    eventId: string
-    analysis: string
-    impact: string
-  } | null>(null)
 
   const [symbolFilter, setSymbolFilter] = useState('')
   const [eventTypeFilter, setEventTypeFilter] = useState<
@@ -111,6 +71,9 @@ export default function EventsFeed() {
   const [appliedFilters, setAppliedFilters] = useState<EventFilterParams>({})
 
   const [qaSymbol, setQaSymbol] = useState('')
+  const qaSymbolFieldRef = useRef<HTMLDivElement>(null)
+  const [isQaSymbolDropdownOpen, setIsQaSymbolDropdownOpen] = useState(false)
+  const { symbols, isLoading: isLoadingQaSymbols } = useSymbols()
   const [qaQuestion, setQaQuestion] = useState('')
   const [qaLoading, setQaLoading] = useState(false)
   const [qaError, setQaError] = useState<string | null>(null)
@@ -137,6 +100,34 @@ export default function EventsFeed() {
   useEffect(() => {
     loadEvents(appliedFilters)
   }, [appliedFilters, loadEvents])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        qaSymbolFieldRef.current &&
+        !qaSymbolFieldRef.current.contains(event.target as Node)
+      ) {
+        setIsQaSymbolDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const filteredQaSymbols = useMemo(() => {
+    const query = qaSymbol.trim().toLowerCase()
+    if (!query) return symbols.slice(0, 10)
+    const startsWithMatches = symbols.filter((stock) =>
+      stock.symbol.toLowerCase().startsWith(query)
+    )
+    const containsMatches = symbols.filter(
+      (stock) =>
+        !stock.symbol.toLowerCase().startsWith(query) &&
+        (stock.symbol.toLowerCase().includes(query) ||
+          stock.name.toLowerCase().includes(query))
+    )
+    return [...startsWithMatches, ...containsMatches].slice(0, 10)
+  }, [qaSymbol, symbols])
 
   const applyFilters = useCallback(() => {
     setAppliedFilters({
@@ -182,18 +173,6 @@ export default function EventsFeed() {
       setQaError(getQaErrorMessage(e))
     } finally {
       setQaLoading(false)
-    }
-  }
-
-  const handleAnalyzeEvent = async (eventId: string) => {
-    try {
-      setAnalyzing(eventId)
-      const result = await eventService.analyzeEvent(eventId)
-      setAnalysisResult({ eventId, ...result })
-    } catch (err) {
-      console.error('Error analyzing event:', err)
-    } finally {
-      setAnalyzing(null)
     }
   }
 
@@ -321,16 +300,6 @@ export default function EventsFeed() {
     return null
   }
 
-  const renderStatusBadge = (event: CorporateEvent) => {
-    const parsed = parseEventStatus(event.status)
-    if (parsed === undefined) return null
-    return (
-      <Badge variant={statusBadgeVariant(parsed)} className="mt-2">
-        {StatusLabels[parsed]}
-      </Badge>
-    )
-  }
-
   const sortedEvents = useMemo(
     () =>
       [...events].sort(
@@ -369,24 +338,6 @@ export default function EventsFeed() {
         <PageHeader
           title="Sự kiện doanh nghiệp"
           description="Theo dõi lịch công bố, cổ tức, ĐHĐCĐ và các sự kiện quan trọng"
-          actions={
-            <>
-              <Button variant="outline" asChild>
-                <Link to="/events/calendar">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Lịch
-                </Link>
-              </Button>
-              <Button
-                variant="default"
-                className="gap-2"
-                onClick={() => loadEvents(appliedFilters)}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Làm mới
-              </Button>
-            </>
-          }
         />
 
         <Card>
@@ -495,14 +446,57 @@ export default function EventsFeed() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={qaSymbolFieldRef}>
                 <Label htmlFor="qa-symbol">Mã CK</Label>
                 <Input
                   id="qa-symbol"
                   value={qaSymbol}
-                  onChange={(e) => setQaSymbol(e.target.value.toUpperCase())}
-                  placeholder="VD: FPT"
+                  autoComplete="off"
+                  onChange={(e) => {
+                    setQaSymbol(e.target.value.toUpperCase())
+                    setIsQaSymbolDropdownOpen(true)
+                  }}
+                  onFocus={() => setIsQaSymbolDropdownOpen(true)}
+                  placeholder={
+                    isLoadingQaSymbols ? 'Đang tải mã…' : 'Gõ hoặc chọn mã (VD: FPT)'
+                  }
                 />
+                {isQaSymbolDropdownOpen && (
+                  <div
+                    className={cn(
+                      'absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto',
+                      'rounded-md border bg-popover text-popover-foreground shadow-md'
+                    )}
+                  >
+                    {isLoadingQaSymbols ? (
+                      <div className="px-3 py-3 text-sm text-muted-foreground">
+                        Đang tải danh sách mã…
+                      </div>
+                    ) : filteredQaSymbols.length === 0 ? (
+                      <div className="px-3 py-3 text-sm text-muted-foreground">
+                        Không có mã phù hợp
+                      </div>
+                    ) : (
+                      filteredQaSymbols.map((stock) => (
+                        <button
+                          key={stock.symbol}
+                          type="button"
+                          className="w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setQaSymbol(stock.symbol)
+                            setIsQaSymbolDropdownOpen(false)
+                          }}
+                        >
+                          <div className="text-sm font-medium">{stock.symbol}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {stock.name}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-end">
                 <Button
@@ -602,30 +596,19 @@ export default function EventsFeed() {
               <CardContent className="pt-6">
                 <EmptyState
                   title="Chưa có sự kiện"
-                  description="Thử đổi bộ lọc hoặc làm mới sau khi backend đã thu thập dữ liệu."
+                  description="Thử đổi bộ lọc hoặc quay lại sau khi backend đã thu thập dữ liệu."
                 />
               </CardContent>
             </Card>
           ) : (
             sortedEvents.map((event) => (
-              <Card
-                key={event.id}
-                className={cn(
-                  'cursor-pointer transition-shadow hover:shadow-md'
-                )}
-                onClick={() => setSelectedEvent(event)}
-              >
+              <Card key={event.id} className={cn('transition-shadow')}>
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-[hsl(var(--text))]">
-                          {event.stockTicker?.symbol || 'N/A'}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {event.stockTicker?.name}
-                        </span>
-                      </div>
+                      <p className="mb-2 text-sm font-semibold text-[hsl(var(--text))]">
+                        {event.stockTicker?.symbol || 'N/A'}
+                      </p>
                       <h3 className="mb-1 text-lg font-semibold text-[hsl(var(--text))]">
                         {event.title}
                       </h3>
@@ -659,103 +642,6 @@ export default function EventsFeed() {
           )}
         </div>
 
-        <Dialog
-          open={!!selectedEvent}
-          onOpenChange={(open) => {
-            if (!open) {
-              setSelectedEvent(null)
-              setAnalysisResult(null)
-            }
-          }}
-        >
-          <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
-            {selectedEvent && (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="pr-8 text-left text-xl">
-                    {selectedEvent.title}
-                  </DialogTitle>
-                  <p className="text-left text-sm text-muted-foreground">
-                    {selectedEvent.stockTicker?.symbol} —{' '}
-                    {selectedEvent.stockTicker?.name}
-                  </p>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold text-[hsl(var(--text))]">
-                      Ngày:{' '}
-                      {eventService.formatEventDate(selectedEvent.eventDate)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {eventService.getRelativeTime(selectedEvent.eventDate)}
-                    </p>
-                    {renderStatusBadge(selectedEvent)}
-                  </div>
-                  {selectedEvent.description && (
-                    <div>
-                      <h4 className="mb-1 text-sm font-semibold text-[hsl(var(--text))]">
-                        Mô tả
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedEvent.description}
-                      </p>
-                    </div>
-                  )}
-                  {renderEventDetails(selectedEvent)}
-                  {selectedEvent.sourceUrl && (
-                    <div>
-                      <a
-                        href={selectedEvent.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Xem nguồn chính thức →
-                      </a>
-                    </div>
-                  )}
-                  <div className="border-t pt-4">
-                    <Button
-                      onClick={() => handleAnalyzeEvent(selectedEvent.id)}
-                      disabled={analyzing === selectedEvent.id}
-                    >
-                      {analyzing === selectedEvent.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Đang phân tích…
-                        </>
-                      ) : (
-                        'Phân tích bằng AI'
-                      )}
-                    </Button>
-                    {analysisResult?.eventId === selectedEvent.id && (
-                      <Card className="mt-3 border bg-muted/30">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-base">
-                            Kết quả AI
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                          <p className="whitespace-pre-wrap text-[hsl(var(--text))]">
-                            {analysisResult.analysis}
-                          </p>
-                          <div className="border-t pt-2 text-muted-foreground">
-                            <strong className="text-[hsl(var(--text))]">
-                              Tác động:
-                            </strong>{' '}
-                            <span className="whitespace-pre-wrap">
-                              {analysisResult.impact}
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   )

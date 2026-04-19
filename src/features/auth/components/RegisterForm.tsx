@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { Link, useNavigate } from 'react-router-dom'
+import type { AxiosError } from 'axios'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useToast } from '@/shared/hooks/useToast'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
@@ -40,13 +41,17 @@ export const RegisterForm = () => {
       setLoading(true)
       await registerUser(data)
       toast.success('Registration successful! Please check your email to verify your account.')
-      // Show message and navigate after a delay
-      setTimeout(() => {
-        navigate('/login')
-      }, 2000)
+      navigate(`/check-email?email=${encodeURIComponent(data.email)}`, { state: { email: data.email } })
     } catch (err: unknown) {
+      const status = (err as AxiosError | undefined)?.response?.status
       const errorMessage = getAxiosErrorMessage(err)
-      toast.error(errorMessage === 'Unknown error' ? 'Registration failed. Please try again.' : errorMessage)
+      if (status === 401) {
+        toast.error(
+          'This email is already registered but not verified. Use the same password you chose originally to receive a new verification link.'
+        )
+      } else {
+        toast.error(errorMessage === 'Unknown error' ? 'Registration failed. Please try again.' : errorMessage)
+      }
     } finally {
       setLoading(false)
     }

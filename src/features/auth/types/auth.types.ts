@@ -31,3 +31,31 @@ export interface ChangePasswordResponse {
   message: string
 }
 
+export interface VerifyEmailResponse {
+  success: boolean
+  message: string
+  token?: string
+  email?: string
+  role?: string
+}
+
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean
+  message: string
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export interface ResetPasswordResponse {
+  success: boolean
+  message: string
+}
+
