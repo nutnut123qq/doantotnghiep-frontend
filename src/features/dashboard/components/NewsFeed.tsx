@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { newsService, News, NewsQASource } from '../services/newsService'
-import { Newspaper } from 'lucide-react'
+import { Newspaper, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/shared/components/ErrorState'
@@ -26,10 +26,16 @@ const formatDate = (dateString: string) => {
   }
 }
 
+const PAGE_SIZE = 10
+
 export const NewsFeed = () => {
   const [news, setNews] = useState<News[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [inputPage, setInputPage] = useState('')
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
   const [answer, setAnswer] = useState('')
@@ -46,12 +52,16 @@ export const NewsFeed = () => {
     }
   }
 
-  const loadNews = useCallback(async () => {
+  const loadNews = useCallback(async (targetPage = page) => {
     try {
       setLoading(true)
       setError(null)
-      const data = await newsService.getNews(1, 10)
-      setNews(data)
+      const response = await newsService.getNews(targetPage, PAGE_SIZE)
+      setNews(response.items)
+      setTotalPages(response.totalPages)
+      if (targetPage !== page) {
+        setPage(targetPage)
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load news'
       setError(errorMessage)
@@ -59,11 +69,27 @@ export const NewsFeed = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page])
 
   useEffect(() => {
     loadNews()
   }, [loadNews])
+
+  const goToPage = useCallback((newPage: number) => {
+    if (newPage < 1 || (totalPages > 0 && newPage > totalPages)) return
+    loadNews(newPage)
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [loadNews, totalPages])
+
+  const handleInputJump = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const num = parseInt(inputPage, 10)
+      if (!isNaN(num) && num >= 1 && num <= totalPages) {
+        goToPage(num)
+        setInputPage('')
+      }
+    }
+  }
 
   const handleAskQuestion = async () => {
     if (!question.trim()) return
@@ -104,6 +130,13 @@ export const NewsFeed = () => {
           </Badge>
         )
     }
+  }
+
+  const getPageNumbers = () => {
+    if (totalPages <= 0) return []
+    const start = Math.max(1, page - 2)
+    const end = Math.min(totalPages, page + 2)
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
   }
 
   if (loading) {
@@ -150,14 +183,14 @@ export const NewsFeed = () => {
         </div>
         <button
           type="button"
-          onClick={loadNews}
+          onClick={() => loadNews()}
           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
         >
           Làm mới
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-4">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-4">
       {news.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Newspaper className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
@@ -201,6 +234,77 @@ export const NewsFeed = () => {
         ))
       )}
 
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center gap-3 py-2">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => goToPage(page - 1)}
+              disabled={page <= 1 || loading}
+              className="flex items-center justify-center w-8 h-8 rounded-md text-sm text-blue-600 dark:text-blue-400 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Trang trước"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            {getPageNumbers().map((num) => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => goToPage(num)}
+                disabled={loading}
+                className={`flex items-center justify-center w-8 h-8 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  num === page
+                    ? 'bg-blue-600 text-white'
+                    : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => goToPage(page + 1)}
+              disabled={page >= totalPages || loading}
+              className="flex items-center justify-center w-8 h-8 rounded-md text-sm text-blue-600 dark:text-blue-400 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Trang sau"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => goToPage(totalPages)}
+              disabled={page >= totalPages || loading}
+              className="flex items-center justify-center w-8 h-8 rounded-md text-sm text-blue-600 dark:text-blue-400 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Trang cuối"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              Trang <span className="font-medium text-foreground">{page}</span> / {totalPages}
+            </span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1">
+              Đến trang
+              <input
+                type="text"
+                inputMode="numeric"
+                value={inputPage}
+                onChange={(e) => setInputPage(e.target.value.replace(/\D/g, ''))}
+                onKeyDown={handleInputJump}
+                placeholder="#"
+                className="w-10 px-1 py-0.5 text-center text-sm border border-input rounded bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="pt-3 border-t border-border">
         <p className="text-xs font-medium text-foreground mb-2">Hỏi đáp AI theo tin tức</p>
         <div className="flex space-x-2">
@@ -229,7 +333,7 @@ export const NewsFeed = () => {
             className="mt-3 space-y-3 animate-pulse"
             aria-busy="true"
             aria-live="polite"
-            aria-label="Đang tạo câu trả lời AI"
+            aria-label="Đang tạo câu trả lởi AI"
           >
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
               <div className="h-3.5 bg-blue-200/80 dark:bg-blue-800/60 rounded w-28 mb-3" />
@@ -250,7 +354,7 @@ export const NewsFeed = () => {
         {!asking && answer && (
           <div className="mt-3 space-y-2">
             <div className="p-3 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
-              <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">Trả lời AI:</p>
+              <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">Trả lởi AI:</p>
               <p className="text-sm text-blue-800 dark:text-blue-300 whitespace-pre-wrap">{answer}</p>
             </div>
 
@@ -284,4 +388,3 @@ export const NewsFeed = () => {
     </div>
   )
 }
-

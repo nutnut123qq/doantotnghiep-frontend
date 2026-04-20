@@ -1,4 +1,5 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
+import { PaginatedResponse } from '@/shared/types/common.types'
 
 export interface News {
   id: string
@@ -37,7 +38,7 @@ export interface NewsQAResponse {
 }
 
 export const newsService = {
-  async getNews(page = 1, pageSize = 20, tickerId?: string): Promise<News[]> {
+  async getNews(page = 1, pageSize = 10, tickerId?: string): Promise<PaginatedResponse<News>> {
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString(),
@@ -47,7 +48,7 @@ export const newsService = {
       params.append('tickerId', tickerId)
     }
     
-    const response = await apiClient.get<News[]>(`/News?${params.toString()}`)
+    const response = await apiClient.get<PaginatedResponse<News>>(`/News?${params.toString()}`)
     return response.data
   },
 
