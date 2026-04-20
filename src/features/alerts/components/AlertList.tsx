@@ -88,8 +88,6 @@ export const AlertList = () => {
       greater_than: '>',
       less_than: '<',
       equals: '=',
-      percent_change_up: '% ↑',
-      percent_change_down: '% ↓',
     }
     return labels[condition] || condition
   }

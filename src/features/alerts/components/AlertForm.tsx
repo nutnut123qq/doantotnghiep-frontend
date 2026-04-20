@@ -170,8 +170,6 @@ export const AlertForm = ({
             <SelectItem value="greater_than">Greater Than</SelectItem>
             <SelectItem value="less_than">Less Than</SelectItem>
             <SelectItem value="equals">Equals</SelectItem>
-            <SelectItem value="percent_change_up">% Change Up</SelectItem>
-            <SelectItem value="percent_change_down">% Change Down</SelectItem>
           </SelectContent>
         </Select>
       </div>

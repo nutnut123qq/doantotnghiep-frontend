@@ -1,9 +1,6 @@
 export enum AlertType {
   Price = 1,
   Volume = 2,
-  TechnicalIndicator = 3,
-  Sentiment = 4,
-  Volatility = 5,
 }
 
 export interface Alert {
@@ -43,9 +40,6 @@ export interface GetAlertsResponse {
 export const AlertTypeLabels: Record<AlertType, string> = {
   [AlertType.Price]: 'Price',
   [AlertType.Volume]: 'Volume',
-  [AlertType.TechnicalIndicator]: 'Technical Indicator',
-  [AlertType.Sentiment]: 'Sentiment',
-  [AlertType.Volatility]: 'Volatility',
 }
 
 /** API / DB / SignalR dùng nghìn VND cho giá; form & bảng dùng VND đầy đủ. */
@@ -59,13 +53,10 @@ export function coerceAlertType(type: unknown): AlertType {
     const byName: Record<string, AlertType> = {
       Price: AlertType.Price,
       Volume: AlertType.Volume,
-      TechnicalIndicator: AlertType.TechnicalIndicator,
-      Sentiment: AlertType.Sentiment,
-      Volatility: AlertType.Volatility,
     }
     if (byName[type] !== undefined) return byName[type]
     const n = parseInt(type, 10)
-    if (!Number.isNaN(n) && n >= 1 && n <= 5) return n as AlertType
+    if (!Number.isNaN(n) && n >= 1 && n <= 2) return n as AlertType
   }
   return AlertType.Price
 }
