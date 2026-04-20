@@ -27,7 +27,6 @@ const EventsManagement = lazy(() => import('@/features/admin/components/EventsMa
 const AIInsightsManagement = lazy(() => import('@/features/admin/components/AIInsightsManagement').then(m => ({ default: m.AIInsightsManagement })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
-const WorkspacePage = lazy(() => import('@/features/workspace/components/WorkspacePage').then(m => ({ default: m.WorkspacePage })))
 const AnalysisReportsPage = lazy(() =>
   import('@/features/analysis-reports/components/AnalysisReportsPage').then(m => ({ default: m.AnalysisReportsPage }))
 )
@@ -187,14 +186,6 @@ export const router = createBrowserRouter(
         {
           path: 'chart',
           element: <ChartLegacyRedirect />,
-        },
-        {
-          path: 'workspace',
-          element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <WorkspacePage />
-            </Suspense>
-          ),
         },
         {
           path: 'analysis-reports',
