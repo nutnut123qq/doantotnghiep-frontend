@@ -2,10 +2,6 @@ import { apiClient } from '../../../infrastructure/api/apiClient';
 import type { 
   SystemStats, 
   SystemHealthStatus,
-  CreateUserRequest,
-  UpdateUserRequest,
-  ResetPasswordRequest,
-  UpdateUserRoleRequest,
   SetUserStatusRequest,
   PaginatedUsers
 } from '../../../shared/types/adminTypes';
@@ -84,50 +80,6 @@ class AdminService {
   async getSystemHealth(): Promise<SystemHealthStatus> {
     const response = await apiClient.get<SystemHealthStatus>(`${this.baseUrl}/health`);
     return response.data;
-  }
-
-  /**
-   * Create a new user
-   */
-  async createUser(request: CreateUserRequest): Promise<void> {
-    await apiClient.post(`${this.baseUrl}/users`, request);
-  }
-
-  /**
-   * Update user info/role
-   */
-  async updateUser(userId: string, request: UpdateUserRequest): Promise<void> {
-    await apiClient.put(`${this.baseUrl}/users/${userId}`, request);
-  }
-
-  /**
-   * Reset user password
-   */
-  async resetUserPassword(userId: string, newPassword: string): Promise<void> {
-    const request: ResetPasswordRequest = { newPassword };
-    await apiClient.post(`${this.baseUrl}/users/${userId}/reset-password`, request);
-  }
-
-  /**
-   * Lock user account
-   */
-  async lockUser(userId: string): Promise<void> {
-    await apiClient.post(`${this.baseUrl}/users/${userId}/lock`);
-  }
-
-  /**
-   * Unlock user account
-   */
-  async unlockUser(userId: string): Promise<void> {
-    await apiClient.post(`${this.baseUrl}/users/${userId}/unlock`);
-  }
-
-  /**
-   * Update user role
-   */
-  async updateUserRole(userId: string, newRole: number): Promise<void> {
-    const request: UpdateUserRoleRequest = { newRole };
-    await apiClient.put(`${this.baseUrl}/users/${userId}/role`, request);
   }
 
   /**

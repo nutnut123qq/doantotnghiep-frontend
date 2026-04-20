@@ -27,12 +27,6 @@ const EventsManagement = lazy(() => import('@/features/admin/components/EventsMa
 const AIInsightsManagement = lazy(() => import('@/features/admin/components/AIInsightsManagement').then(m => ({ default: m.AIInsightsManagement })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
-const AnalysisReportsPage = lazy(() =>
-  import('@/features/analysis-reports/components/AnalysisReportsPage').then(m => ({ default: m.AnalysisReportsPage }))
-)
-const AnalysisReportDetailPage = lazy(() =>
-  import('@/features/analysis-reports/components/AnalysisReportDetailPage').then(m => ({ default: m.AnalysisReportDetailPage }))
-)
 
 /** Old `/chart?symbol=` URLs redirect to dashboard with the same symbol. */
 function ChartLegacyRedirect() {
@@ -186,22 +180,6 @@ export const router = createBrowserRouter(
         {
           path: 'chart',
           element: <ChartLegacyRedirect />,
-        },
-        {
-          path: 'analysis-reports',
-          element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <AnalysisReportsPage />
-            </Suspense>
-          ),
-        },
-        {
-          path: 'analysis-reports/:id',
-          element: (
-            <Suspense fallback={<LoadingFallback />}>
-              <AnalysisReportDetailPage />
-            </Suspense>
-          ),
         },
       ],
     },

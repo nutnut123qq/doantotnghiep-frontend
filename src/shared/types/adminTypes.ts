@@ -69,29 +69,8 @@ export interface PerformanceMetrics {
   uptimeSeconds: number;
 }
 
-export interface UpdateUserRoleRequest {
-  newRole: UserRole;
-}
-
 export interface SetUserStatusRequest {
   isActive: boolean;
-}
-
-export interface CreateUserRequest {
-  email: string;
-  password: string;
-  fullName?: string | null;
-  role: UserRole;
-}
-
-export interface UpdateUserRequest {
-  email?: string | null;
-  fullName?: string | null;
-  role?: UserRole | null;
-}
-
-export interface ResetPasswordRequest {
-  newPassword: string;
 }
 
 export interface PaginatedUsers {
