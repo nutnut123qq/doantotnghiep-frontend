@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { useSymbols } from '@/features/dashboard/hooks/useSymbols'
+import { renderMarkdownAnalysis } from '@/features/dashboard/utils/markdownParser'
 
 function getQaErrorMessage(error: unknown): string {
   const fallback = 'Không thể trả lời. Vui lòng thử lại sau.'
@@ -553,9 +554,9 @@ export default function EventsFeed() {
             )}
             {!qaLoading && qaResult && (
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-                <p className="text-sm text-[hsl(var(--text))] whitespace-pre-wrap">
-                  {qaResult.answer}
-                </p>
+                <div className="text-sm text-[hsl(var(--text))]">
+                  {renderMarkdownAnalysis(qaResult.answer)}
+                </div>
                 {qaResult.sources.length > 0 && (
                   <div className="text-xs text-muted-foreground border-t pt-2">
                     <p className="font-medium text-[hsl(var(--text))] mb-1">
