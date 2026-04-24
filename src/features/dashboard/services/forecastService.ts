@@ -209,7 +209,7 @@ export const forecastService = {
     options: PollForecastOptions = {},
   ): Promise<ForecastResult> {
     const timeHorizon = options.timeHorizon ?? 'short'
-    const intervalMs = options.intervalMs ?? 3000
+    const intervalMs = options.intervalMs ?? 5000
     const maxMs = options.maxMs ?? 5 * 60 * 1000
     const signal = options.signal
 
