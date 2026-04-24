@@ -1,5 +1,6 @@
 import { apiClient } from '@/infrastructure/api/apiClient'
 import { storage } from '@/infrastructure/storage/localStorage'
+import { normalizeRole } from '../utils/roleUtils'
 import type {
   LoginRequest,
   RegisterRequest,
@@ -19,7 +20,7 @@ export const authService = {
     const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
     if (response.data.token) {
       storage.set('token', response.data.token)
-      storage.set('user', { email: response.data.email, role: response.data.role })
+      storage.set('user', { email: response.data.email, role: normalizeRole(response.data.role) })
     }
     return response.data
   },
@@ -49,7 +50,7 @@ export const authService = {
     const data = response.data
     if (data.success && data.token && data.email && data.role) {
       storage.set('token', data.token)
-      storage.set('user', { email: data.email, role: data.role })
+      storage.set('user', { email: data.email, role: normalizeRole(data.role) })
     }
     return data
   },

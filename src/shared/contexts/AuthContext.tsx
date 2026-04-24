@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { authService } from '@/features/auth/services/authService'
+import { normalizeRole } from '@/features/auth/utils/roleUtils'
 import type { LoginRequest, RegisterRequest } from '@/features/auth/types/auth.types'
 
 interface User {
@@ -34,7 +35,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (token) {
       const storedUser = localStorage.getItem('user')
       if (storedUser) {
-        setUser(JSON.parse(storedUser))
+        try {
+          const parsed = JSON.parse(storedUser)
+          setUser({ email: parsed.email, role: normalizeRole(parsed.role) })
+        } catch {
+          /* ignore invalid storage */
+        }
       }
     }
     setIsLoading(false)
@@ -42,11 +48,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (credentials: LoginRequest) => {
     const response = await authService.login(credentials)
-    const userData = { email: response.email, role: response.role }
+    const userData = { email: response.email, role: normalizeRole(response.role) }
     // Ensure localStorage is updated before setting state
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
-    return response
+    return { ...response, role: userData.role }
   }
 
   const register = async (data: RegisterRequest) => {

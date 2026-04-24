@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 import { useToast } from '@/shared/hooks/useToast'
+import { normalizeRole } from '@/features/auth/utils/roleUtils'
 import { useEffect } from 'react'
 
 interface RoleProtectedRouteProps {
@@ -15,11 +16,13 @@ export const RoleProtectedRoute = ({
   const { isAuthenticated, isLoading, user } = useAuthContext()
   const toast = useToast()
 
+  const normalizedRole = user ? normalizeRole(user.role) : null
+
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user && !allowedRoles.includes(user.role)) {
+    if (!isLoading && isAuthenticated && normalizedRole && !allowedRoles.includes(normalizedRole)) {
       toast.error('You do not have permission to access this page.')
     }
-  }, [isLoading, isAuthenticated, user, allowedRoles, toast])
+  }, [isLoading, isAuthenticated, normalizedRole, allowedRoles, toast])
 
   if (isLoading) {
     return (
@@ -36,7 +39,7 @@ export const RoleProtectedRoute = ({
     return <Navigate to="/login" replace />
   }
 
-  if (user && !allowedRoles.includes(user.role)) {
+  if (normalizedRole && !allowedRoles.includes(normalizedRole)) {
     return <Navigate to="/" replace />
   }
 
