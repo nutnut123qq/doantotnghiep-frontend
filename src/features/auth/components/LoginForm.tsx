@@ -46,10 +46,10 @@ export const LoginForm = () => {
         /* ignore */
       }
       let target = '/'
-      if (returnUrl && returnUrl !== '/login') {
-        target = returnUrl
-      } else if (auth.role === 'Admin') {
+      if (auth.role === 'Admin') {
         target = '/admin'
+      } else if (returnUrl && returnUrl !== '/login') {
+        target = returnUrl
       }
       setTimeout(() => navigate(target, { replace: true }), 100)
     } catch (err: unknown) {
