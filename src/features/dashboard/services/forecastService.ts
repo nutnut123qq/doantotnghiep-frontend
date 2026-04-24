@@ -210,7 +210,7 @@ export const forecastService = {
   ): Promise<ForecastResult> {
     const timeHorizon = options.timeHorizon ?? 'short'
     const intervalMs = options.intervalMs ?? 5000
-    const maxMs = options.maxMs ?? 5 * 60 * 1000
+    const maxMs = options.maxMs ?? 10 * 60 * 1000
     const signal = options.signal
 
     let envelope: ForecastEnqueueResponse
@@ -291,11 +291,11 @@ export const forecastService = {
   getTrendBgColor(trend: string): string {
     switch (trend) {
       case 'Up':
-        return 'bg-green-50 border-green-200'
+        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
       case 'Down':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
       default:
-        return 'bg-slate-50 border-slate-200'
+        return 'bg-muted border-border'
     }
   },
 

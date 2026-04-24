@@ -37,33 +37,6 @@ export const TradingBoardFilters = ({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex-1 min-w-[150px]">
-        <Input
-          type="text"
-          placeholder="Industry"
-          value={filters.industry || ''}
-          onChange={(e) => onFilterChange('industry', e.target.value || undefined as string | undefined)}
-          className="h-9"
-        />
-      </div>
-      <div className="flex-1 min-w-[150px]">
-        <Select
-          value={filters.watchlistId || 'all'}
-          onValueChange={(value) => onFilterChange('watchlistId', value === 'all' ? undefined : value as string)}
-        >
-          <SelectTrigger className="h-9">
-            <SelectValue placeholder="Watchlist" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Watchlists</SelectItem>
-            {watchlists.map((watchlist) => (
-              <SelectItem key={watchlist.id} value={watchlist.id}>
-                {watchlist.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
     </div>
   )
 }

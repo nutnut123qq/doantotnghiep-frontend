@@ -33,7 +33,7 @@ import { effectivePrice, hasQuotablePrice } from '@/lib/stockTickerNormalize'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/shared/components/PageHeader'
 import { TradingBoardFilters } from './TradingBoardFilters'
-import { DensityToggle } from './DensityToggle'
+
 import { EmptyState } from '@/shared/components/EmptyState'
 export const TradingBoard = () => {
   const [filters, setFilters] = useState<TradingBoardFiltersType>({})
@@ -43,7 +43,7 @@ export const TradingBoard = () => {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const columnOrder = useMemo<string[]>(() => [...DEFAULT_COLUMN_ORDER], [])
-  const [density, setDensity] = useState<'compact' | 'comfortable'>('compact')
+  const density = 'compact'
 
   const formatExchange = (exchange: unknown) => {
     if (exchange === 'HOSE' || exchange === 'HNX' || exchange === 'UPCOM') return exchange
@@ -380,10 +380,6 @@ export const TradingBoard = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by symbol or company name..."
                     className="flex-1"
-                  />
-                  <DensityToggle
-                    density={density}
-                    onDensityChange={setDensity}
                   />
                 </div>
                 <TradingBoardFilters

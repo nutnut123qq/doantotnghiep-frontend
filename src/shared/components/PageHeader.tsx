@@ -22,7 +22,7 @@ export const PageHeader = ({
             {title}
           </h1>
           {description && (
-            <p className="text-[hsl(var(--muted))]">{description}</p>
+            <p className="text-muted-foreground">{description}</p>
           )}
         </div>
         {actions && <div className="flex items-center space-x-2">{actions}</div>}

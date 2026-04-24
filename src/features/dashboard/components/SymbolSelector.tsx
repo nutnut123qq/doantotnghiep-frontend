@@ -143,7 +143,7 @@ export const SymbolSelector = ({
       {/* Input Field */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-slate-400" />
+          <MagnifyingGlassIcon className="h-5 w-5 text-muted-foreground" />
         </div>
         <input
           ref={inputRef}
@@ -153,12 +153,12 @@ export const SymbolSelector = ({
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="block w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg bg-white text-slate-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-slate-400 text-sm"
+          className="block w-full pl-10 pr-10 py-2 border border-border rounded-lg bg-popover text-popover-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200 hover:border-muted-foreground text-sm"
         />
         {searchQuery && (
           <button
             onClick={handleClear}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
             type="button"
           >
             <XMarkIcon className="h-5 w-5" />
@@ -168,22 +168,22 @@ export const SymbolSelector = ({
 
       {/* Dropdown Suggestions */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
           {isLoading ? (
-            <div className="px-4 py-3 text-sm text-slate-500 text-center">
+            <div className="px-4 py-3 text-sm text-muted-foreground text-center">
               Đang tải danh sách mã chứng khoán...
             </div>
           ) : error ? (
-            <div className="px-4 py-3 text-sm text-red-600 text-center">
+            <div className="px-4 py-3 text-sm text-destructive text-center">
               Lỗi khi tải danh sách mã. Vui lòng thử lại.
             </div>
           ) : symbols.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-slate-500 text-center">
+            <div className="px-4 py-3 text-sm text-muted-foreground text-center">
               <div>Không có dữ liệu mã chứng khoán</div>
               <div className="text-xs mt-1">API có thể chưa sẵn sàng</div>
             </div>
           ) : filteredSymbols.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-slate-500 text-center">
+            <div className="px-4 py-3 text-sm text-muted-foreground text-center">
               <div>Không tìm thấy mã chứng khoán</div>
               <div className="text-xs mt-1">
                 Tìm kiếm: "{searchQuery}" ({symbols.length} mã có sẵn)
@@ -202,18 +202,18 @@ export const SymbolSelector = ({
                       onClick={() => handleSelect(symbol)}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                         isHighlighted
-                          ? 'bg-blue-50 text-blue-900'
-                          : 'text-slate-700 hover:bg-slate-50'
+                          ? 'bg-accent text-accent-foreground'
+                          : 'text-popover-foreground hover:bg-accent hover:text-accent-foreground'
                       } ${isSelected ? 'font-semibold' : ''}`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{symbol.symbol}</span>
                         {isSelected && (
-                          <span className="text-xs text-blue-600">✓</span>
+                          <span className="text-xs text-primary">✓</span>
                         )}
                       </div>
                       {symbol.name && (
-                        <div className="text-xs text-slate-500 mt-0.5 truncate">
+                        <div className="text-xs text-muted-foreground mt-0.5 truncate">
                           {symbol.name}
                         </div>
                       )}
