@@ -17,9 +17,6 @@ import { Switch } from '@/components/ui/switch'
 import {
   AlertType,
   AlertTypeLabels,
-  coerceAlertType,
-  isPriceAlertType,
-  priceThresholdApiToUser,
 } from '../types/alert.types'
 import type { Alert, CreateAlertRequest } from '../types/alert.types'
 import { format } from 'date-fns'
@@ -98,14 +95,10 @@ export const AlertList = () => {
     return Number(value).toLocaleString('vi-VN')
   }
 
-  /** SignalR notification: giá vẫn là đơn vị API (nghìn VND). */
-  const formatTriggerMetric = (type: string | AlertType, value: number | null | undefined) => {
+  /** SignalR notification: backend now sends both threshold and currentValue in full VND. */
+  const formatTriggerMetric = (_type: string | AlertType, value: number | null | undefined) => {
     if (value === null || value === undefined) return 'N/A'
-    const t = coerceAlertType(type)
-    const display =
-      isPriceAlertType(type) ? priceThresholdApiToUser(t, Number(value)) : Number(value)
-    if (display === null || display === undefined) return 'N/A'
-    return Number(display).toLocaleString('vi-VN')
+    return Number(value).toLocaleString('vi-VN')
   }
 
   return (
