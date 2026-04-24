@@ -127,6 +127,59 @@ export function renderMarkdownAnalysis(
       continue
     }
 
+    if (/^\|/.test(line)) {
+      const tableLines: string[] = []
+      while (i < lines.length && /^\|/.test(lines[i].trim())) {
+        tableLines.push(lines[i].trim())
+        i++
+      }
+      // Remove separator lines (only dashes, pipes, spaces, colons)
+      const rows = tableLines
+        .filter((l) => !/^\|?[\s\-:|]+\|?$/.test(l))
+        .map((l) => l.split('|').map((c) => c.trim()).filter(Boolean))
+
+      if (rows.length >= 1) {
+        const header = rows[0]
+        const body = rows.slice(1)
+        elements.push(
+          <div key={`tbl-${key++}`} className="overflow-x-auto my-2">
+            <table className="min-w-full text-sm border-collapse border border-blue-200 dark:border-blue-800">
+              <thead>
+                <tr className="bg-blue-50 dark:bg-blue-900/30">
+                  {header.map((cell, idx) => (
+                    <th
+                      key={`th-${idx}`}
+                      className="border border-blue-200 dark:border-blue-800 px-3 py-2 text-left font-semibold text-blue-900 dark:text-blue-100"
+                    >
+                      {parseMarkdownBold(cell, boldColorClass)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {body.map((row, ridx) => (
+                  <tr
+                    key={`tr-${ridx}`}
+                    className={ridx % 2 === 1 ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}
+                  >
+                    {row.map((cell, cidx) => (
+                      <td
+                        key={`td-${cidx}`}
+                        className="border border-blue-200 dark:border-blue-800 px-3 py-2 text-blue-800 dark:text-blue-200"
+                      >
+                        {parseMarkdownBold(cell, boldColorClass)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      }
+      continue
+    }
+
     elements.push(
       <p key={`p-${key++}`} className={paragraphClassName || undefined}>
         {parseMarkdownBold(line, boldColorClass)}
