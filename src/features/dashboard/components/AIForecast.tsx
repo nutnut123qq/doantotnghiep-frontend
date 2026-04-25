@@ -83,7 +83,6 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
 
     try {
       const data = await forecastService.pollForecast(symbol, {
-        timeHorizon: 'short',
         signal: controller.signal,
         onStatus: (status) => {
           setJobStatus(status)

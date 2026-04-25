@@ -6,7 +6,6 @@ export interface ForecastResult {
   trend: 'Up' | 'Down' | 'Sideways'
   confidence: 'High' | 'Medium' | 'Low'
   confidenceScore: number
-  timeHorizon: 'short' | 'medium' | 'long'
   recommendation: 'Buy' | 'Hold' | 'Sell'
   keyDrivers?: string[] | null
   risks?: string[] | null
@@ -20,13 +19,11 @@ export interface ForecastEnqueueResponse {
   status: ForecastJobStatus
   jobId?: string | null
   symbol: string
-  timeHorizon: string
   /** Present when Python/.NET returned an inline cache hit. */
   result?: ForecastResult
 }
 
 export interface PollForecastOptions {
-  timeHorizon?: 'short' | 'medium' | 'long'
   intervalMs?: number
   maxMs?: number
   signal?: AbortSignal
@@ -75,13 +72,11 @@ function sleepWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
   })
 }
 
+// Legacy: LangGraph now runs a single analysis without time-horizon splits.
+// Keeping a minimal stub so existing imports don't break.
 export interface AllForecasts {
   symbol: string
-  forecasts: {
-    shortTerm: ForecastResult
-    mediumTerm: ForecastResult
-    longTerm: ForecastResult
-  }
+  forecast: ForecastResult
 }
 
 export interface BatchForecastItem {
@@ -93,9 +88,9 @@ export interface BatchForecastItem {
 }
 
 export const forecastService = {
-  async getForecast(symbol: string, timeHorizon: 'short' | 'medium' | 'long' = 'short'): Promise<ForecastResult> {
+  async getForecast(symbol: string): Promise<ForecastResult> {
     try {
-      const response = await apiClient.get<ForecastResult & { confidence_score?: number }>(`/Forecast/${symbol}?timeHorizon=${timeHorizon}`)
+      const response = await apiClient.get<ForecastResult & { confidence_score?: number }>(`/Forecast/${symbol}?timeHorizon=short`)
       // Normalize data to ensure arrays are never null
       const data = response.data
       return {
@@ -121,7 +116,6 @@ export const forecastService = {
    */
   async enqueueForecast(
     symbol: string,
-    timeHorizon: 'short' | 'medium' | 'long' = 'short',
     signal?: AbortSignal,
   ): Promise<ForecastEnqueueResponse> {
     const response = await apiClient.get<
@@ -131,7 +125,7 @@ export const forecastService = {
         symbol?: string
         timeHorizon?: string
       }
-    >(`/Forecast/${symbol}?timeHorizon=${timeHorizon}`, {
+    >(`/Forecast/${symbol}?timeHorizon=short`, {
       signal,
       silent: true,
       validateStatus: (status) => status === 200 || status === 202,
@@ -143,7 +137,6 @@ export const forecastService = {
       return {
         status: 'completed',
         symbol,
-        timeHorizon,
         result: normalizeForecast(data as unknown as ForecastResult & { confidence_score?: number }),
       }
     }
@@ -155,14 +148,13 @@ export const forecastService = {
         ? (rawStatus as ForecastJobStatus)
         : 'queued'
 
-    return { status, jobId, symbol, timeHorizon }
+    return { status, jobId, symbol }
   },
 
   /** Poll `/Forecast/langgraph/jobs/{jobId}` once — returns result on completion. */
   async getForecastJob(
     jobId: string,
     symbol: string,
-    timeHorizon: 'short' | 'medium' | 'long' = 'short',
     signal?: AbortSignal,
   ): Promise<ForecastEnqueueResponse> {
     const response = await apiClient.get<
@@ -173,7 +165,7 @@ export const forecastService = {
         timeHorizon?: string
         error?: string
       }
-    >(`/Forecast/langgraph/jobs/${encodeURIComponent(jobId)}?symbol=${encodeURIComponent(symbol)}&timeHorizon=${timeHorizon}`, {
+    >(`/Forecast/langgraph/jobs/${encodeURIComponent(jobId)}?symbol=${encodeURIComponent(symbol)}&timeHorizon=short`, {
       signal,
       silent: true,
       validateStatus: (status) => status === 200 || status === 202,
@@ -186,7 +178,6 @@ export const forecastService = {
         status: 'completed',
         jobId,
         symbol,
-        timeHorizon,
         result: normalizeForecast(data as unknown as ForecastResult & { confidence_score?: number }),
       }
     }
@@ -197,7 +188,7 @@ export const forecastService = {
         ? (rawStatus as ForecastJobStatus)
         : 'unknown'
 
-    return { status, jobId, symbol, timeHorizon }
+    return { status, jobId, symbol }
   },
 
   /**
@@ -208,14 +199,13 @@ export const forecastService = {
     symbol: string,
     options: PollForecastOptions = {},
   ): Promise<ForecastResult> {
-    const timeHorizon = options.timeHorizon ?? 'short'
     const intervalMs = options.intervalMs ?? 5000
     const maxMs = options.maxMs ?? 10 * 60 * 1000
     const signal = options.signal
 
     let envelope: ForecastEnqueueResponse
     try {
-      envelope = await this.enqueueForecast(symbol, timeHorizon, signal)
+      envelope = await this.enqueueForecast(symbol, signal)
     } catch (error: unknown) {
       if (signal?.aborted) throw new ForecastPollAbortedError()
       throw new Error(getAxiosErrorMessage(error) || 'Không thể tạo job dự báo')
@@ -247,7 +237,7 @@ export const forecastService = {
 
       let polled: ForecastEnqueueResponse
       try {
-        polled = await this.getForecastJob(jobId, symbol, timeHorizon, signal)
+        polled = await this.getForecastJob(jobId, symbol, signal)
       } catch (error: unknown) {
         if (signal?.aborted) throw new ForecastPollAbortedError()
         throw new Error(getAxiosErrorMessage(error) || 'Mất kết nối khi chờ phân tích')
@@ -269,10 +259,10 @@ export const forecastService = {
     return response.data
   },
 
-  async getBatchForecasts(symbols: string[], timeHorizon: 'short' | 'medium' | 'long' = 'short'): Promise<{ forecasts: BatchForecastItem[] }> {
+  async getBatchForecasts(symbols: string[]): Promise<{ forecasts: BatchForecastItem[] }> {
     const response = await apiClient.post<{ forecasts: BatchForecastItem[] }>('/Forecast/batch', {
       symbols,
-      timeHorizon,
+      timeHorizon: 'short',
     })
     return response.data
   },
@@ -325,17 +315,10 @@ export const forecastService = {
     }
   },
 
-  getTimeHorizonLabel(timeHorizon: string): string {
-    switch (timeHorizon) {
-      case 'short':
-        return '1-5 ngày'
-      case 'medium':
-        return '1-4 tuần'
-      case 'long':
-        return '1-3 tháng'
-      default:
-        return timeHorizon
-    }
+  // Legacy: time horizon is no longer surfaced in the UI because LangGraph
+  // runs a single unified analysis. The helper is kept for backward compat.
+  getTimeHorizonLabel(_timeHorizon: string): string {
+    return 'Phân tích tổng hợp'
   },
 }
 
