@@ -911,7 +911,7 @@ export const Portfolio = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="symbol"
-                      placeholder="Tìm kiếm mã cổ phiếu (VD: VIC, VNM, VCB)..."
+                      placeholder="Tìm kiếm mã cổ phiếu (VD: VCB, VHM, FPT)..."
                       value={symbolSearchQuery}
                       onChange={handleSymbolInputChange}
                       onFocus={() => setIsSymbolDropdownOpen(true)}
