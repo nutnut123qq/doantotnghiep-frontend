@@ -52,6 +52,114 @@ export interface AdminCorporateEvent {
   isDeleted: boolean;
 }
 
+export interface AIProvider {
+  id: string;
+  name: string;
+  model: string;
+  status: string;
+  latencyMs: number;
+  quotaRemaining: number;
+  quotaTotal: number;
+  keyMasked: string;
+  priority: number;
+  note?: string;
+}
+
+export interface AIProbeResult {
+  probedAt: string;
+  results: Array<{
+    id: string;
+    status: string;
+    latencyMs: number;
+    error?: string;
+  }>;
+}
+
+export interface AIPipelineNode {
+  id: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+}
+
+export interface AIPipelineEdge {
+  from: string;
+  to: string;
+}
+
+export interface AIPipelineInfo {
+  lightMode: boolean;
+  provider: string;
+  nodes: AIPipelineNode[];
+  edges: AIPipelineEdge[];
+  estimatedLlmCalls: number;
+}
+
+export interface AIRagDocument {
+  documentId: string;
+  source: string;
+  symbol: string;
+  chunks: number;
+  sizeBytes: number;
+  ingestedAt?: string;
+}
+
+export interface AICacheStats {
+  hitRatePercent: number;
+  memoryUsedMb: number;
+  totalKeys: number;
+  connectedClients: number;
+  dbSize: number;
+}
+
+export interface AIJob {
+  id: string;
+  symbol: string;
+  status: string;
+  progress: number;
+  provider?: string;
+  enqueuedAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+}
+
+export interface AIParameters {
+  temperature: number;
+  maxTokens: number;
+  promptVersion: string;
+  shadowMode: boolean;
+  canaryRatio: number;
+  llmProvider: string;
+  defaultModel: string;
+  lightModeEnv?: string;
+}
+
+export interface AIParametersUpdate {
+  temperature?: number;
+  maxTokens?: number;
+  promptVersion?: string;
+  shadowMode?: boolean;
+  canaryRatio?: number;
+}
+
+export interface AITraceNode {
+  name: string;
+  status: string;
+  ms: number;
+  parallel: boolean;
+}
+
+export interface AITrace {
+  id: string;
+  symbol: string;
+  provider: string;
+  startedAt: string;
+  totalMs: number;
+  nodes: AITraceNode[];
+  result: Record<string, unknown>;
+}
+
 class AdminService {
   private baseUrl = '/Admin';
 
@@ -190,6 +298,73 @@ class AdminService {
   async generateAIInsight(symbol: string): Promise<AdminAIInsight> {
     const response = await apiClient.post<AdminAIInsight>('/AIInsights/generate', { symbol });
     return response.data;
+  }
+
+  // AI Management
+  private aiMgmtBase = '/admin/ai-management';
+
+  async getAIProviders(): Promise<AIProvider[]> {
+    const response = await apiClient.get<AIProvider[]>(`${this.aiMgmtBase}/providers`);
+    return response.data;
+  }
+
+  async probeAIProviders(): Promise<AIProbeResult> {
+    const response = await apiClient.post<AIProbeResult>(`${this.aiMgmtBase}/providers/probe`);
+    return response.data;
+  }
+
+  async getAIPipeline(): Promise<AIPipelineInfo> {
+    const response = await apiClient.get<AIPipelineInfo>(`${this.aiMgmtBase}/pipeline`);
+    return response.data;
+  }
+
+  async getRAGDocuments(): Promise<AIRagDocument[]> {
+    const response = await apiClient.get<AIRagDocument[]>(`${this.aiMgmtBase}/rag/documents`);
+    return response.data;
+  }
+
+  async deleteRAGDocument(documentId: string): Promise<void> {
+    await apiClient.delete(`${this.aiMgmtBase}/rag/documents/${documentId}`);
+  }
+
+  async getCacheStats(): Promise<AICacheStats> {
+    const response = await apiClient.get<AICacheStats>(`${this.aiMgmtBase}/cache/stats`);
+    return response.data;
+  }
+
+  async updateCacheTTL(payload: { analyzeTtl?: number; quoteTtl?: number; historyTtl?: number; symbolsTtl?: number }): Promise<void> {
+    await apiClient.put(`${this.aiMgmtBase}/cache/ttl`, payload);
+  }
+
+  async getAIJobs(): Promise<AIJob[]> {
+    const response = await apiClient.get<AIJob[]>(`${this.aiMgmtBase}/jobs`);
+    return response.data;
+  }
+
+  async retryAIJob(jobId: string): Promise<void> {
+    await apiClient.post(`${this.aiMgmtBase}/jobs/${jobId}/retry`);
+  }
+
+  async cancelAIJob(jobId: string): Promise<void> {
+    await apiClient.delete(`${this.aiMgmtBase}/jobs/${jobId}`);
+  }
+
+  async getAIParameters(): Promise<AIParameters> {
+    const response = await apiClient.get<AIParameters>(`${this.aiMgmtBase}/parameters`);
+    return response.data;
+  }
+
+  async updateAIParameters(payload: AIParametersUpdate): Promise<void> {
+    await apiClient.put(`${this.aiMgmtBase}/parameters`, payload);
+  }
+
+  async getAITraces(limit = 20): Promise<AITrace[]> {
+    const response = await apiClient.get<AITrace[]>(`${this.aiMgmtBase}/traces`, { params: { limit } });
+    return response.data;
+  }
+
+  async clearAITraces(): Promise<void> {
+    await apiClient.delete(`${this.aiMgmtBase}/traces`);
   }
 }
 

@@ -25,6 +25,7 @@ const NewsManagement = lazy(() => import('@/features/admin/components/NewsManage
 const FinanceManagement = lazy(() => import('@/features/admin/components/FinanceManagement').then(m => ({ default: m.FinanceManagement })))
 const EventsManagement = lazy(() => import('@/features/admin/components/EventsManagement').then(m => ({ default: m.EventsManagement })))
 const AIInsightsManagement = lazy(() => import('@/features/admin/components/AIInsightsManagement').then(m => ({ default: m.AIInsightsManagement })))
+const AIManagement = lazy(() => import('@/features/admin/components/AIManagement').then(m => ({ default: m.AIManagement })))
 const Settings = lazy(() => import('@/features/settings/components/Settings').then(m => ({ default: m.Settings })))
 const AlertList = lazy(() => import('@/features/alerts/components/AlertList').then(m => ({ default: m.AlertList })))
 
@@ -156,6 +157,14 @@ export const router = createBrowserRouter(
               element: (
                 <Suspense fallback={<LoadingFallback />}>
                   <AIInsightsManagement />
+                </Suspense>
+              ),
+            },
+            {
+              path: 'ai-management',
+              element: (
+                <Suspense fallback={<LoadingFallback />}>
+                  <AIManagement />
                 </Suspense>
               ),
             },
