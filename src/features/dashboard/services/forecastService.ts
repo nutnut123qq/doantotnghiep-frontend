@@ -15,6 +15,17 @@ export interface ForecastResult {
 
 export type ForecastJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'unknown'
 
+export interface ForecastThinkingStep {
+  node: string
+  output: Record<string, unknown>
+  timestamp: string
+}
+
+export interface ForecastProgressResponse {
+  jobId?: string
+  steps: ForecastThinkingStep[]
+}
+
 export interface ForecastEnqueueResponse {
   status: ForecastJobStatus
   jobId?: string | null
@@ -28,6 +39,7 @@ export interface PollForecastOptions {
   maxMs?: number
   signal?: AbortSignal
   onStatus?: (status: ForecastJobStatus, attempt: number) => void
+  onThinkingSteps?: (steps: ForecastThinkingStep[]) => void
 }
 
 export class ForecastPollTimeoutError extends Error {
@@ -191,6 +203,22 @@ export const forecastService = {
     return { status, jobId, symbol }
   },
 
+  /** Fetch thinking steps for a running job. */
+  async getForecastJobProgress(
+    jobId: string,
+    signal?: AbortSignal,
+  ): Promise<ForecastProgressResponse> {
+    try {
+      const response = await apiClient.get<ForecastProgressResponse>(
+        `/Forecast/langgraph/jobs/${encodeURIComponent(jobId)}/progress`,
+        { signal, silent: true },
+      )
+      return response.data
+    } catch (error: unknown) {
+      return { jobId, steps: [] }
+    }
+  },
+
   /**
    * Enqueue + poll helper. Resolves with the final forecast, or throws
    * {@link ForecastPollTimeoutError} / {@link ForecastPollAbortedError}.
@@ -244,6 +272,18 @@ export const forecastService = {
       }
 
       options.onStatus?.(polled.status, attempt)
+
+      // Fetch thinking steps in parallel with status polling (fire-and-forget updates)
+      if (polled.status === 'running' || polled.status === 'queued') {
+        try {
+          const progress = await this.getForecastJobProgress(jobId, signal)
+          if (progress.steps.length > 0) {
+            options.onThinkingSteps?.(progress.steps)
+          }
+        } catch {
+          // ignore progress fetch errors
+        }
+      }
 
       if (polled.status === 'completed' && polled.result) {
         return polled.result

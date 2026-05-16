@@ -5,6 +5,7 @@ import {
   ForecastJobStatus,
   ForecastPollAbortedError,
   ForecastPollTimeoutError,
+  ForecastThinkingStep,
 } from '../services/forecastService'
 import { getAxiosErrorMessage } from '@/shared/utils/axiosError'
 import { forecastBusy } from '../utils/forecastBusy'
@@ -33,6 +34,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
   const [hasRequested, setHasRequested] = useState(false)
   const [jobStatus, setJobStatus] = useState<ForecastJobStatus | null>(null)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [thinkingSteps, setThinkingSteps] = useState<ForecastThinkingStep[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const elapsedTimerRef = useRef<number | null>(null)
 
@@ -51,6 +53,7 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
     setHasRequested(false)
     setJobStatus(null)
     setElapsedSeconds(0)
+    setThinkingSteps([])
     stopElapsedTimer()
     abortRef.current?.abort()
     abortRef.current = null
@@ -87,6 +90,9 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
         onStatus: (status) => {
           setJobStatus(status)
         },
+        onThinkingSteps: (steps) => {
+          setThinkingSteps(steps)
+        },
       })
       if (controller.signal.aborted) return
       setForecast(data)
@@ -119,6 +125,27 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
     return `Đang phân tích... (${elapsedSeconds}s)`
   })()
 
+  const nodeDisplayNames: Record<string, string> = {
+    context_loader: 'Thu thập dữ liệu',
+    news_analyst: 'Phân tích tin tức',
+    tech_analyst: 'Phân tích kỹ thuật',
+    bull_researcher: 'Nghiên cứu kịch bản tăng',
+    bear_researcher: 'Nghiên cứu kịch bản giảm',
+    research_manager: 'Tổng hợp nghiên cứu',
+    trader: 'Đánh giá xu hướng',
+    aggressive_debator: 'Phản biện tích cực',
+    neutral_debator: 'Phản biện trung lập',
+    conservative_debator: 'Phản biện thận trọng',
+    risk_judge: 'Đánh giá rủi ro & Kết luận',
+  }
+
+  const getThinkingPreview = (output: Record<string, unknown>): string => {
+    const texts = Object.values(output).filter((v) => typeof v === 'string') as string[]
+    const combined = texts.join('\n').trim()
+    if (combined.length <= 180) return combined
+    return combined.slice(0, 180) + '...'
+  }
+
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'Up':
@@ -150,90 +177,133 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
           </div>
         )}
 
-        {/* Scrollable Content Skeleton */}
+        {/* Thinking Steps Panel */}
+        <div className="mb-4 flex-shrink-0">
+          <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-2">
+            🧠 Agent đang suy nghĩ...
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+            {thinkingSteps.length === 0 && (
+              <div className="text-sm text-muted-foreground">Khởi động pipeline phân tích...</div>
+            )}
+            {thinkingSteps.map((step, idx) => {
+              const isLast = idx === thinkingSteps.length - 1
+              const isDone = !isLast || jobStatus === 'completed'
+              const label = nodeDisplayNames[step.node] || step.node
+              const preview = getThinkingPreview(step.output)
+              return (
+                <div
+                  key={`${step.node}-${idx}`}
+                  className={`rounded-lg border p-3 text-sm transition-all ${
+                    isDone
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                      : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base">{isDone ? '✅' : '⏳'}</span>
+                    <span className="font-medium text-card-foreground">{label}</span>
+                    {!isDone && <ArrowPathIcon className="h-3 w-3 text-yellow-600 animate-spin ml-auto" />}
+                  </div>
+                  {preview && step.node !== 'context_loader' && step.node !== 'risk_judge' && (
+                    <div className="mt-1 text-xs text-muted-foreground line-clamp-3 whitespace-pre-line">
+                      {preview}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
-          {/* Forecast Summary Skeleton - 3 cards grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Trend Card Skeleton */}
-            <div className="p-4 rounded-lg border border-border bg-green-50 dark:bg-green-900/20 animate-pulse">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-4 w-16 bg-green-200 dark:bg-green-800 rounded"></div>
-                <div className="h-6 w-6 bg-green-200 dark:bg-green-800 rounded-full"></div>
-              </div>
-              <div className="h-8 w-20 bg-green-200 dark:bg-green-800 rounded"></div>
-            </div>
-
-            {/* Confidence Card Skeleton */}
-            <div className="p-4 bg-muted rounded-lg border border-border animate-pulse">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-4 w-20 bg-background rounded"></div>
-                <div className="h-5 w-12 bg-purple-200 dark:bg-purple-800 rounded"></div>
-              </div>
-              <div className="h-8 w-24 bg-background rounded"></div>
-            </div>
-
-            {/* Recommendation Card Skeleton */}
-            <div className="p-4 bg-muted rounded-lg border border-border animate-pulse">
-              <div className="flex items-center justify-between mb-2">
-                <div className="h-4 w-24 bg-background rounded"></div>
-              </div>
-              <div className="h-6 w-16 bg-blue-200 dark:bg-blue-800 rounded-full"></div>
-            </div>
-          </div>
-
-          {/* Key Drivers Skeleton */}
-          <div className="mb-6 animate-pulse">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="h-5 w-5 bg-yellow-200 dark:bg-yellow-800 rounded"></div>
-              <div className="h-5 w-28 bg-muted rounded"></div>
-            </div>
-            <ul className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <li key={i} className="flex items-start space-x-2">
-                  <div className="h-4 w-4 bg-green-200 dark:bg-green-800 rounded-full mt-1"></div>
-                  <div className="flex-1 space-y-1">
-                    <div className="h-4 bg-muted rounded w-full"></div>
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
+          {thinkingSteps.length === 0 ? (
+            /* Skeleton when pipeline hasn't started showing steps yet */
+            <>
+              {/* Forecast Summary Skeleton - 3 cards grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-lg border border-border bg-green-50 dark:bg-green-900/20 animate-pulse">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="h-4 w-16 bg-green-200 dark:bg-green-800 rounded"></div>
+                    <div className="h-6 w-6 bg-green-200 dark:bg-green-800 rounded-full"></div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Risks Skeleton */}
-          <div className="mb-6 animate-pulse">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="h-5 w-5 bg-red-200 dark:bg-red-800 rounded"></div>
-              <div className="h-5 w-36 bg-muted rounded"></div>
-            </div>
-            <ul className="space-y-2">
-              {[1, 2].map((i) => (
-                <li key={i} className="flex items-start space-x-2">
-                  <div className="h-4 w-4 bg-red-200 dark:bg-red-800 rounded-full mt-1"></div>
-                  <div className="flex-1 space-y-1">
-                    <div className="h-4 bg-muted rounded w-full"></div>
-                    <div className="h-4 bg-muted rounded w-2/3"></div>
+                  <div className="h-8 w-20 bg-green-200 dark:bg-green-800 rounded"></div>
+                </div>
+                <div className="p-4 bg-muted rounded-lg border border-border animate-pulse">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="h-4 w-20 bg-background rounded"></div>
+                    <div className="h-5 w-12 bg-purple-200 dark:bg-purple-800 rounded"></div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  <div className="h-8 w-24 bg-background rounded"></div>
+                </div>
+                <div className="p-4 bg-muted rounded-lg border border-border animate-pulse">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="h-4 w-24 bg-background rounded"></div>
+                  </div>
+                  <div className="h-6 w-16 bg-blue-200 dark:bg-blue-800 rounded-full"></div>
+                </div>
+              </div>
 
-          {/* Analysis Skeleton */}
-          <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 animate-pulse">
-            <div className="h-5 w-32 bg-purple-200 dark:bg-purple-800 rounded mb-3"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-full"></div>
-              <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-full"></div>
-              <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-5/6"></div>
-              <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-3/4"></div>
+              <div className="mb-6 animate-pulse">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="h-5 w-5 bg-yellow-200 dark:bg-yellow-800 rounded"></div>
+                  <div className="h-5 w-28 bg-muted rounded"></div>
+                </div>
+                <ul className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <li key={i} className="flex items-start space-x-2">
+                      <div className="h-4 w-4 bg-green-200 dark:bg-green-800 rounded-full mt-1"></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-4 bg-muted rounded w-full"></div>
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mb-6 animate-pulse">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="h-5 w-5 bg-red-200 dark:bg-red-800 rounded"></div>
+                  <div className="h-5 w-36 bg-muted rounded"></div>
+                </div>
+                <ul className="space-y-2">
+                  {[1, 2].map((i) => (
+                    <li key={i} className="flex items-start space-x-2">
+                      <div className="h-4 w-4 bg-red-200 dark:bg-red-800 rounded-full mt-1"></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="h-4 bg-muted rounded w-full"></div>
+                        <div className="h-4 bg-muted rounded w-2/3"></div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800 animate-pulse">
+                <div className="h-5 w-32 bg-purple-200 dark:bg-purple-800 rounded mb-3"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-full"></div>
+                  <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-full"></div>
+                  <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-5/6"></div>
+                  <div className="h-4 bg-purple-200 dark:bg-purple-800 rounded w-3/4"></div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="h-3 w-48 bg-muted rounded mx-auto animate-pulse"></div>
+              </div>
+            </>
+          ) : (
+            /* When thinking steps are arriving: show a lightweight waiting hint instead of skeleton */
+            <div className="flex flex-col items-center justify-center py-10 space-y-4">
+              <ArrowPathIcon className="h-8 w-8 text-purple-500 animate-spin" />
+              <p className="text-sm text-muted-foreground">
+                Đang chờ kết luận cuối cùng từ Risk Judge...
+              </p>
             </div>
-          </div>
-
-          {/* Footer Skeleton */}
-          <div className="mt-4">
-            <div className="h-3 w-48 bg-muted rounded mx-auto animate-pulse"></div>
-          </div>
+          )}
         </div>
       </div>
     )
