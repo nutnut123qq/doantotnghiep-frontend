@@ -39,7 +39,7 @@ export const SymbolSelector = ({
   // Filter symbols based on search query
   const filteredSymbols = useMemo(() => {
     if (!searchQuery.trim()) {
-      return symbols.slice(0, 10) // Show first 10 when no search
+      return symbols.slice(0, 30) // Show first 30 when no search
     }
 
     const query = searchQuery.toLowerCase()
@@ -49,7 +49,7 @@ export const SymbolSelector = ({
           s.symbol.toLowerCase().includes(query) ||
           s.name?.toLowerCase().includes(query)
       )
-      .slice(0, 10) // Limit to 10 suggestions
+      .slice(0, 30) // Limit to 30 suggestions
   }, [symbols, searchQuery])
 
   // Update search query when value changes externally
