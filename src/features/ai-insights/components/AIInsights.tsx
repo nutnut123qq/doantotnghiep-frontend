@@ -9,7 +9,8 @@ import {
   Smile,
   AlertTriangle,
   Star,
-  X
+  X,
+  Zap
 } from 'lucide-react'
 import { aiInsightsService, shouldRetryAIInsightsRequest, type AIInsight } from '../services/aiInsightsService'
 import { motion } from 'framer-motion'
@@ -32,6 +33,7 @@ export const AIInsights = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All Insights')
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [triggerLoading, setTriggerLoading] = useState(false)
 
   const insightsQuery = useQuery({
     queryKey: ['ai-insights', 'list'],
@@ -68,6 +70,23 @@ export const AIInsights = () => {
     if (failed?.error) {
       const msg = getAxiosErrorMessage(failed.error)
       setError(msg === 'Unknown error' ? 'Không thể tải dữ liệu AI Insights' : msg)
+    }
+  }
+
+  const handleTriggerAll = async () => {
+    if (!confirm('Bạn có chắc muốn tạo AI Insights cho toàn bộ 30 mã VN30? Quá trình này có thể mất vài phút.')) {
+      return
+    }
+    setTriggerLoading(true)
+    setError(null)
+    try {
+      const result = await aiInsightsService.generateBatch()
+      alert(`Đã bắt đầu tạo insights cho ${result.count} mã. Job ID: ${result.jobId}`)
+    } catch (err: unknown) {
+      const msg = getAxiosErrorMessage(err)
+      setError(msg === 'Unknown error' ? 'Không thể trigger batch insights' : msg)
+    } finally {
+      setTriggerLoading(false)
     }
   }
 
@@ -195,11 +214,21 @@ export const AIInsights = () => {
     <div className="p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            AI Insights
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">AI-powered market analysis and trading recommendations</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+              AI Insights
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400">AI-powered market analysis and trading recommendations</p>
+          </div>
+          <button
+            onClick={() => void handleTriggerAll()}
+            disabled={triggerLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Zap className="h-4 w-4" />
+            {triggerLoading ? 'Đang chạy...' : 'Trigger All VN30'}
+          </button>
         </div>
 
         {/* Insights with Tabs */}

@@ -84,5 +84,10 @@ export const aiInsightsService = {
     const response = await apiClient.get<AccuracyMetrics>(`/AIInsights/metrics/accuracy?maxInsights=${maxInsights}`)
     return response.data
   },
+
+  async generateBatch(symbols?: string[]): Promise<{ status: string; jobId: string; count: number; symbols: string[] }> {
+    const response = await apiClient.post('/AIInsights/generate/batch', { symbols })
+    return response.data
+  },
 }
 

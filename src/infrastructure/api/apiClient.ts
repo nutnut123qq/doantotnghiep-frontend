@@ -65,16 +65,17 @@ apiClient.interceptors.response.use(
       const isExpected404 = status === 404 && 
         error.config?.url?.toLowerCase().includes('/userpreference')
       
-      if (status >= 400 && status !== 401 && !isExpected404 && !isSilent) {
-        if (status >= 500) {
-          notify.error(`Server error: ${message}`)
-        } else {
-          notify.error(message)
-        }
-      }
+      // Toast notifications temporarily disabled
+      // if (status >= 400 && status !== 401 && !isExpected404 && !isSilent) {
+      //   if (status >= 500) {
+      //     notify.error(`Server error: ${message}`)
+      //   } else {
+      //     notify.error(message)
+      //   }
+      // }
     } else if (error.request && !isSilent) {
       // Network error
-      notify.error('Network error: Please check your connection')
+      // notify.error('Network error: Please check your connection')
     }
     
     return Promise.reject(error)

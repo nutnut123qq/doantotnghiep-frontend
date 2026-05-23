@@ -300,6 +300,11 @@ class AdminService {
     return response.data;
   }
 
+  async generateAIInsightsBatch(symbols?: string[]): Promise<{ status: string; jobId: string; count: number; symbols: string[] }> {
+    const response = await apiClient.post<{ status: string; jobId: string; count: number; symbols: string[] }>('/AIInsights/generate/batch', { symbols });
+    return response.data;
+  }
+
   // AI Management
   private aiMgmtBase = '/admin/ai-management';
 

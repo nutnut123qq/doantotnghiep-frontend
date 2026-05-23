@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EmptyState } from '@/shared/components/EmptyState'
 import { ErrorState } from '@/shared/components/ErrorState'
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton'
-import { Brain, RefreshCw, Sparkles } from 'lucide-react'
+import { Brain, RefreshCw, Sparkles, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { logger } from '@/shared/utils/logger'
@@ -25,6 +25,7 @@ export function AIInsightsManagement() {
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all')
   const [generateSymbol, setGenerateSymbol] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [triggeringAll, setTriggeringAll] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const loadInsights = useCallback(async () => {
@@ -90,6 +91,19 @@ export function AIInsightsManagement() {
     }
   }, [generateSymbol, loadInsights])
 
+  const handleGenerateAll = useCallback(async () => {
+    try {
+      setTriggeringAll(true)
+      const result = await adminService.generateAIInsightsBatch()
+      toast.success(`Triggered batch insight generation for ${result.count} symbols (Job: ${result.jobId})`)
+    } catch (err) {
+      logger.error('Error generating batch AI insights', { error: err })
+      toast.error('Failed to trigger batch insight generation')
+    } finally {
+      setTriggeringAll(false)
+    }
+  }, [])
+
   if (loading && items.length === 0) {
     return <LoadingSkeleton />
   }
@@ -147,9 +161,17 @@ export function AIInsightsManagement() {
               placeholder="Symbol to generate insight"
               className="max-w-xs"
             />
-            <Button onClick={() => void handleGenerate()} disabled={generating}>
+            <Button onClick={() => void handleGenerate()} disabled={generating || triggeringAll}>
               <Sparkles className={cn('mr-2 h-4 w-4', generating && 'animate-pulse')} />
               Trigger Generate
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => void handleGenerateAll()}
+              disabled={generating || triggeringAll}
+            >
+              <Zap className={cn('mr-2 h-4 w-4', triggeringAll && 'animate-pulse')} />
+              Trigger All
             </Button>
           </div>
         </CardContent>
