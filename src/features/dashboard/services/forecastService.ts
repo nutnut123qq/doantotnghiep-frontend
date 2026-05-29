@@ -120,11 +120,8 @@ export const forecastService = {
   /**
    * Ask the backend to enqueue a LangGraph forecast job.
    *
-   * The backend returns either:
-   *   - HTTP 200 + full {@link ForecastResult} when a fresh cache exists, OR
-   *   - HTTP 202 + `{ status, jobId }` when a worker needs to run the graph.
-   *
-   * We inspect the payload shape and return a unified envelope for the caller.
+   * The backend returns HTTP 202 + `{ status, jobId }` while the graph runs;
+   * poll {@link pollForecastJob} until status is completed or failed.
    */
   async enqueueForecast(
     symbol: string,
