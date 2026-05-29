@@ -223,13 +223,6 @@ function PipelineTab() {
           <div className="text-sm text-[hsl(var(--text)/0.7)]">
             Nodes: <span className="font-semibold text-[hsl(var(--text))]">{enabledCount}</span> / {pipeline.nodes.length}
           </div>
-          <div className="h-4 w-px bg-[hsl(var(--border))]" />
-          <div className="flex items-center gap-2 text-sm">
-            <Switch checked={pipeline.lightMode} disabled id="light-mode" />
-            <label htmlFor="light-mode" className="text-[hsl(var(--text))]">
-              Light Mode (skip 3 debators)
-            </label>
-          </div>
         </div>
         <Button size="sm" variant="outline" onClick={() => void refresh()}>
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
@@ -657,7 +650,6 @@ function ParametersTab() {
             <span>Provider: {form.llmProvider}</span>
             <span>|</span>
             <span>Default Model: {form.defaultModel}</span>
-            {form.lightModeEnv && <><span>|</span><span>Light Mode Env: {form.lightModeEnv}</span></>}
           </div>
 
           <Button size="sm" onClick={() => void handleSave()} disabled={saving}>

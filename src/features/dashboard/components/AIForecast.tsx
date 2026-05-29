@@ -133,9 +133,6 @@ export const AIForecast = ({ symbol }: AIForecastProps) => {
     bear_researcher: 'Nghiên cứu kịch bản giảm',
     research_manager: 'Tổng hợp nghiên cứu',
     trader: 'Đánh giá xu hướng',
-    aggressive_debator: 'Phản biện tích cực',
-    neutral_debator: 'Phản biện trung lập',
-    conservative_debator: 'Phản biện thận trọng',
     risk_judge: 'Đánh giá rủi ro & Kết luận',
   }
 

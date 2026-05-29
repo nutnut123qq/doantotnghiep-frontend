@@ -88,7 +88,6 @@ export interface AIPipelineEdge {
 }
 
 export interface AIPipelineInfo {
-  lightMode: boolean;
   provider: string;
   nodes: AIPipelineNode[];
   edges: AIPipelineEdge[];
@@ -132,7 +131,6 @@ export interface AIParameters {
   canaryRatio: number;
   llmProvider: string;
   defaultModel: string;
-  lightModeEnv?: string;
 }
 
 export interface AIParametersUpdate {
