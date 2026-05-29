@@ -3,7 +3,6 @@ import {
   BarChart3,
   Brain,
   CalendarDays,
-  Cpu,
   Landmark,
   LogOut,
   Newspaper,
@@ -20,7 +19,6 @@ const adminNavigation = [
   { label: 'Finance', to: '/admin/finance', icon: Landmark },
   { label: 'Events', to: '/admin/events', icon: CalendarDays },
   { label: 'AI Insights', to: '/admin/ai-insights', icon: Brain },
-  { label: 'AI Management', to: '/admin/ai-management', icon: Cpu },
 ]
 
 export function AdminLayout() {
