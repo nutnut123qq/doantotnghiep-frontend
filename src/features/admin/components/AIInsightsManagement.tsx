@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { adminService, type AdminAIInsight } from '../services/adminService'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,16 @@ export function AIInsightsManagement() {
   const [generating, setGenerating] = useState(false)
   const [triggeringAll, setTriggeringAll] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const batchPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopBatchPolling = useCallback(() => {
+    if (batchPollRef.current) {
+      clearInterval(batchPollRef.current)
+      batchPollRef.current = null
+    }
+  }, [])
+
+  useEffect(() => () => stopBatchPolling(), [stopBatchPolling])
 
   const loadInsights = useCallback(async () => {
     try {
@@ -94,15 +104,32 @@ export function AIInsightsManagement() {
   const handleGenerateAll = useCallback(async () => {
     try {
       setTriggeringAll(true)
+      stopBatchPolling()
       const result = await adminService.generateAIInsightsBatch()
-      toast.success(`Triggered batch insight generation for ${result.count} symbols (Job: ${result.jobId})`)
+      toast.success(
+        `Batch started for ${result.count} symbols (Job: ${result.jobId}). List will auto-refresh.`
+      )
+
+      void loadInsights()
+
+      const pollIntervalMs = 45_000
+      const pollDurationMs = 25 * 60_000
+      const startedAt = Date.now()
+
+      batchPollRef.current = setInterval(() => {
+        if (Date.now() - startedAt >= pollDurationMs) {
+          stopBatchPolling()
+          return
+        }
+        void loadInsights()
+      }, pollIntervalMs)
     } catch (err) {
       logger.error('Error generating batch AI insights', { error: err })
       toast.error('Failed to trigger batch insight generation')
     } finally {
       setTriggeringAll(false)
     }
-  }, [])
+  }, [loadInsights, stopBatchPolling])
 
   if (loading && items.length === 0) {
     return <LoadingSkeleton />
