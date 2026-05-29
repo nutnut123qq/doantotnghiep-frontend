@@ -241,7 +241,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
       const data = await stockDataService.getOHLCVData(selectedSymbol, startDate, endDate)
 
       if (!data || data.length === 0) {
-        setError('Không có dữ liệu')
+        setError('No data available')
         return
       }
 
@@ -302,7 +302,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
       chartRef.current?.timeScale().fitContent()
     } catch (err) {
       logger.error('Error loading chart data', { error: err, symbol: selectedSymbol, timeRange })
-      setError('Lỗi khi tải dữ liệu biểu đồ')
+      setError('Failed to load chart data')
     } finally {
       setLoading(false)
     }
@@ -323,11 +323,11 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
         <div className="flex items-center space-x-3">
           <ChartBarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           <div className="flex items-center space-x-2">
-            <span className="text-lg font-semibold text-card-foreground">Biểu đồ</span>
+            <span className="text-lg font-semibold text-card-foreground">Chart</span>
             <SymbolSelector
               value={selectedSymbol}
               onChange={handleSymbolChange}
-              placeholder="Chọn mã CK..."
+              placeholder="Select symbol..."
               className="w-48"
             />
           </div>
@@ -382,7 +382,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
             onClick={loadChartData}
             disabled={loading}
             className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50"
-            title="Làm mới"
+            title="Refresh"
           >
             <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -391,7 +391,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
           <button
             onClick={() => chartSettingsService.exportSettings(selectedSymbol)}
             className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400"
-            title="Xuất cài đặt"
+            title="Export settings"
           >
             <Cog6ToothIcon className="h-5 w-5" />
           </button>
@@ -404,7 +404,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
           <div className="absolute inset-0 flex items-center justify-center bg-card/80 z-10 rounded-lg">
             <div className="text-center">
               <ArrowPathIcon className="h-8 w-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Đang tải dữ liệu...</p>
+              <p className="text-sm text-muted-foreground">Loading data...</p>
             </div>
           </div>
         )}
@@ -418,7 +418,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
                 onClick={loadChartData}
                 className="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
-                Thử lại
+                Retry
               </button>
             </div>
           </div>
@@ -432,11 +432,11 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-green-500 rounded"></div>
-            <span>Tăng</span>
+            <span>Up</span>
           </div>
           <div className="flex items-center space-x-1">
             <div className="w-3 h-3 bg-red-500 rounded"></div>
-            <span>Giảm</span>
+            <span>Down</span>
           </div>
           {showMA20 && (
             <div className="flex items-center space-x-1">
@@ -452,7 +452,7 @@ export const TradingViewChart = ({ symbol, height = 500, onSymbolChange }: Tradi
           )}
         </div>
         <div>
-          Dữ liệu từ VNStock
+          Data from VNStock
         </div>
       </div>
     </div>

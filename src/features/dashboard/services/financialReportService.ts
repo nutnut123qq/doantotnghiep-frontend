@@ -85,13 +85,13 @@ export const financialReportService = {
       return '—'
     }
     if (n >= 1000000000) {
-      return `${(n / 1000000000).toFixed(2)} tỷ`
+      return `${(n / 1000000000).toFixed(2)}B`
     }
     if (n >= 1000000) {
-      return `${(n / 1000000).toFixed(2)} triệu`
+      return `${(n / 1000000).toFixed(2)}M`
     }
     if (n >= 1000) {
-      return `${(n / 1000).toFixed(2)} nghìn`
+      return `${(n / 1000).toFixed(2)}K`
     }
     return n.toFixed(2)
   },

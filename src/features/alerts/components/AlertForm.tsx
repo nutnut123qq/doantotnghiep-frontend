@@ -210,7 +210,7 @@ export const AlertForm = ({
         />
         {formData.type === AlertType.Price && (
           <p className="text-xs text-muted-foreground">
-            Nhập giá đầy đủ bằng VND (số nguyên), ví dụ 100000.
+            Enter the full price in VND (integer), e.g. 100000.
           </p>
         )}
       </div>

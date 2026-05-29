@@ -337,29 +337,29 @@ export default function EventsFeed() {
     <div className="p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
         <PageHeader
-          title="Sự kiện doanh nghiệp"
-          description="Theo dõi lịch công bố, cổ tức, ĐHĐCĐ và các sự kiện quan trọng"
+          title="Corporate Events"
+          description="Track earnings announcements, dividends, AGMs, and other important events"
         />
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Bộ lọc</CardTitle>
+            <CardTitle className="text-lg">Filters</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="space-y-2">
-                <Label htmlFor="symbol-filter">Mã CK</Label>
+                <Label htmlFor="symbol-filter">Symbol</Label>
                 <Input
                   id="symbol-filter"
                   value={symbolFilter}
                   onChange={(e) =>
                     setSymbolFilter(e.target.value.toUpperCase())
                   }
-                  placeholder="VD: VNM"
+                  placeholder="e.g. VNM"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Loại sự kiện</Label>
+                <Label>Event type</Label>
                 <Select
                   value={
                     eventTypeFilter === undefined
@@ -375,10 +375,10 @@ export default function EventsFeed() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Tất cả" />
+                    <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value={String(EventType.Earnings)}>
                       Earnings
                     </SelectItem>
@@ -396,7 +396,7 @@ export default function EventsFeed() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Trạng thái</Label>
+                <Label>Status</Label>
                 <Select
                   value={
                     statusFilter === undefined ? 'all' : String(statusFilter)
@@ -408,10 +408,10 @@ export default function EventsFeed() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Tất cả" />
+                    <SelectValue placeholder="All" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value={String(Status.Upcoming)}>
                       Upcoming
                     </SelectItem>
@@ -422,14 +422,14 @@ export default function EventsFeed() {
               </div>
               <div className="flex items-end gap-2">
                 <Button className="flex-1" onClick={applyFilters}>
-                  Áp dụng
+                  Apply
                 </Button>
                 <Button
                   variant="outline"
                   className="flex-1"
                   onClick={clearFilters}
                 >
-                  Xóa lọc
+                  Clear filters
                 </Button>
               </div>
             </div>
@@ -596,8 +596,8 @@ export default function EventsFeed() {
             <Card>
               <CardContent className="pt-6">
                 <EmptyState
-                  title="Chưa có sự kiện"
-                  description="Thử đổi bộ lọc hoặc quay lại sau khi backend đã thu thập dữ liệu."
+                  title="No events yet"
+                  description="Try changing the filters or check back after the backend has collected data."
                 />
               </CardContent>
             </Card>
@@ -627,7 +627,7 @@ export default function EventsFeed() {
                           className="mt-2 inline-block text-xs text-primary hover:underline"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          Xem nguồn →
+                          View source →
                         </a>
                       )}
                     </div>

@@ -57,13 +57,13 @@ export function NewsManagement() {
       )
       try {
         await adminService.setNewsDeleted(news.id, isDeleted)
-        toast.success(isDeleted ? 'Article hidden' : 'Article visible')
+        toast.success(isDeleted ? 'Article hidden' : 'Article shown')
       } catch (err) {
         setItems((rows) =>
           rows.map((n) => (n.id === news.id ? { ...n, isDeleted: prev } : n))
         )
         logger.error('Error updating news visibility', { error: err })
-        toast.error('Failed to update visibility')
+        toast.error('Failed to update visibility status')
       } finally {
         setTogglingId(null)
       }
@@ -94,7 +94,7 @@ export function NewsManagement() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Newspaper className="h-5 w-5" />
-          <span>Toggle visibility for users. Hidden articles stay in the database so crawlers will not re-add the same URL.</span>
+          <span>Toggle visibility for users. Hidden articles remain in the database so the crawler does not re-add the same URL.</span>
         </div>
         <Button variant="outline" size="sm" onClick={() => void loadNews(currentPage)} disabled={loading}>
           <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
@@ -106,7 +106,7 @@ export function NewsManagement() {
         <EmptyState
           icon={Newspaper}
           title="No news"
-          description="There are no news items on this page."
+          description="No news articles on this page."
         />
       ) : (
         <Card className="bg-[hsl(var(--surface-1))]">
@@ -180,7 +180,7 @@ export function NewsManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Total {totalCount} items - Page {currentPage} of {totalPages}
+                {totalCount} items total — Page {currentPage} / {totalPages}
               </div>
               <div className="flex items-center space-x-2">
                 <Button

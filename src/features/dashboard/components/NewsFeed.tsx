@@ -16,11 +16,11 @@ const formatDate = (dateString: string) => {
   const diffDays = Math.floor(diffMs / 86400000)
 
   if (diffMins < 60) {
-    return `${diffMins} phút trước`
+    return `${diffMins} min ago`
   } else if (diffHours < 24) {
-    return `${diffHours} giờ trước`
+    return `${diffHours} hr ago`
   } else if (diffDays < 7) {
-    return `${diffDays} ngày trước`
+    return `${diffDays} days ago`
   } else {
     return date.toLocaleDateString('vi-VN')
   }
@@ -144,7 +144,7 @@ export const NewsFeed = () => {
       <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
         <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <Newspaper className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-card-foreground">Tin tức</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">News</h3>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <div className="space-y-4">
@@ -165,7 +165,7 @@ export const NewsFeed = () => {
       <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
         <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <Newspaper className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-card-foreground">Tin tức</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">News</h3>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <ErrorState message={error} onRetry={loadNews} />
@@ -179,14 +179,14 @@ export const NewsFeed = () => {
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <Newspaper className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-card-foreground">Tin tức</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">News</h3>
         </div>
         <button
           type="button"
           onClick={() => loadNews()}
           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
         >
-          Làm mới
+          Refresh
         </button>
       </div>
 
@@ -194,7 +194,7 @@ export const NewsFeed = () => {
       {news.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Newspaper className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
-          <p>Chưa có tin tức</p>
+          <p>No news yet</p>
         </div>
       ) : (
         news.map((item) => (
@@ -242,7 +242,7 @@ export const NewsFeed = () => {
               onClick={() => goToPage(page - 1)}
               disabled={page <= 1 || loading}
               className="flex items-center justify-center w-8 h-8 rounded-md text-sm text-blue-600 dark:text-blue-400 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Trang trước"
+              title="Previous page"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -268,7 +268,7 @@ export const NewsFeed = () => {
               onClick={() => goToPage(page + 1)}
               disabled={page >= totalPages || loading}
               className="flex items-center justify-center w-8 h-8 rounded-md text-sm text-blue-600 dark:text-blue-400 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Trang sau"
+              title="Next page"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -278,7 +278,7 @@ export const NewsFeed = () => {
               onClick={() => goToPage(totalPages)}
               disabled={page >= totalPages || loading}
               className="flex items-center justify-center w-8 h-8 rounded-md text-sm text-blue-600 dark:text-blue-400 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Trang cuối"
+              title="Last page"
             >
               <ChevronsRight className="h-4 w-4" />
             </button>
@@ -286,11 +286,11 @@ export const NewsFeed = () => {
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>
-              Trang <span className="font-medium text-foreground">{page}</span> / {totalPages}
+              Page <span className="font-medium text-foreground">{page}</span> / {totalPages}
             </span>
             <span className="text-border">|</span>
             <span className="flex items-center gap-1">
-              Đến trang
+              Go to page
               <input
                 type="text"
                 inputMode="numeric"

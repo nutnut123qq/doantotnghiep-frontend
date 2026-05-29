@@ -117,10 +117,10 @@ export const Portfolio = () => {
     } catch (err: unknown) {
       console.error('Error loading portfolio data:', err)
       if (isAxiosError(err) && err.response?.status === 404) {
-        setError('API endpoint chưa được implement. Vui lòng liên hệ admin.')
+        setError('API endpoint is not implemented. Please contact an admin.')
       } else {
         const msg = getAxiosErrorMessage(err)
-        setError(msg === 'Unknown error' ? 'Không thể tải dữ liệu portfolio. Vui lòng thử lại.' : msg)
+        setError(msg === 'Unknown error' ? 'Failed to load portfolio data. Please try again.' : msg)
       }
       setHoldings([])
       setSummaryStats(null)
@@ -141,7 +141,7 @@ export const Portfolio = () => {
       const avgPrice = parseFloat(newHolding.avgPrice)
 
       if (!newHolding.symbol.trim() || !shares || !avgPrice || shares <= 0 || avgPrice <= 0) {
-        notify.error('Vui lòng nhập đầy đủ thông tin hợp lệ')
+        notify.error('Please enter valid information')
         return
       }
 
@@ -162,7 +162,7 @@ export const Portfolio = () => {
     } catch (err: unknown) {
       console.error('Error adding holding:', err)
       const msg = getAxiosErrorMessage(err)
-      notify.error(msg === 'Unknown error' ? 'Không thể thêm mã cổ phiếu. Vui lòng thử lại.' : msg)
+      notify.error(msg === 'Unknown error' ? 'Failed to add stock. Please try again.' : msg)
     } finally {
       setIsSubmitting(false)
     }
@@ -186,12 +186,12 @@ export const Portfolio = () => {
       const avgPrice = parseFloat(editHolding.avgPrice)
 
       if (!shares || !avgPrice || shares <= 0 || avgPrice <= 0) {
-        notify.error('Vui lòng nhập đầy đủ thông tin hợp lệ')
+        notify.error('Please enter valid information')
         return
       }
 
       await portfolioService.updateHolding(selectedHolding.id, { shares, avgPrice })
-      notify.success(`Đã cập nhật ${selectedHolding.symbol} thành công`)
+      notify.success(`Updated ${selectedHolding.symbol} successfully`)
 
       setIsEditDialogOpen(false)
       setSelectedHolding(null)
@@ -200,7 +200,7 @@ export const Portfolio = () => {
     } catch (err: unknown) {
       console.error('Error updating holding:', err)
       const msg = getAxiosErrorMessage(err)
-      notify.error(msg === 'Unknown error' ? 'Không thể cập nhật mã cổ phiếu. Vui lòng thử lại.' : msg)
+      notify.error(msg === 'Unknown error' ? 'Failed to update stock. Please try again.' : msg)
     } finally {
       setIsUpdating(false)
     }
@@ -217,7 +217,7 @@ export const Portfolio = () => {
     try {
       setIsDeleting(true)
       await portfolioService.deleteHolding(selectedHolding.id)
-      notify.success(`Đã xóa ${selectedHolding.symbol} khỏi portfolio`)
+      notify.success(`Removed ${selectedHolding.symbol} from portfolio`)
 
       setIsDeleteDialogOpen(false)
       setSelectedHolding(null)
@@ -225,7 +225,7 @@ export const Portfolio = () => {
     } catch (err: unknown) {
       console.error('Error deleting holding:', err)
       const msg = getAxiosErrorMessage(err)
-      notify.error(msg === 'Unknown error' ? 'Không thể xóa mã cổ phiếu. Vui lòng thử lại.' : msg)
+      notify.error(msg === 'Unknown error' ? 'Failed to remove stock. Please try again.' : msg)
     } finally {
       setIsDeleting(false)
     }
@@ -549,7 +549,7 @@ export const Portfolio = () => {
                 disabled={isUpdating || isDeleting}
               >
                 <Pencil className="h-3.5 w-3.5 mr-1" />
-                Sửa
+                Edit
               </Button>
               <Button
                 variant="outline"
@@ -559,7 +559,7 @@ export const Portfolio = () => {
                 className="text-rose-600 hover:text-rose-700"
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
-                Xóa
+                Delete
               </Button>
             </div>
           )
@@ -621,7 +621,7 @@ export const Portfolio = () => {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-center space-y-4">
                 <p className="text-lg font-medium text-red-600 dark:text-red-400">
-                  Không thể tải dữ liệu portfolio
+                  Failed to load portfolio data
                 </p>
                 <p className="text-sm text-muted-foreground">{error}</p>
                 <Button
@@ -630,7 +630,7 @@ export const Portfolio = () => {
                   className="mt-4"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Thử lại
+                  Retry
                 </Button>
               </div>
             </CardContent>
@@ -662,7 +662,7 @@ export const Portfolio = () => {
                 size="sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Thêm mã cổ phiếu
+                Add stock
               </Button>
               <Button
                 onClick={loadData}
@@ -898,20 +898,20 @@ export const Portfolio = () => {
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Thêm mã cổ phiếu vào Portfolio</DialogTitle>
+              <DialogTitle>Add Stock to Portfolio</DialogTitle>
               <DialogDescription>
-                Nhập thông tin mã cổ phiếu bạn muốn thêm vào portfolio của bạn.
+                Enter the stock details you want to add to your portfolio.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="symbol">Mã cổ phiếu *</Label>
+                <Label htmlFor="symbol">Stock symbol *</Label>
                 <div className="relative" ref={symbolInputRef}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="symbol"
-                      placeholder="Tìm kiếm mã cổ phiếu (VD: VCB, VHM, FPT)..."
+                      placeholder="Search stock symbol (e.g. VCB, VHM, FPT)..."
                       value={symbolSearchQuery}
                       onChange={handleSymbolInputChange}
                       onFocus={() => setIsSymbolDropdownOpen(true)}
@@ -944,18 +944,18 @@ export const Portfolio = () => {
                     >
                       {isLoadingSymbols ? (
                         <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                          Đang tải danh sách mã chứng khoán...
+                          Loading stock symbols...
                         </div>
                       ) : symbols.length === 0 ? (
                         <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                          <div>Không có dữ liệu mã chứng khoán</div>
-                          <div className="text-xs mt-1">API có thể chưa sẵn sàng</div>
+                          <div>No stock symbol data</div>
+                          <div className="text-xs mt-1">API may not be ready</div>
                         </div>
                       ) : filteredSymbols.length === 0 ? (
                         <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                          <div>Không tìm thấy mã chứng khoán</div>
+                          <div>No matching stock symbols</div>
                           <div className="text-xs mt-1">
-                            Tìm kiếm: &quot;{symbolSearchQuery}&quot; ({symbols.length} mã có sẵn)
+                            Search: &quot;{symbolSearchQuery}&quot; ({symbols.length} symbols available)
                           </div>
                         </div>
                       ) : (
@@ -1000,7 +1000,7 @@ export const Portfolio = () => {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="shares">Số lượng cổ phiếu *</Label>
+                <Label htmlFor="shares">Number of shares *</Label>
                 <Input
                   id="shares"
                   type="number"
@@ -1013,7 +1013,7 @@ export const Portfolio = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="avgPrice">Giá mua trung bình (VND) *</Label>
+                <Label htmlFor="avgPrice">Average purchase price (VND) *</Label>
                 <Input
                   id="avgPrice"
                   type="number"
@@ -1037,13 +1037,13 @@ export const Portfolio = () => {
                 }}
                 disabled={isSubmitting}
               >
-                Hủy
+                Cancel
               </Button>
               <Button
                 onClick={handleAddHolding}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Đang thêm...' : 'Thêm'}
+                {isSubmitting ? 'Adding...' : 'Add'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1062,16 +1062,16 @@ export const Portfolio = () => {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Chỉnh sửa mã cổ phiếu</DialogTitle>
+              <DialogTitle>Edit Stock</DialogTitle>
               <DialogDescription>
                 {selectedHolding
-                  ? `Cập nhật thông tin cho mã ${selectedHolding.symbol}.`
-                  : 'Cập nhật thông tin mã cổ phiếu trong portfolio.'}
+                  ? `Update details for ${selectedHolding.symbol}.`
+                  : 'Update stock details in your portfolio.'}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="editShares">Số lượng cổ phiếu *</Label>
+                <Label htmlFor="editShares">Number of shares *</Label>
                 <Input
                   id="editShares"
                   type="number"
@@ -1084,7 +1084,7 @@ export const Portfolio = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="editAvgPrice">Giá mua trung bình (VND) *</Label>
+                <Label htmlFor="editAvgPrice">Average purchase price (VND) *</Label>
                 <Input
                   id="editAvgPrice"
                   type="number"
@@ -1103,10 +1103,10 @@ export const Portfolio = () => {
                 onClick={() => setIsEditDialogOpen(false)}
                 disabled={isUpdating}
               >
-                Hủy
+                Cancel
               </Button>
               <Button onClick={handleUpdateHolding} disabled={isUpdating}>
-                {isUpdating ? 'Đang cập nhật...' : 'Lưu thay đổi'}
+                {isUpdating ? 'Updating...' : 'Save changes'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1124,11 +1124,11 @@ export const Portfolio = () => {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Xóa mã cổ phiếu</DialogTitle>
+              <DialogTitle>Remove Stock</DialogTitle>
               <DialogDescription>
                 {selectedHolding
-                  ? `Bạn có chắc muốn xóa ${selectedHolding.symbol} khỏi portfolio không?`
-                  : 'Bạn có chắc muốn xóa mã cổ phiếu này khỏi portfolio không?'}
+                  ? `Are you sure you want to remove ${selectedHolding.symbol} from your portfolio?`
+                  : 'Are you sure you want to remove this stock from your portfolio?'}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -1137,14 +1137,14 @@ export const Portfolio = () => {
                 onClick={() => setIsDeleteDialogOpen(false)}
                 disabled={isDeleting}
               >
-                Hủy
+                Cancel
               </Button>
               <Button
                 onClick={handleDeleteHolding}
                 disabled={isDeleting}
                 className="bg-rose-600 hover:bg-rose-700 text-white"
               >
-                {isDeleting ? 'Đang xóa...' : 'Xóa'}
+                {isDeleting ? 'Removing...' : 'Delete'}
               </Button>
             </DialogFooter>
           </DialogContent>

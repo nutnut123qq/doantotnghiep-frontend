@@ -6,7 +6,7 @@ export function AdminDashboard() {
     <div className="animate-fade-in space-y-6">
       <PageHeader
         title="Admin Dashboard"
-        description="System monitoring and management"
+        description="Monitor and manage the system"
       />
       <SystemStats />
     </div>

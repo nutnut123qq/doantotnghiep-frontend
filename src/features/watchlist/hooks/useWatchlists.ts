@@ -20,10 +20,10 @@ export const useWatchlists = () => {
     mutationFn: (name: string) => watchlistService.createWatchlist(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      notify.success('Đã tạo watchlist thành công!')
+      notify.success('Watchlist created successfully!')
     },
     onError: (error: unknown) => {
-      notify.error(getAxiosErrorMessage(error) || 'Không thể tạo watchlist')
+      notify.error(getAxiosErrorMessage(error) || 'Failed to create watchlist')
     },
   })
 
@@ -32,10 +32,10 @@ export const useWatchlists = () => {
       watchlistService.updateWatchlist(id, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      notify.success('Đã cập nhật watchlist thành công!')
+      notify.success('Watchlist updated successfully!')
     },
     onError: (error: unknown) => {
-      notify.error(getAxiosErrorMessage(error) || 'Không thể cập nhật watchlist')
+      notify.error(getAxiosErrorMessage(error) || 'Failed to update watchlist')
     },
   })
 
@@ -43,10 +43,10 @@ export const useWatchlists = () => {
     mutationFn: (id: string) => watchlistService.deleteWatchlist(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      notify.success('Đã xóa watchlist thành công!')
+      notify.success('Watchlist deleted successfully!')
     },
     onError: (error: unknown) => {
-      notify.error(getAxiosErrorMessage(error) || 'Không thể xóa watchlist')
+      notify.error(getAxiosErrorMessage(error) || 'Failed to delete watchlist')
     },
   })
 
@@ -55,10 +55,10 @@ export const useWatchlists = () => {
       watchlistService.addStock(watchlistId, symbol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      notify.success('Đã thêm cổ phiếu vào watchlist!')
+      notify.success('Stock added to watchlist!')
     },
     onError: (error: unknown) => {
-      notify.error(getAxiosErrorMessage(error) || 'Không thể thêm cổ phiếu')
+      notify.error(getAxiosErrorMessage(error) || 'Failed to add stock')
     },
   })
 
@@ -67,10 +67,10 @@ export const useWatchlists = () => {
       watchlistService.removeStock(watchlistId, symbol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlists'] })
-      notify.success('Đã xóa cổ phiếu khỏi watchlist!')
+      notify.success('Stock removed from watchlist!')
     },
     onError: (error: unknown) => {
-      notify.error(getAxiosErrorMessage(error) || 'Không thể xóa cổ phiếu')
+      notify.error(getAxiosErrorMessage(error) || 'Failed to remove stock')
     },
   })
 

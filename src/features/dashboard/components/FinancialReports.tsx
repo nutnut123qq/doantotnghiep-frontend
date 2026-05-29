@@ -116,7 +116,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
       <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
         <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">Financial Reports</h3>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <div className="animate-pulse space-y-4">
@@ -133,7 +133,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
       <div className="bg-card rounded-2xl shadow-lg p-6 border border-border h-full min-h-0 overflow-hidden flex flex-col">
         <div className="flex items-center space-x-3 mb-6 flex-shrink-0">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính - {symbol}</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">Financial Reports - {symbol}</h3>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <ErrorState
@@ -150,13 +150,13 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <DocumentTextIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-card-foreground">Báo cáo tài chính - {symbol}</h3>
+          <h3 className="text-lg font-semibold text-card-foreground">Financial Reports - {symbol}</h3>
         </div>
         <button
           onClick={loadReports}
           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
         >
-          Làm mới
+          Refresh
         </button>
       </div>
 
@@ -164,13 +164,13 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
         {reports.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
-            <p>Chưa có báo cáo tài chính</p>
+            <p>No financial reports yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Report List */}
           <div className="lg:col-span-1">
-            <h4 className="text-sm font-semibold text-card-foreground mb-3">Danh sách báo cáo</h4>
+            <h4 className="text-sm font-semibold text-card-foreground mb-3">Report list</h4>
             <div className="space-y-2">
               {reports.map((report) => (
                 <button
@@ -202,22 +202,22 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
                 <div>
                   <div className="flex items-center space-x-2 mb-4">
                     <ChartBarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <h4 className="text-sm font-semibold text-card-foreground">Chỉ số tài chính</h4>
+                    <h4 className="text-sm font-semibold text-card-foreground">Financial metrics</h4>
                   </div>
                   {metrics ? (
                     <div className="grid grid-cols-2 gap-4">
-                      <MetricCard label="Doanh thu" value={financialReportService.formatCurrency(metrics.Revenue)} />
-                      <MetricCard label="Lợi nhuận gộp" value={financialReportService.formatCurrency(metrics.GrossProfit)} />
-                      <MetricCard label="Lợi nhuận hoạt động" value={financialReportService.formatCurrency(metrics.OperatingProfit)} />
-                      <MetricCard label="Lợi nhuận sau thuế" value={financialReportService.formatCurrency(metrics.NetProfit)} />
+                      <MetricCard label="Revenue" value={financialReportService.formatCurrency(metrics.Revenue)} />
+                      <MetricCard label="Gross profit" value={financialReportService.formatCurrency(metrics.GrossProfit)} />
+                      <MetricCard label="Operating profit" value={financialReportService.formatCurrency(metrics.OperatingProfit)} />
+                      <MetricCard label="Net profit" value={financialReportService.formatCurrency(metrics.NetProfit)} />
                       <MetricCard label="EPS" value={financialReportService.formatNumber(metrics.EPS)} />
                       <MetricCard label="ROE" value={financialReportService.formatPercent(metrics.ROE)} />
                       <MetricCard label="ROA" value={financialReportService.formatPercent(metrics.ROA)} />
-                      <MetricCard label="Vốn chủ sở hữu" value={financialReportService.formatCurrency(metrics.Equity)} />
+                      <MetricCard label="Equity" value={financialReportService.formatCurrency(metrics.Equity)} />
                     </div>
                   ) : (
                     <div className="p-4 bg-muted rounded-lg border border-border">
-                      <p className="text-sm text-muted-foreground">Không thể parse dữ liệu chỉ số tài chính từ báo cáo này.</p>
+                      <p className="text-sm text-muted-foreground">Unable to parse financial metrics from this report.</p>
                     </div>
                   )}
                 </div>
@@ -389,7 +389,7 @@ export const FinancialReports = ({ symbol = 'VIC' }: FinancialReportsProps) => {
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <DocumentTextIcon className="h-12 w-12 mx-auto mb-2 text-muted-foreground/30" />
-                <p>Chọn một báo cáo để xem chi tiết</p>
+                <p>Select a report to view details</p>
               </div>
             )}
           </div>

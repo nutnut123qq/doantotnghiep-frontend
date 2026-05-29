@@ -62,11 +62,11 @@ export function EventsManagement() {
 
     try {
       await adminService.setCorporateEventDeleted(event.id, isDeleted)
-      toast.success(isDeleted ? 'Event hidden' : 'Event visible')
+      toast.success(isDeleted ? 'Event hidden' : 'Event shown')
     } catch (err) {
       setItems((rows) => rows.map((e) => (e.id === event.id ? { ...e, isDeleted: previous } : e)))
       logger.error('Error updating event visibility', { error: err })
-      toast.error('Failed to update visibility')
+      toast.error('Failed to update visibility status')
     } finally {
       setTogglingId(null)
     }
@@ -90,7 +90,7 @@ export function EventsManagement() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarDays className="h-5 w-5" />
-          <span>Manage corporate event visibility with soft-delete (isDeleted).</span>
+          <span>Manage corporate event visibility via soft-delete (isDeleted).</span>
         </div>
         <Button variant="outline" size="sm" onClick={() => void loadEvents(currentPage)} disabled={loading}>
           <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
@@ -99,7 +99,7 @@ export function EventsManagement() {
       </div>
 
       {items.length === 0 && !loading ? (
-        <EmptyState icon={CalendarDays} title="No events" description="There are no corporate events on this page." />
+        <EmptyState icon={CalendarDays} title="No events" description="No corporate events on this page." />
       ) : (
         <Card className="bg-[hsl(var(--surface-1))]">
           <CardContent className="p-0">
@@ -109,7 +109,7 @@ export function EventsManagement() {
                   <TableHead>Title</TableHead>
                   <TableHead>Symbol</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Event Date</TableHead>
+                  <TableHead>Event date</TableHead>
                   <TableHead className="w-[90px]">Link</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[140px] text-right">Visible</TableHead>
@@ -166,7 +166,7 @@ export function EventsManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Total {totalCount} items - Page {currentPage} of {totalPages}
+                {totalCount} items total — Page {currentPage} / {totalPages}
               </div>
               <div className="flex items-center space-x-2">
                 <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={!canGoPrev || loading}>

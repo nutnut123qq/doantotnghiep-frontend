@@ -24,7 +24,7 @@ export const CreateWatchlistModal = ({
     setError('')
 
     if (!name.trim()) {
-      setError('Tên watchlist không được để trống')
+      setError('Watchlist name cannot be empty')
       return
     }
 
@@ -47,14 +47,14 @@ export const CreateWatchlistModal = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Tạo Watchlist Mới"
-      description="Nhập tên cho watchlist mới của bạn"
+      title="Create New Watchlist"
+      description="Enter a name for your new watchlist"
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="watchlist-name" className="block text-sm font-medium text-slate-700 mb-2">
-            Tên Watchlist
+            Watchlist Name
           </label>
           <Input
             id="watchlist-name"
@@ -64,7 +64,7 @@ export const CreateWatchlistModal = ({
               setName(e.target.value)
               setError('')
             }}
-            placeholder="Ví dụ: Tech Stocks, Banking..."
+            placeholder="e.g. Tech Stocks, Banking..."
             disabled={isCreating}
             className={error ? 'border-red-500' : ''}
           />
@@ -78,14 +78,14 @@ export const CreateWatchlistModal = ({
             onClick={handleClose}
             disabled={isCreating}
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             type="submit"
             disabled={isCreating || !name.trim()}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
           >
-            {isCreating ? 'Đang tạo...' : 'Tạo Watchlist'}
+            {isCreating ? 'Creating...' : 'Create Watchlist'}
           </Button>
         </div>
       </form>

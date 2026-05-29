@@ -40,12 +40,12 @@ export const AddStockModal = ({
     setError('')
 
     if (!watchlistId) {
-      setError('Lỗi: Không tìm thấy watchlist')
+      setError('Error: Watchlist not found')
       return
     }
 
     if (!symbol.trim()) {
-      setError('Vui lòng chọn mã chứng khoán')
+      setError('Please select a stock symbol')
       return
     }
 
@@ -56,7 +56,7 @@ export const AddStockModal = ({
     )
 
     if (exists) {
-      setError(`Mã ${symbolUpper} đã có trong watchlist này`)
+      setError(`${symbolUpper} is already in this watchlist`)
       return
     }
 
@@ -79,19 +79,19 @@ export const AddStockModal = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Thêm Cổ Phiếu"
-      description="Chọn mã chứng khoán để thêm vào watchlist"
+      title="Add Stock"
+      description="Select a stock symbol to add to the watchlist"
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="stock-symbol" className="block text-sm font-medium text-slate-700 mb-2">
-            Mã Chứng Khoán
+            Stock Symbol
           </label>
           <SymbolSelector
             value={symbol}
             onChange={setSymbol}
-            placeholder="Tìm mã chứng khoán..."
+            placeholder="Search stock symbol..."
             className="w-full"
           />
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -104,14 +104,14 @@ export const AddStockModal = ({
             onClick={handleClose}
             disabled={isAdding}
           >
-            Hủy
+            Cancel
           </Button>
           <Button
             type="submit"
             disabled={isAdding || !symbol.trim()}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
           >
-            {isAdding ? 'Đang thêm...' : 'Thêm Cổ Phiếu'}
+            {isAdding ? 'Adding...' : 'Add Stock'}
           </Button>
         </div>
       </form>

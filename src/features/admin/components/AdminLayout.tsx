@@ -14,11 +14,11 @@ import { cn } from '@/lib/utils'
 import { useAuthContext } from '@/shared/contexts/AuthContext'
 
 const adminNavigation = [
-  { label: 'Tổng quan', to: '/admin', icon: BarChart3, end: true },
-  { label: 'Người dùng', to: '/admin/users', icon: Users },
-  { label: 'Tin tức', to: '/admin/news', icon: Newspaper },
-  { label: 'Tài chính', to: '/admin/finance', icon: Landmark },
-  { label: 'Sự kiện', to: '/admin/events', icon: CalendarDays },
+  { label: 'Overview', to: '/admin', icon: BarChart3, end: true },
+  { label: 'Users', to: '/admin/users', icon: Users },
+  { label: 'News', to: '/admin/news', icon: Newspaper },
+  { label: 'Finance', to: '/admin/finance', icon: Landmark },
+  { label: 'Events', to: '/admin/events', icon: CalendarDays },
   { label: 'AI Insights', to: '/admin/ai-insights', icon: Brain },
   { label: 'AI Management', to: '/admin/ai-management', icon: Cpu },
 ]
@@ -65,7 +65,7 @@ export function AdminLayout() {
             className="mt-4 w-full justify-start text-[hsl(var(--negative))] hover:bg-[hsl(var(--negative)/0.1)] hover:text-[hsl(var(--negative))]"
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Đăng xuất
+            Log out
           </Button>
         </aside>
 
@@ -98,7 +98,7 @@ export function AdminLayout() {
               className="ml-auto whitespace-nowrap text-[hsl(var(--negative))] hover:bg-[hsl(var(--negative)/0.1)] hover:text-[hsl(var(--negative))]"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Đăng xuất
+              Log out
             </Button>
           </div>
 

@@ -67,7 +67,7 @@ export const AIInsights = () => {
     const failed = results.find((result) => result.isError)
     if (failed?.error) {
       const msg = getAxiosErrorMessage(failed.error)
-      setError(msg === 'Unknown error' ? 'Không thể tải dữ liệu AI Insights' : msg)
+      setError(msg === 'Unknown error' ? 'Failed to load AI Insights data' : msg)
     }
   }
 
@@ -78,7 +78,7 @@ export const AIInsights = () => {
     } catch (err: unknown) {
       console.error('Error loading insight details:', err)
       const msg = getAxiosErrorMessage(err)
-      setError(msg === 'Unknown error' ? 'Không thể tải chi tiết insight' : msg)
+      setError(msg === 'Unknown error' ? 'Failed to load insight details' : msg)
     }
   }
 
@@ -160,7 +160,7 @@ export const AIInsights = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-slate-600 dark:text-slate-300">Đang tải AI Insights...</p>
+              <p className="text-slate-600 dark:text-slate-300">Loading AI Insights...</p>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ export const AIInsights = () => {
   if (error || queryError) {
     const displayError = error ?? (() => {
       const msg = getAxiosErrorMessage(queryError)
-      return msg === 'Unknown error' ? 'Không thể tải dữ liệu AI Insights' : msg
+      return msg === 'Unknown error' ? 'Failed to load AI Insights data' : msg
     })()
 
     return (
@@ -183,7 +183,7 @@ export const AIInsights = () => {
               onClick={() => void loadData()}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
-              Thử lại
+              Retry
             </button>
           </div>
         </div>
@@ -230,14 +230,14 @@ export const AIInsights = () => {
                     <Cpu className="w-16 h-16 text-slate-400 mx-auto mb-4" />
                     <p className="text-slate-600 dark:text-slate-300 text-lg font-medium mb-2">
                       {insights.length === 0 
-                        ? 'Chưa có insights nào được tạo' 
-                        : 'Chưa có insights trong danh mục này'}
+                        ? 'No insights have been generated yet' 
+                        : 'No insights in this category'}
                     </p>
                     {insights.length === 0 && (
                       <p className="text-slate-500 dark:text-slate-400 mb-6">
-                        Dữ liệu insight được hệ thống backend tạo định kỳ cho toàn bộ người dùng.
+                        Insight data is generated periodically by the backend for all users.
                         <br />
-                        <span className="text-sm text-slate-400 dark:text-slate-500">Vui lòng quay lại sau.</span>
+                        <span className="text-sm text-slate-400 dark:text-slate-500">Please check back later.</span>
                       </p>
                     )}
                   </div>
@@ -339,12 +339,12 @@ export const AIInsights = () => {
                   {getSentimentIcon(marketSentiment.overall)}
                 </div>
                 <p className={`text-2xl font-bold ${getSentimentColor(marketSentiment.overall)}`}>
-                  {marketSentiment.overall === 'Bullish' ? 'Tăng giá' : marketSentiment.overall === 'Bearish' ? 'Giảm giá' : 'Trung lập'}
+                  {marketSentiment.overall === 'Bullish' ? 'Bullish' : marketSentiment.overall === 'Bearish' ? 'Bearish' : 'Neutral'}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">
                   {marketSentiment.buySignalsCount > marketSentiment.sellSignalsCount
-                    ? `${Math.round((marketSentiment.buySignalsCount / (marketSentiment.buySignalsCount + marketSentiment.sellSignalsCount + marketSentiment.holdSignalsCount)) * 100)}% tín hiệu tích cực`
-                    : 'Tín hiệu hỗn hợp'}
+                    ? `${Math.round((marketSentiment.buySignalsCount / (marketSentiment.buySignalsCount + marketSentiment.sellSignalsCount + marketSentiment.holdSignalsCount)) * 100)}% positive signals`
+                    : 'Mixed signals'}
                 </p>
               </div>
             </div>
@@ -356,7 +356,7 @@ export const AIInsights = () => {
                   <AlertTriangle className={`w-12 h-12 ${getRiskColor(marketSentiment.riskLevel)}`} />
                 </div>
                 <p className={`text-2xl font-bold ${getRiskColor(marketSentiment.riskLevel)}`}>
-                  {marketSentiment.riskLevel === 'High' ? 'Cao' : marketSentiment.riskLevel === 'Moderate' ? 'Trung bình' : 'Thấp'}
+                  {marketSentiment.riskLevel === 'High' ? 'High' : marketSentiment.riskLevel === 'Moderate' ? 'Moderate' : 'Low'}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">Volatility index: {marketSentiment.volatilityIndex}</p>
               </div>
@@ -410,13 +410,13 @@ export const AIInsights = () => {
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Mô tả</h4>
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Description</h4>
                     <p className="text-sm text-slate-600 dark:text-slate-300">{selectedInsight.description}</p>
                   </div>
 
                   {selectedInsight.reasoning && selectedInsight.reasoning.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Lý do phân tích</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Analysis reasoning</h4>
                       <ul className="space-y-2">
                         {selectedInsight.reasoning.map((reason, index) => (
                           <li key={index} className="flex items-start space-x-2 text-sm text-slate-600 dark:text-slate-300">
@@ -432,13 +432,13 @@ export const AIInsights = () => {
                     <div className="grid grid-cols-2 gap-4">
                       {selectedInsight.targetPrice && (
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Giá mục tiêu</h4>
+                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Target price</h4>
                           <p className="text-lg font-bold text-emerald-600">{selectedInsight.targetPrice.toLocaleString('vi-VN')} VND</p>
                         </div>
                       )}
                       {selectedInsight.stopLoss && (
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Cắt lỗ</h4>
+                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Stop loss</h4>
                           <p className="text-lg font-bold text-rose-600">{selectedInsight.stopLoss.toLocaleString('vi-VN')} VND</p>
                         </div>
                       )}

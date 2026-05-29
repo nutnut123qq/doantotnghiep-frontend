@@ -44,10 +44,10 @@ export const Watchlist = () => {
     if (!watchlistToDelete) return
     try {
       await deleteWatchlist(watchlistToDelete.id)
-      notify.success(`Watchlist "${watchlistToDelete.name}" đã được xóa`)
+      notify.success(`Watchlist "${watchlistToDelete.name}" deleted`)
       setWatchlistToDelete(null)
     } catch {
-      notify.error('Không thể xóa watchlist')
+      notify.error('Failed to delete watchlist')
     }
   }
 
@@ -60,10 +60,10 @@ export const Watchlist = () => {
     if (!stockToRemove) return
     try {
       await removeStock(stockToRemove)
-      notify.success(`${stockToRemove.symbol} đã được xóa khỏi watchlist`)
+      notify.success(`${stockToRemove.symbol} removed from watchlist`)
       setStockToRemove(null)
     } catch {
-      notify.error('Không thể xóa cổ phiếu')
+      notify.error('Failed to remove stock')
     }
   }
 
@@ -73,7 +73,7 @@ export const Watchlist = () => {
         {/* Header */}
         <PageHeader
           title="Watchlist"
-          description="Theo dõi các cổ phiếu yêu thích và xu hướng thị trường"
+          description="Track your favorite stocks and market trends"
           actions={
             <Button
               onClick={() => setIsCreateModalOpen(true)}
@@ -81,7 +81,7 @@ export const Watchlist = () => {
               className="flex items-center space-x-2"
             >
               <Plus className="w-5 h-5" />
-              <span>{isCreating ? 'Đang tạo...' : 'Tạo Watchlist'}</span>
+              <span>{isCreating ? 'Creating...' : 'Create Watchlist'}</span>
             </Button>
           }
         />
@@ -90,7 +90,7 @@ export const Watchlist = () => {
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <p className="text-red-800 dark:text-red-400">
-              Lỗi khi tải watchlists: {error instanceof Error ? error.message : 'Đã xảy ra lỗi'}
+              Failed to load watchlists: {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
         )}
@@ -121,7 +121,7 @@ export const Watchlist = () => {
                     <div className="flex items-center space-x-3">
                       <Star className="w-6 h-6 text-amber-500 fill-amber-500" />
                       <h3 className="text-lg font-semibold text-[hsl(var(--text))]">{watchlist.name}</h3>
-                      <span className="text-sm text-[hsl(var(--muted))]">({watchlist.stocks.length} cổ phiếu)</span>
+                      <span className="text-sm text-[hsl(var(--muted))]">({watchlist.stocks.length} stocks)</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
@@ -129,7 +129,7 @@ export const Watchlist = () => {
                         size="icon"
                         onClick={() => setEditingWatchlist({ id: watchlist.id, name: watchlist.name })}
                         disabled={isUpdating}
-                        title="Chỉnh sửa"
+                        title="Edit"
                       >
                         <Pencil className="w-5 h-5" />
                       </Button>
@@ -138,7 +138,7 @@ export const Watchlist = () => {
                         size="icon"
                         onClick={() => handleDeleteClick(watchlist.id, watchlist.name)}
                         disabled={isDeleting}
-                        title="Xóa"
+                        title="Delete"
                         className="hover:text-[hsl(var(--negative))]"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -151,7 +151,7 @@ export const Watchlist = () => {
                 <div className="divide-y divide-slate-100 dark:divide-slate-700">
                   {watchlist.stocks.length === 0 ? (
                     <div className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                      <p>Chưa có cổ phiếu nào trong watchlist này</p>
+                      <p>No stocks in this watchlist yet</p>
                     </div>
                   ) : (
                     watchlist.stocks.map((stock) => (
@@ -179,7 +179,7 @@ export const Watchlist = () => {
                               size="icon"
                               onClick={() => handleRemoveStockClick(watchlist.id, stock.symbol)}
                               disabled={isRemovingStock}
-                              title="Xóa cổ phiếu"
+                              title="Remove stock"
                               className="text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-[hsl(var(--negative))]"
                             >
                               <X className="w-5 h-5" />
@@ -205,7 +205,7 @@ export const Watchlist = () => {
                     disabled={isAddingStock || !watchlist.id}
                   >
                     <Plus className="w-4 h-4" />
-                    <span>{isAddingStock ? 'Đang thêm...' : 'Thêm Cổ Phiếu'}</span>
+                    <span>{isAddingStock ? 'Adding...' : 'Add Stock'}</span>
                   </button>
                 </div>
               </div>
@@ -219,13 +219,13 @@ export const Watchlist = () => {
             <div className="flex justify-center mb-4">
               <Star className="w-16 h-16 text-amber-500 fill-amber-500" />
             </div>
-            <h3 className="text-xl font-semibold text-[hsl(var(--text))] mb-2">Chưa có Watchlist nào</h3>
-            <p className="text-[hsl(var(--muted))] mb-6">Tạo watchlist đầu tiên để bắt đầu theo dõi cổ phiếu</p>
+            <h3 className="text-xl font-semibold text-[hsl(var(--text))] mb-2">No watchlists yet</h3>
+            <p className="text-[hsl(var(--muted))] mb-6">Create your first watchlist to start tracking stocks</p>
             <Button
               onClick={() => setIsCreateModalOpen(true)}
               disabled={isCreating}
             >
-              {isCreating ? 'Đang tạo...' : 'Tạo Watchlist Đầu Tiên'}
+              {isCreating ? 'Creating...' : 'Create Your First Watchlist'}
             </Button>
           </div>
         )}
@@ -268,10 +268,10 @@ export const Watchlist = () => {
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={setDeleteConfirmOpen}
-          title="Xóa Watchlist"
-          description={watchlistToDelete ? `Bạn có chắc chắn muốn xóa watchlist "${watchlistToDelete.name}"?` : ''}
-          confirmText="Xóa"
-          cancelText="Hủy"
+          title="Delete Watchlist"
+          description={watchlistToDelete ? `Are you sure you want to delete watchlist "${watchlistToDelete.name}"?` : ''}
+          confirmText="Delete"
+          cancelText="Cancel"
           onConfirm={handleDeleteConfirm}
           variant="destructive"
         />
@@ -280,10 +280,10 @@ export const Watchlist = () => {
         <ConfirmDialog
           open={removeStockConfirmOpen}
           onOpenChange={setRemoveStockConfirmOpen}
-          title="Xóa Cổ Phiếu"
-          description={stockToRemove ? `Bạn có chắc chắn muốn xóa ${stockToRemove.symbol} khỏi watchlist?` : ''}
-          confirmText="Xóa"
-          cancelText="Hủy"
+          title="Remove Stock"
+          description={stockToRemove ? `Are you sure you want to remove ${stockToRemove.symbol} from the watchlist?` : ''}
+          confirmText="Delete"
+          cancelText="Cancel"
           onConfirm={handleRemoveStockConfirm}
           variant="destructive"
         />
@@ -291,4 +291,3 @@ export const Watchlist = () => {
     </div>
   )
 }
-

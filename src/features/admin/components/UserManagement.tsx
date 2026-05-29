@@ -93,7 +93,7 @@ export function UserManagement() {
         <div>
           <h2 className="text-2xl font-bold text-[hsl(var(--text))]">User Management</h2>
           <p className="text-sm text-[hsl(var(--muted))] mt-1">
-            Total {totalCount} users
+            {totalCount} users total
           </p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export function UserManagement() {
               <EmptyState
                 icon={Users}
                 title="No users found"
-                description="No users match the current filters"
+                description="No users match the current filter"
               />
             </div>
           ) : (
@@ -198,7 +198,7 @@ export function UserManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="text-sm text-[hsl(var(--muted))]">
-                Page {currentPage} of {totalPages}
+                Page {currentPage} / {totalPages}
               </div>
               <div className="flex space-x-2">
                 <Button

@@ -770,7 +770,7 @@ export function AIManagement() {
         <div>
           <h2 className="text-lg font-semibold text-[hsl(var(--text))]">AI Management</h2>
           <p className="text-sm text-[hsl(var(--text)/0.6)]">
-            Quản lý multi-agent pipeline, LLM providers, RAG và cache
+            Manage multi-agent pipeline, LLM providers, RAG, and cache
           </p>
         </div>
       </div>

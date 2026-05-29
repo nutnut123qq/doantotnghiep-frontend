@@ -121,7 +121,7 @@ export const watchlistService = {
       return transformWatchlist(response.data)
     } catch (error: unknown) {
       if (isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 405)) {
-        throw new Error('Chức năng cập nhật watchlist chưa được hỗ trợ')
+        throw new Error('Watchlist update is not supported')
       }
       throw error
     }

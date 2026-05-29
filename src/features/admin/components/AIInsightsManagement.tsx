@@ -49,7 +49,7 @@ export function AIInsightsManagement() {
       })
       setItems(data)
     } catch (err) {
-      setError('Failed to load AI insights')
+      setError('Failed to load AI Insights')
       logger.error('Error loading admin AI insights', { error: err })
     } finally {
       setLoading(false)
@@ -71,7 +71,7 @@ export function AIInsightsManagement() {
     setItems((prev) => prev.map((item) => (item.id === insight.id ? { ...item, isDeleted } : item)))
     try {
       await adminService.toggleAIInsightDeleted(insight.id, isDeleted)
-      toast.success(isDeleted ? 'Insight hidden' : 'Insight visible')
+      toast.success(isDeleted ? 'Insight hidden' : 'Insight shown')
     } catch (err) {
       setItems((prev) => prev.map((item) => (item.id === insight.id ? { ...item, isDeleted: insight.isDeleted } : item)))
       logger.error('Error toggling AI insight visibility', { error: err, insightId: insight.id })
@@ -83,14 +83,14 @@ export function AIInsightsManagement() {
 
   const handleGenerate = useCallback(async () => {
     if (!generateSymbol.trim()) {
-      toast.error('Please input a symbol')
+      toast.error('Please enter a symbol')
       return
     }
 
     try {
       setGenerating(true)
       await adminService.generateAIInsight(generateSymbol.trim().toUpperCase())
-      toast.success(`Triggered insight generation for ${generateSymbol.trim().toUpperCase()}`)
+      toast.success(`Insight generation triggered for ${generateSymbol.trim().toUpperCase()}`)
       setGenerateSymbol('')
       await loadInsights()
     } catch (err) {
@@ -107,7 +107,7 @@ export function AIInsightsManagement() {
       stopBatchPolling()
       const result = await adminService.generateAIInsightsBatch()
       toast.success(
-        `Batch started for ${result.count} symbols (Job: ${result.jobId}). List will auto-refresh.`
+        `Batch started for ${result.count} symbols (Job: ${result.jobId}). The list will refresh automatically.`
       )
 
       void loadInsights()
@@ -163,7 +163,7 @@ export function AIInsightsManagement() {
               )}
               onClick={() => setVisibilityFilter(filter)}
             >
-              {filter}
+              {filter === 'all' ? 'All' : filter === 'visible' ? 'Visible' : 'Hidden'}
             </button>
           ))}
         </div>

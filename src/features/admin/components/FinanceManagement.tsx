@@ -54,11 +54,11 @@ export function FinanceManagement() {
 
     try {
       await adminService.setFinancialReportDeleted(report.id, isDeleted)
-      toast.success(isDeleted ? 'Report hidden' : 'Report visible')
+      toast.success(isDeleted ? 'Report hidden' : 'Report shown')
     } catch (err) {
       setItems((rows) => rows.map((r) => (r.id === report.id ? { ...r, isDeleted: previous } : r)))
       logger.error('Error updating report visibility', { error: err })
-      toast.error('Failed to update visibility')
+      toast.error('Failed to update visibility status')
     } finally {
       setTogglingId(null)
     }
@@ -82,7 +82,7 @@ export function FinanceManagement() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Landmark className="h-5 w-5" />
-          <span>Manage financial report visibility with soft-delete (isDeleted).</span>
+          <span>Manage financial report visibility via soft-delete (isDeleted).</span>
         </div>
         <Button variant="outline" size="sm" onClick={() => void loadReports(currentPage)} disabled={loading}>
           <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
@@ -91,7 +91,7 @@ export function FinanceManagement() {
       </div>
 
       {items.length === 0 && !loading ? (
-        <EmptyState icon={Landmark} title="No reports" description="There are no financial reports on this page." />
+        <EmptyState icon={Landmark} title="No reports" description="No financial reports on this page." />
       ) : (
         <Card className="bg-[hsl(var(--surface-1))]">
           <CardContent className="p-0">
@@ -101,7 +101,7 @@ export function FinanceManagement() {
                   <TableHead>Symbol</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Period</TableHead>
-                  <TableHead>Report Date</TableHead>
+                  <TableHead>Report date</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[140px] text-right">Visible</TableHead>
                 </TableRow>
@@ -140,7 +140,7 @@ export function FinanceManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Total {totalCount} items - Page {currentPage} of {totalPages}
+                {totalCount} items total — Page {currentPage} / {totalPages}
               </div>
               <div className="flex items-center space-x-2">
                 <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={!canGoPrev || loading}>

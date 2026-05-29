@@ -14,7 +14,7 @@ interface SymbolSelectorProps {
 export const SymbolSelector = ({
   value,
   onChange,
-  placeholder = 'Tìm mã CK...',
+  placeholder = 'Search symbol...',
   className = '',
 }: SymbolSelectorProps) => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -171,22 +171,22 @@ export const SymbolSelector = ({
         <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
           {isLoading ? (
             <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-              Đang tải danh sách mã chứng khoán...
+              Loading stock symbols...
             </div>
           ) : error ? (
             <div className="px-4 py-3 text-sm text-destructive text-center">
-              Lỗi khi tải danh sách mã. Vui lòng thử lại.
+              Failed to load symbols. Please try again.
             </div>
           ) : symbols.length === 0 ? (
             <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-              <div>Không có dữ liệu mã chứng khoán</div>
-              <div className="text-xs mt-1">API có thể chưa sẵn sàng</div>
+              <div>No stock symbol data</div>
+              <div className="text-xs mt-1">API may not be ready</div>
             </div>
           ) : filteredSymbols.length === 0 ? (
             <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-              <div>Không tìm thấy mã chứng khoán</div>
+              <div>No matching stock symbols</div>
               <div className="text-xs mt-1">
-                Tìm kiếm: "{searchQuery}" ({symbols.length} mã có sẵn)
+                Search: "{searchQuery}" ({symbols.length} symbols available)
               </div>
             </div>
           ) : (
